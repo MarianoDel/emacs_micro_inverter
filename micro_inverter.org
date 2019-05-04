@@ -1,0 +1,80 @@
+* MICRO BOOSTER ETAPA B con stm32f030K6T6
+** Arranque Hardware
+*** DONE Implementar DMA para el ADC
+    CLOSED: [2018-07-23 Mon 11:10]
+*** DONE El muestreo con TIM1 termina muy sobre el nuevo pulso
+    CLOSED: [2018-07-23 Mon 12:53]
+    - Corregir el tiempo de muestreo atrasando o adelentando el sample time
+     Lo paso a 71.5 ciclos y termina muestreando a 24KHz
+
+*** TODO Revisar sensado de corriente - parece no funcionar ok -
+*** TODO Maxima tension de salida - quema el diodo FR307 -
+    - Agregar red Snubber???
+*** TODO Soft start del filtro para Vout a traves de dmax y Vin [2/2]
+    - [X] definir dmax segun la tension de entrada CORREGIR de 20 a 25V tiene el valor de 20
+    - [X] revisar Vout en funcion de dmax con algo de carga
+
+*** TODO Temas del PID
+    - Con un valor fijo de d; ejemplo d = 100 y Vout = 0, sin carga, salta la proteccion de 
+      corriente
+    - Podria implementar un d delta de 5 puntos maximo, para que no avance tan rapido
+    - Me ayuda tambien con el Soft Start
+
+*** TODO Con corriente en QB salta proteccion de QA
+    - 24-07-18 Mejore la pista con cable de red, el sensado ya no pasa por debajo del transformador
+    - 24-07-18 Ahora no aparecen pulsos en de corriente en QB
+*** La bobina de salida ve una diferencia de tension muy alta en arranque
+    - definir dmax respecto de la bobina de salida
+      Vout trafo * Ton = I * Lm
+** Info por el puerto serie
+*** Por el puerto serie debiera enviar info
+    - [ ] potencia estimada
+    - [ ] error estimado
+    - [ ] maximo pwm que esta permitiendo
+    - [ ] d actual q1 y q2
+    - [ ] tension de entrada sensada
+    - [ ] info de corriente (medida q1 y q2 o algo asi)
+
+** DONE Mensaje de Bienvenida
+   CLOSED: [2018-07-23 Mon 12:18]
+
+
+* Caracteristicas especiales de Hardware
+** Retardo entre salida pwm y deteccon de Int
+   - incluso con la pata (+) del coparador en 0 existe un retardo de XXus en la deteccion
+*** Probar con pwm fijo y medir Int con LED
+
+** Por el punto anterior debiera trabajar VM y luego CM segun ciclo de trabajo
+
+* Cambios a Modelo Forward - Mas estable -
+** DONE Comienzo cambios
+   CLOSED: [2018-11-26 Fri 08:57]
+
+** DONE Push Pull a Forward [4/4]
+   CLOSED: [2018-12-14 Fri 09:01]
+   - [X] Puentear bobinados primarios
+   - [X] Liberar un secundario, cablear diodo vertical
+   - [X] Agrandar inductancia bobina salida
+   - [X] Acoplar segundo mosfet en paralelo
+
+** TODO Mejorar red snubber para 600Vcc
+   - midiendo el secundario con primario en corto Lleak=56uHy
+   - cambie la red varias veces, no consigo eliminar la oscilacion
+   - probe con una red resistiva de alta tension en el mosfet
+     para ver si es un efecto que lo forma la punta de alta tension, no es asi
+   - Puse dos mosfet en paralelo para ver si no es un problema desde el primario,
+     parece que no.
+
+*** Trato de determinar los parametros de Lleak y Cdiodo
+    - Foscilacion1 = 893KHz sin red
+    - Foscilacion2 = 658KHz con cap // 470pF
+    - me da Cdiodo = 558pF (FR307 en inversa) y Lleak = 57uHy, que me coincide con la prueba de 
+      trafo en corto
+    - Entre patas del bobinado de salida tengo 12.2nF
+    - pruebo con FR307 UF5408 y MUR460, en todos los casos tengo la misma senial en los diodos
+    - el problema de capacidad lo debo tener en la salida del trafo
+
+** TODO Inversor con placa de potencia camilla
+
+** TODO Agrandar bobinado secundario para 350Vcc
+

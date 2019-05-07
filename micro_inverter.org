@@ -1,4 +1,4 @@
-* MICRO BOOSTER ETAPA B con stm32f030K6T6
+* MICRO INVERTER ETAPA C con stm32f030K6T6
 ** Arranque Hardware
 *** DONE Implementar DMA para el ADC
     CLOSED: [2018-07-23 Mon 11:10]
@@ -39,42 +39,43 @@
    CLOSED: [2018-07-23 Mon 12:18]
 
 
-* Caracteristicas especiales de Hardware
-** Retardo entre salida pwm y deteccon de Int
-   - incluso con la pata (+) del coparador en 0 existe un retardo de XXus en la deteccion
-*** Probar con pwm fijo y medir Int con LED
+* Modos de Funcionamiento
+** Inversor
+** Inversor con realim de corriente
+** Inversor Conectado a la Red
 
-** Por el punto anterior debiera trabajar VM y luego CM segun ciclo de trabajo
+* Estados del Programa Principal (Inversor)
+** Init
+** Generting
+** Error Overcurrent
 
-* Cambios a Modelo Forward - Mas estable -
-** DONE Comienzo cambios
-   CLOSED: [2018-11-26 Fri 08:57]
+* Estados del Programa Principal (Inversor con realim corriente)
+** Init
+** Generting
+   - aca es lo mismo que lo anterior pero realimento
+     por corriente en la carga en vez de poner open loop la tension
 
-** DONE Push Pull a Forward [4/4]
-   CLOSED: [2018-12-14 Fri 09:01]
-   - [X] Puentear bobinados primarios
-   - [X] Liberar un secundario, cablear diodo vertical
-   - [X] Agrandar inductancia bobina salida
-   - [X] Acoplar segundo mosfet en paralelo
+** Error Overcurrent
 
-** TODO Mejorar red snubber para 600Vcc
-   - midiendo el secundario con primario en corto Lleak=56uHy
-   - cambie la red varias veces, no consigo eliminar la oscilacion
-   - probe con una red resistiva de alta tension en el mosfet
-     para ver si es un efecto que lo forma la punta de alta tension, no es asi
-   - Puse dos mosfet en paralelo para ver si no es un problema desde el primario,
-     parece que no.
 
-*** Trato de determinar los parametros de Lleak y Cdiodo
-    - Foscilacion1 = 893KHz sin red
-    - Foscilacion2 = 658KHz con cap // 470pF
-    - me da Cdiodo = 558pF (FR307 en inversa) y Lleak = 57uHy, que me coincide con la prueba de 
-      trafo en corto
-    - Entre patas del bobinado de salida tengo 12.2nF
-    - pruebo con FR307 UF5408 y MUR460, en todos los casos tengo la misma senial en los diodos
-    - el problema de capacidad lo debo tener en la salida del trafo
+* Estados del Programa Principal (Inversor Conectado a la Red)
+** Init
+** Wait For Sync
+** Generting
+** Error Overcurrent
+** Error Islanding
 
-** TODO Inversor con placa de potencia camilla
+* Modulo de Sync especial
+** AC Sync mide en ambos sentidos
+** Buffer circular de 32
+*** Revisar cada nueva medicion del circuito sync contra el buffer circular
+    - errores mayores a 2% cortar generador
+    - comparar t1 y t2 con int que mide UP DWN
 
-** TODO Agrandar bobinado secundario para 350Vcc
+*** Como generar el nuevo sync
+    - viene un ciclo atrasado
+    - revisar t1 y t2, dentro del 2%
+    - luego de un UP flanco en t1 + t2/2
+    - luego de un DWN flanco en t1 + t2/2
 
+*** El sentido de los ciclos determinarlos con el opto de medicion de tension

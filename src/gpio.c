@@ -56,14 +56,14 @@ void GPIO_Config (void)
     //10: Pull-down
     //11: Reserved
 
-#if (defined VER_2_0)
+
     //--- GPIO A ---//
     if (!GPIOA_CLK)
         GPIOA_CLK_ON;
 
     temp = GPIOA->MODER;	//2 bits por pin
-    temp &= 0x3F000CC0;		//PA0 PA1 PA2 analog input; PA4 input; PA6 alternate function; PA7 Input
-    temp |= 0x402A203F;		//PA8 PA9 PA10 alternative function; PA11 Input; PA15 output
+    temp &= 0x3CC000C0;		//PA0 PA1 PA2 analog input; PA4 PA5 input; PA6 PA7 alternate function;
+    temp |= 0x4128A03F;		//PA8 input; PA9 PA10 alternative function; PA12 output; PA15 output
     GPIOA->MODER = temp;
 
     temp = GPIOA->OTYPER;	//1 bit por pin
@@ -72,7 +72,7 @@ void GPIO_Config (void)
     GPIOA->OTYPER = temp;
 
     temp = GPIOA->OSPEEDR;	//2 bits por pin
-    temp &= 0x3FC03FFF;
+    temp &= 0x3CFFFFFF;
     temp |= 0x00000000;		//low speed
     GPIOA->OSPEEDR = temp;
 
@@ -90,8 +90,8 @@ void GPIO_Config (void)
         GPIOB_CLK_ON;
 
     temp = GPIOB->MODER;	//2 bits por pin
-    temp &= 0xFFFFCFF0;		//PB0 input; PB1 alternative; PB6 input
-    temp |= 0x00000008;
+    temp &= 0xFFFFCFF0;		//PB0 PB1 alternative function; PB6 input
+    temp |= 0x0000000A;
     GPIOB->MODER = temp;
 
     temp = GPIOB->OTYPER;	//1 bit por pin
@@ -105,8 +105,8 @@ void GPIO_Config (void)
     GPIOB->OSPEEDR = temp;
 
     temp = GPIOB->PUPDR;	//2 bits por pin
-    temp &= 0xFFFFCFFC;		//PB0 PB6 pull up
-    temp |= 0x00001001;
+    temp &= 0xFFFFCFFF;		//PB6 pull up
+    temp |= 0x00001000;
     GPIOB->PUPDR = temp;
 
     //Alternate Fuction for GPIOB
@@ -141,41 +141,44 @@ void GPIO_Config (void)
 
 #endif
 
-#ifdef WITH_OVERCURRENT_SHUTDOWN
-    //Interrupt en PA4 y PA5
+#if (defined WITH_OVERCURRENT_SHUTDOWN) || (defined WITH_AC_SYNC_INT)
+    //Interrupt en PA4 y PA5 or/and PA8
     if (!SYSCFG_CLK)
         SYSCFG_CLK_ON;
 
+#ifdef WITH_OVERCURRENT_SHUTDOWN
     SYSCFG->EXTICR[1] = 0x00000000; //Select Port A & Pin4 Pin5  external interrupt
     // EXTI->IMR |= 0x00000030; 			//Corresponding mask bit for interrupts EXTI4 EXTI5
     EXTI->EMR |= 0x00000000; 			//Corresponding mask bit for events
-    EXTI->RTSR |= 0x00000030; 			//Interrupt line on rising edge
+    EXTI->RTSR |= 0x00000030; 			//pin4 pin5 Interrupt line on rising edge
     EXTI->FTSR |= 0x00000000; 			//Interrupt line on falling edge
+#endif
+#ifdef WITH_AC_SYNC_INT
+    SYSCFG->EXTICR[2] = 0x00000000; //Select Port A & Pin8  external interrupt
+    // EXTI->IMR |= 0x00000030; 			//Corresponding mask bit for interrupts EXTI4 EXTI5
+    EXTI->EMR |= 0x00000000; 			//Corresponding mask bit for events
+    EXTI->RTSR |= 0x00000100; 			//pin8 Interrupt line on rising edge
+    EXTI->FTSR |= 0x00000000; 			//Interrupt line on falling edge
+#endif
 
     NVIC_EnableIRQ(EXTI4_15_IRQn);
     NVIC_SetPriority(EXTI4_15_IRQn, 2);
     
-#else
-    //Interrupt en PA4
-    if (!SYSCFG_CLK)
-        SYSCFG_CLK_ON;
-
-    SYSCFG->EXTICR[1] = 0x00000000; //Select Port A & Pin4 external interrupt
-    // EXTI->IMR |= 0x00000010; 			//Corresponding mask bit for interrupts EXTI4
-    EXTI->EMR |= 0x00000000; 			//Corresponding mask bit for events
-    EXTI->RTSR |= 0x00000000; 			//Interrupt line on rising edge
-    EXTI->FTSR |= 0x00000010; 			//Interrupt line on falling edge
-
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
-    NVIC_SetPriority(EXTI4_15_IRQn, 2);    
 #endif    
 
-#endif    //end of ver_2_0
 }
 
+#if (defined WITH_OVERCURRENT_SHUTDOWN) && (defined WITH_AC_SYNC_INT)
+inline void EXTIOff (void)
+{
+    EXTI->IMR &= ~0x00000130;
+}
 
-#if (defined VER_2_0)
-#ifdef WITH_OVERCURRENT_SHUTDOWN
+inline void EXTIOn (void)
+{
+    EXTI->IMR |= 0x00000130;
+}
+#elif defined WITH_OVERCURRENT_SHUTDOWN
 inline void EXTIOff (void)
 {
     EXTI->IMR &= ~0x00000030;
@@ -185,17 +188,18 @@ inline void EXTIOn (void)
 {
     EXTI->IMR |= 0x00000030;
 }
-#else
+#elif defined WITH_AC_SYNC_INT
 inline void EXTIOff (void)
 {
-    EXTI->IMR &= ~0x00000010;
+    EXTI->IMR &= ~0x00000100;
 }
 
 inline void EXTIOn (void)
 {
-    EXTI->IMR |= 0x00000010;
+    EXTI->IMR |= 0x00000100;
 }
 #endif
-#endif    //end of ver 2.0
+
+
 
 //--- end of file ---//

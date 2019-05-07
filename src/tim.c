@@ -11,7 +11,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "tim.h"
 #include "stm32f0xx.h"
-#include "uart.h"
 #include "hard.h"
 
 
@@ -167,7 +166,6 @@ void TIM_1_Init (void)
 }
 
 
-#ifdef USE_ONLY_MOSFET_A
 void TIM_3_Init (void)
 {
     unsigned int temp = 0;
@@ -183,31 +181,37 @@ void TIM_3_Init (void)
     //TIM3->SMCR |= TIM_SMCR_SMS_2;    //reset mode link timer1    OJO no anda
     // TIM3->SMCR |= TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1;    //trigger mode link timer1
     TIM3->SMCR = 0x0000;    //
-    //TIM3->CCMR1 = 0x6000;            //CH2 output PWM mode 1
-    //  TIM3->CCMR1 = 0x0060;            //CH1 output PWM mode 1
-    TIM3->CCMR1 = 0x0060;            //CH1 output PWM mode 1 (channel active TIM3->CNT < TIM3->CCR1)
-    TIM3->CCMR2 = 0x0000;            //
-    //  TIM3->CCER |= TIM_CCER_CC1E | TIM_CCER_CC1P;    //CH1 enable on pin active high
-    TIM3->CCER |= TIM_CCER_CC1E;    //CH1 enable on pin active high
-    //TIM3->CCER |= TIM_CCER_CC2E | TIM_CCER_CC2P;    //CH2 enable on pin active high
+    TIM3->CCMR1 = 0x6060;            //CH1 CH2 output PWM mode 1 (channel active TIM3->CNT < TIM3->CCR1)
+    TIM3->CCMR2 = 0x6060;            //CH3 CH4
+    //  TIM3->CCER |= TIM_CCER_CC1E | TIM_CCER_CC1P;    //CH1 enable on pin active low
+    TIM3->CCER |= TIM_CCER_CC4E |
+        TIM_CCER_CC3E |
+        TIM_CCER_CC2E |
+        TIM_CCER_CC1E;    //CH1 CH2 CH3 CH4 enable on pin active high
+
     TIM3->ARR = DUTY_100_PERCENT;
     TIM3->CNT = 0;
-    TIM3->PSC = 0;
 
+#if defined USE_FREQ_48KHZ
+    TIM3->PSC = 0;
+#elif defined USE_FREQ_24KHZ
+    TIM3->PSC = 1;
+#else
+#error "No FREQ selected for TIM3 on hard.h"
+#endif
+    
     //TIM3->EGR = TIM_EGR_UG;    //generate event
 
-    //Configuracion Pines
-    //Alternate Fuction
-    //  temp = GPIOA->MODER;    //2 bits por pin
-    //  temp &= 0xFFFFCFFF;        //PA6 (alternative)
-    //  temp |= 0x00002000;
-    //  GPIOA->MODER = temp;
-
-    //Configuracion Pin Ctrol_M_A
+    //Alternative Function Pins
     temp = GPIOA->AFR[0];
-    temp &= 0xF0FFFFFF;
-    temp |= 0x01000000;    //PA6 -> AF1;
+    temp &= 0x00FFFFFF;
+    temp |= 0x11000000;    //PA7 & PA6 -> AF1;
     GPIOA->AFR[0] = temp;
+
+    temp = GPIOB->AFR[0];
+    temp &= 0xFFFFFF00;
+    temp |= 0x00000011;    //PB1 & PB0 -> AF1;
+    GPIOB->AFR[0] = temp;
 
     // Enable timer ver UDIS
     //TIM3->DIER |= TIM_DIER_UIE;
@@ -215,88 +219,15 @@ void TIM_3_Init (void)
 
     TIM3->CCR1 = 0;        
 }
-#endif    //USE_ONLY_MOSFET_A
 
-#ifdef USE_MOSFET_A_AND_B
-void TIM_3_Init (void)
+
+void TIM3_IRQHandler (void)	
 {
-    unsigned int temp = 0;
-
-    if (!RCC_TIM3_CLK)
-        RCC_TIM3_CLK_ON;
-
-    //Configuracion del timer.
-    TIM3->CR1 |= TIM_CR1_OPM;        //clk int / 1; upcounting; one pulse
-    //TIM3->CR1 = 0x0000;        //clk int / 1; upcounting;
-    //TIM3->CR2 |= TIM_CR2_MMS_1;        //UEV -> TRG0
-    TIM3->CR2 = 0x0000;
-    //TIM3->SMCR |= TIM_SMCR_SMS_2 |TIM_SMCR_SMS_1 | TIM_SMCR_TS_1 | TIM_SMCR_TS_0;    //reset mode
-    //TIM3->SMCR |= TIM_SMCR_SMS_2;    //reset mode link timer1    OJO no anda
-    TIM3->SMCR |= TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1;    //trigger mode link timer1
-    //TIM3->SMCR = 0x0000;    //
-    //TIM3->CCMR1 = 0x6000;            //CH2 output PWM mode 1
-    //  TIM3->CCMR1 = 0x0060;            //CH1 output PWM mode 1
-    TIM3->CCMR1 = 0x0070;            //CH1 output PWM mode 2 (channel inactive TIM3->CNT < TIM3->CCR1)
-    TIM3->CCMR2 = 0x0000;            //
-    //  TIM3->CCER |= TIM_CCER_CC1E | TIM_CCER_CC1P;    //CH1 enable on pin active high
-    TIM3->CCER |= TIM_CCER_CC1E;    //CH1 enable on pin active high
-    //TIM3->CCER |= TIM_CCER_CC2E | TIM_CCER_CC2P;    //CH2 enable on pin active high
-    TIM3->ARR = DUTY_50_PERCENT;
-    TIM3->CNT = 0;
-    TIM3->PSC = 0;
-
-    //esto anula la salida
-    TIM3->CCR1 = DUTY_50_PERCENT_PLUS_ONE;        //delay = TIM3->CCRx = 512 - TIM1->CCR2
-
-
-    //TIM3->EGR = TIM_EGR_UG;    //generate event
-
-    //Configuracion Pines
-    //Alternate Fuction
-    //  temp = GPIOA->MODER;    //2 bits por pin
-    //  temp &= 0xFFFFCFFF;        //PA6 (alternative)
-    //  temp |= 0x00002000;
-    //  GPIOA->MODER = temp;
-
-    //Configuracion Pin Ctrol_M_A
-    temp = GPIOA->AFR[0];
-    temp &= 0xF0FFFFFF;
-    temp |= 0x01000000;    //PA6 -> AF1;
-    GPIOA->AFR[0] = temp;
-
-    // Enable timer ver UDIS
-    //TIM3->DIER |= TIM_DIER_UIE;
-    TIM3->CR1 |= TIM_CR1_CEN;
-}
-#endif    //USE_MOSFET_A_AND_B
-
-
-void TIM3_IRQHandler (void)	//1 ms
-{
-    /*
-      Usart_Time_1ms ();
-
-      if (timer_1seg)
-      {
-      if (timer_1000)
-      timer_1000--;
-      else
-      {
-      timer_1seg--;
-      timer_1000 = 1000;
-      }
-      }
-
-      if (timer_led_comm)
-      timer_led_comm--;
-
-      if (timer_standby)
-      timer_standby--;
-    */
     //bajar flag
     if (TIM3->SR & 0x01)	//bajo el flag
         TIM3->SR = 0x00;
 }
+
 
 void TIM_6_Init (void)
 {

@@ -196,21 +196,31 @@ int main(void)
     WelcomeCodeFeatures(s_lcd);
 #endif
 
+    
+    // TIM_1_Init ();	   //lo utilizo para mosfet Ctrol_M_B y para FB si esta definido en hard.h
+    TIM_3_Init ();	   //lo utilizo para mosfet Ctrol_M_A y para synchro ADC
+
+    LOW_LEFT(DUTY_NONE);
+    HIGH_LEFT(DUTY_NONE);
+    LOW_RIGHT(DUTY_NONE);
+    HIGH_RIGHT(DUTY_50_PERCENT);
+    
     while (1)
     {
-        if (LED)
-            LED_OFF;
-        else
+        if (STOP_JUMPER)
+        {
             LED_ON;
-
-        Wait_ms(1000);
+            RELAY_ON;
+            Wait_ms(1000);
+        }
+        else
+        {
+            LED_OFF;
+            RELAY_OFF;
+            Wait_ms(1000);
+        }
     }
 
-
-    
-    
-    TIM_1_Init ();	   //lo utilizo para mosfet Ctrol_M_B y para FB si esta definido en hard.h
-    TIM_3_Init ();	   //lo utilizo para mosfet Ctrol_M_A y para synchro ADC
 
     // EnablePreload_MosfetA;
     // EnablePreload_MosfetB;

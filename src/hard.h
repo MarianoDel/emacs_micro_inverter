@@ -61,8 +61,8 @@
 #define WITH_TIM1_FB
 
 //-- Frequency selection ----------
-// #define USE_FREQ_75KHZ
 #define USE_FREQ_48KHZ
+// #define USE_FREQ_24KHZ
 
 //-- Types of Interrupts ----------
 #define WITH_AC_SYNC_INT

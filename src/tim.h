@@ -16,7 +16,6 @@
 
 //--- Exported types ---//
 //--- Exported constants ---//
-#if defined USE_FREQ_48KHZ
 #define DUTY_NONE		0
 #define DUTY_5_PERCENT		50
 #define DUTY_10_PERCENT		100
@@ -24,19 +23,6 @@
 #define DUTY_50_PERCENT		500
 #define DUTY_50_PERCENT_PLUS_ONE		501
 #define DUTY_100_PERCENT        1000
-#elif defined USE_FREQ_75KHZ
-#define DUTY_NONE		0
-#define DUTY_5_PERCENT		32
-#define DUTY_10_PERCENT		64
-#define DUTY_FOR_DMAX           288    //d = 0.45 esto da ok con arranque suave vout con carga 100W -> 310V
-// #define DUTY_FOR_DMAX           224    //d = 0.35 esto da ok con arranque suave vout con carga 100W -> 310V
-// #define DUTY_FOR_DMAX           108    //esto da 66A con 13V input en los primeros pulsos de corriente
-#define DUTY_50_PERCENT		320
-#define DUTY_50_PERCENT_PLUS_ONE		321
-#define DUTY_100_PERCENT        640
-#else
-#error "No freq selected in hard.h"
-#endif
 
 
 #define DUTY_FB_25A    395    //esto es 1.17V que equivale a 25Apico en el primario
@@ -91,6 +77,11 @@
 #ifdef WITH_TIM14_FB
 #define UpdateFB(X)    Update_TIM14_CH1(X)
 #endif
+
+#define LOW_LEFT(X)     Update_TIM3_CH1(X)
+#define HIGH_LEFT(X)    Update_TIM3_CH2(X)
+#define LOW_RIGHT(X)     Update_TIM3_CH3(X)
+#define HIGH_RIGHT(X)    Update_TIM3_CH4(X)
 
 //--- Exported functions ---//
 

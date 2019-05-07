@@ -48,14 +48,9 @@
 // SOFTWARE Features -------------------------
 //-- Types of programs ----------
 #define INVERTER_MODE
-#define INVERTER_MODE_CURRENT_FDBK
-#define INVERTER_MODE_CURRENT_FDBK
+// #define INVERTER_MODE_CURRENT_FDBK
+// #define INVERTER_MODE_GRID_TIE
 
-#ifdef USE_PUSH_PULL_MODE
-// #define IN_PUSH_PULL_SET_FIXED_D        //setea d a DUTY_FOR_DMAX - usareste valor chico!! -
-#define IN_PUSH_PULL_GROW_TO_FIXED_D    //setea d a DUTY_FOR_DMAX pero incrementando de a poco cada 2ms
-// #define IN_PUSH_PULL_VM                 //el d esta definido por la Vout
-#endif
 //-- Types of led indications ----------
 // #define USE_LED_IN_INT
 #define USE_LED_IN_PROT
@@ -66,17 +61,12 @@
 #define WITH_TIM1_FB
 
 //-- Frequency selection ----------
-#define USE_FREQ_75KHZ
-// #define USE_FREQ_48KHZ
+// #define USE_FREQ_75KHZ
+#define USE_FREQ_48KHZ
 
-//-- Types of used Hardware ----------
-#ifdef USE_FORWARD_MODE
-#define USE_ONLY_MOSFET_A
-#endif
-#ifdef USE_PUSH_PULL_MODE
-#define USE_MOSFET_A_AND_B
-#endif
-
+//-- Types of Interrupts ----------
+#define WITH_AC_SYNC_INT
+// #define WITH_OVERCURRENT_SHUTDOWN
 
 //---- End of Features Configuration ----------
 

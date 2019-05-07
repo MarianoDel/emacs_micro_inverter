@@ -244,56 +244,24 @@ unsigned short Hard_GetDmaxLout (unsigned short vin, unsigned short vout)
 
 void WelcomeCodeFeatures (char * str)
 {
-#ifdef TEST_INT_PRGRM
-    Usart1Send("Programa de Testeo INT\n");
-    Wait_ms(30);
-#endif
-#ifdef TEST_ADC_AND_DMA
-    Usart1Send("Programa de Testeo ADC -> DMA\n");
+    // Main Program Type
+#ifdef INVERTER_MODE
+    Usart1Send("Only Inverter Mode\n");
     Wait_ms(30);    
 #endif
-#ifdef TEST_FIXED_D
-    Usart1Send("Programa de ciclo d fijo\n");
-    Wait_ms(30);    
-#endif
-#ifdef TEST_FIXED_VOUT
-    Usart1Send("Programa Vout fijo\n");
-    Wait_ms(30);    
-#endif
-#ifdef ONLY_COMMS
-    Usart1Send("Only Communications for Ver 1.0\n");
-    Wait_ms(30);    
-#endif
-#ifdef CURRENT_MODE_VER_2_0
-    Usart1Send("Current Mode for Hwd ver 2.0\n");
-    Wait_ms(30);    
-#endif
-    
-#ifdef USE_FORWARD_MODE
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FORWARD_MODE));
-    Usart1Send(str);
+#ifdef INVERTER_MODE_CURRENT_FDBK
+    Usart1Send("Inverter Mode with Current Feedback\n");
     Wait_ms(30);    
 #endif
 
-#ifdef USE_PUSH_PULL_MODE
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_PUSH_PULL_MODE));
-    Usart1Send(str);
+#ifdef INVERTER_MODE_GRID_TIE
+    Usart1Send("Grid Tie Inverter\n");
     Wait_ms(30);    
 #endif
 
+    // Features mostly on hardware
 #ifdef WITH_OVERCURRENT_SHUTDOWN
     sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_OVERCURRENT_SHUTDOWN));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
-#ifdef WITH_TIM14_FB
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_TIM14_FB));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-#ifdef WITH_TIM1_FB
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_TIM1_FB));
     Usart1Send(str);
     Wait_ms(30);    
 #endif

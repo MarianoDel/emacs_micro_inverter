@@ -127,10 +127,6 @@ int main(void)
 #ifdef TEST_FIXED_D
     unsigned char stopped = 0;
 #endif
-
-#ifdef ONLY_COMMS
-    unsigned short dmax_vin = 0;
-#endif
     
     char s_lcd [120];		
 
@@ -199,15 +195,25 @@ int main(void)
 #ifdef FEATURES
     WelcomeCodeFeatures(s_lcd);
 #endif
+
+    while (1)
+    {
+        if (LED)
+            LED_OFF;
+        else
+            LED_ON;
+
+        Wait_ms(1000);
+    }
+
+
     
-//---------- Versiones 1_2 y 2_0  --------//    
-#if (defined VER_2_0)
     
     TIM_1_Init ();	   //lo utilizo para mosfet Ctrol_M_B y para FB si esta definido en hard.h
     TIM_3_Init ();	   //lo utilizo para mosfet Ctrol_M_A y para synchro ADC
 
-    EnablePreload_MosfetA;
-    EnablePreload_MosfetB;
+    // EnablePreload_MosfetA;
+    // EnablePreload_MosfetB;
 
 #ifdef WITH_TIM14_FB
     TIM_14_Init ();        //lo uso para FB
@@ -800,9 +806,6 @@ int main(void)
 #endif    //USE_FORWARD_MODE
 
     
-#endif    //ver 2.0
-//---------- Fin VER_2_0 --------//
-
     return 0;
 }
 

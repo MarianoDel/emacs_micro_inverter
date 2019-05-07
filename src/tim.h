@@ -78,25 +78,6 @@
 #define RCC_TIM17_CLK_ON 	RCC->APB2ENR |= 0x00040000
 #define RCC_TIM17_CLK_OFF 	RCC->APB2ENR &= ~0x00040000
 
-#if defined USE_ONLY_MOSFET_A
-#define DisablePreload_MosfetA    (TIM3->CCMR1 &= ~TIM_CCMR1_OC1PE)
-#define EnablePreload_MosfetA    (TIM3->CCMR1 |= TIM_CCMR1_OC1PE)
-#define UpdateTIM_MosfetA(X)    (TIM3->CCR1 = (X))
-#define UpdateTIMSync(X)    do {\
-    TIM1->CCR1 = (X); \
-    TIM3->CCR1 = (X); \
-    } while(0)
-#elif defined USE_MOSFET_A_AND_B
-#define EnablePreload_MosfetA    (TIM3->CR1 |= TIM_CR1_ARPE)
-#define DisablePreload_MosfetA    (TIM3->CR1 &= ~TIM_CR1_ARPE)
-#define UpdateTIM_MosfetA(X)    (TIM3->ARR = DUTY_50_PERCENT + (X))
-#define UpdateTIMSync(X)    do {\
-    TIM1->CCR1 = (X);                  \
-    TIM3->ARR = DUTY_50_PERCENT + (X); \
-    } while(0)
-#else
-#error "no selected MOSFET_A or MOSFET_A_B on hard.h"
-#endif
 
 #define EnablePreload_MosfetB    (TIM1->CCMR1 |= TIM_CCMR1_OC1PE)
 #define DisablePreload_MosfetB    (TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE)

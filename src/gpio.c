@@ -77,8 +77,8 @@ void GPIO_Config (void)
     GPIOA->OSPEEDR = temp;
 
     temp = GPIOA->PUPDR;	//2 bits por pin
-    temp &= 0xFFFFFFFF;
-    temp |= 0x00000000;		//pull down pin1 para pruebas
+    temp &= 0xFFFCFFFF;         //PA8 pull up   
+    temp |= 0x00010000;	
     GPIOA->PUPDR = temp;
 
     //Alternate Fuction for GPIOA
@@ -155,7 +155,7 @@ void GPIO_Config (void)
 #endif
 #ifdef WITH_AC_SYNC_INT
     SYSCFG->EXTICR[2] = 0x00000000; //Select Port A & Pin8  external interrupt
-    // EXTI->IMR |= 0x00000030; 			//Corresponding mask bit for interrupts EXTI4 EXTI5
+    // EXTI->IMR |= 0x00000100; 			//Corresponding mask bit for interrupts EXTI4 EXTI5
     EXTI->EMR |= 0x00000000; 			//Corresponding mask bit for events
     EXTI->RTSR |= 0x00000100; 			//pin8 Interrupt line on rising edge
     EXTI->FTSR |= 0x00000000; 			//Interrupt line on falling edge

@@ -204,31 +204,12 @@ int main(void)
     HIGH_LEFT(DUTY_NONE);
     LOW_RIGHT(DUTY_NONE);
     HIGH_RIGHT(DUTY_50_PERCENT);
-    
-    while (1)
-    {
-        if (STOP_JUMPER)
-        {
-            LED_ON;
-            RELAY_ON;
-            Wait_ms(1000);
-        }
-        else
-        {
-            LED_OFF;
-            RELAY_OFF;
-            Wait_ms(1000);
-        }
-    }
 
-
+    EXTIOn();
+    while (1);
+        
     // EnablePreload_MosfetA;
     // EnablePreload_MosfetB;
-
-#ifdef WITH_TIM14_FB
-    TIM_14_Init ();        //lo uso para FB
-#endif
-    
 
     AdcConfig();
 
@@ -860,39 +841,45 @@ void TimingDelay_Decrement(void)
 
 }
 
-//asi como esta tarda 800ns para ejecutar primera linea y 5.6us para la ultima linea
-//TODO: cambiar todo lo que se pueda por MACROS
+#define AC_SYNC_Int        (EXTI->IMR & 0x00000100)
+#define AC_SYNC_Set        (EXTI->IMR |= 0x00000100)
+#define AC_SYNC_Reset      (EXTI->IMR &= ~0x00000100)
+#define AC_SYNC_Ack        (EXTI->PR |= 0x00000100)
+
+#define AC_SYNC_Int_Rising          (EXTI->RTSR & 0x00000100)
+#define AC_SYNC_Int_Rising_Set      (EXTI->RTSR |= 0x00000100)
+#define AC_SYNC_Int_Rising_Reset    (EXTI->RTSR &= ~0x00000100)
+
+#define AC_SYNC_Int_Falling          (EXTI->FTSR & 0x00000100)
+#define AC_SYNC_Int_Falling_Set      (EXTI->FTSR |= 0x00000100)
+#define AC_SYNC_Int_Falling_Reset    (EXTI->FTSR &= ~0x00000100)
+
 void EXTI4_15_IRQHandler(void)
 {
-#ifdef USE_FORWARD_MODE
-    //actuando el timer 3 en el mosfet A
-#ifdef USE_LED_IN_INT    
-    LED_ON;
-#endif    
-    DisablePreload_MosfetA;
-    UpdateTIM_MosfetA(0);
-    EnablePreload_MosfetA;
-    if (d > 10)
-        d -= 10;
-    UpdateTIM_MosfetA(d);
-#ifdef USE_LED_IN_INT        
-    LED_OFF;
-#endif    
-    EXTI->PR |= 0x00000010;    //4
-#endif
-
-#ifdef USE_PUSH_PULL_MODE
-    //actuando el timer1 en mosfet B y timer3 en el mosfet A
-#ifdef USE_LED_IN_INT    
-    LED_ON;
-#endif
-
+    // if (LED)
+    //     LED_OFF;
+    // else
+    //     LED_ON;
     
-#ifdef USE_LED_IN_INT        
-    LED_OFF;
-#endif    
-    EXTI->PR |= 0x00000010;    //4
-#endif
+    if (AC_SYNC_Int)
+    {
+        if (AC_SYNC_Int_Rising)
+        {
+            //reseteo tim
+            TIM6->CNT = 0;
+            AC_SYNC_Int_Rising_Reset;
+            AC_SYNC_Int_Falling_Set;
+            LED_ON;
+        }
+        else if (AC_SYNC_Int_Falling)
+        {
+            TIM6->CNT = 0;
+            AC_SYNC_Int_Falling_Reset;
+            AC_SYNC_Int_Rising_Set;
+            LED_OFF;
+        }
+        AC_SYNC_Ack;
+    }
 }
 
 //------ EOF -------//

@@ -23,7 +23,7 @@
 #define DUTY_50_PERCENT		500
 #define DUTY_50_PERCENT_PLUS_ONE		501
 #define DUTY_100_PERCENT        1000
-
+#define DUTY_ALWAYS        (DUTY_100_PERCENT + 1)
 
 #define DUTY_FB_25A    395    //esto es 1.17V que equivale a 25Apico en el primario
 

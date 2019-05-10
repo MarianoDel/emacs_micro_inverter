@@ -309,45 +309,25 @@ void TIM_16_Init (void)
 
 }
 
+
 void OneShootTIM16 (unsigned short a)
 {
     TIM16->ARR = a;
     TIM16->CR1 |= TIM_CR1_CEN;
 }
 
+
 void TIM16Enable (void)
 {
     TIM16->CR1 |= TIM_CR1_CEN;
 }
+
 
 void TIM16Disable (void)
 {
     TIM16->CR1 &= ~TIM_CR1_CEN;
 }
 
-void TIM17_IRQHandler (void)	//200uS
-{
-    if (TIM17->SR & 0x01)
-    {
-        TIM17->ARR = delta_t2;
-        ac_sync_int_flag = 1;
-        
-        // //si me llego la segunda int sin que haya visto AC_SYNC, freno
-        // if (TIM17->ARR > 5000)
-        //     TIM17Disable();
-        // else
-        //     TIM17->ARR = delta_t2;w
-        
-#ifdef USE_LED_FOR_SYNC
-        if (LED)
-            LED_OFF;
-        else
-            LED_ON;
-#endif
-        
-        TIM17->SR = 0x00;		//bajar flag
-    }    
-}
 
 void TIM_17_Init (void)
 {
@@ -367,10 +347,37 @@ void TIM_17_Init (void)
     NVIC_SetPriority(TIM17_IRQn, 8);
 }
 
+
+void TIM17_IRQHandler (void)	//200uS
+{
+    if (TIM17->SR & 0x01)
+    {
+        TIM17->ARR = delta_t2;
+        ac_sync_int_flag = 1;
+        
+        // //si me llego la segunda int sin que haya visto AC_SYNC, freno
+        // if (TIM17->ARR > 5000)
+        //     TIM17Disable();
+        // else
+        //     TIM17->ARR = delta_t2;w
+        
+#ifdef USE_LED_FOR_SYNC_IN_INT
+        if (LED)
+            LED_OFF;
+        else
+            LED_ON;
+#endif
+        
+        TIM17->SR = 0x00;		//bajar flag
+    }    
+}
+
+
 void TIM17Enable (void)
 {
     TIM17->CR1 |= TIM_CR1_CEN;
 }
+
 
 void TIM17Disable (void)
 {

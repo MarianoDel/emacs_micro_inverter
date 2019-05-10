@@ -52,8 +52,9 @@
 // #define INVERTER_MODE_GRID_TIE
 
 //-- Types of led indications ----------
-// #define USE_LED_IN_INT
-#define USE_LED_IN_PROT
+// #define USE_LED_FOR_SYNC_IN_MAIN
+// #define USE_LED_FOR_SYNC_IN_INT
+#define USE_LED_FOR_MAIN_STATES
 
 //-- Other configs features ----------
 // #define WITH_OVERCURRENT_SHUTDOWN
@@ -65,8 +66,8 @@
 // #define USE_FREQ_24KHZ
 
 //-- Types of Interrupts ----------
-#define WITH_AC_SYNC_INT
-// #define WITH_OVERCURRENT_SHUTDOWN
+// #define WITH_AC_SYNC_INT
+#define WITH_OVERCURRENT_SHUTDOWN
 
 //---- End of Features Configuration ----------
 
@@ -202,7 +203,8 @@ typedef enum
     START_SYNCING = 0,
     WAIT_FOR_FIRST_SYNC,
     GEN_POS,
-    GEN_NEG
+    GEN_NEG,
+    OVERCURRENT_ERROR
     
 } ac_sync_state_t;
 
@@ -240,7 +242,8 @@ typedef enum
 #define LED_LOW_VOLTAGE               3
 #define LED_PROTECTED                 4
 #define LED_VIN_ERROR                 5
-#define LED_OVERCURRENT_ERROR         6
+#define LED_OVERCURRENT_POS           6
+#define LED_OVERCURRENT_NEG           7
 
 
 #define SIZEOF_DATA1	512

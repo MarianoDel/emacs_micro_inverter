@@ -196,6 +196,15 @@
 //------- END OF PIN CONFIG -------------------
 
 
+//AC_SYNC States
+typedef enum
+{
+    START_SYNCING = 0,
+    WAIT_FOR_FIRST_SYNC,
+    GEN_POS,
+    GEN_NEG
+    
+} ac_sync_state_t;
 
 //ESTADOS DEL PROGRAMA PRINCIPAL
 typedef enum

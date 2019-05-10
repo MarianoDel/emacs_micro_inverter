@@ -46,7 +46,8 @@ volatile unsigned char seq_ready = 0;
 
 // ------- Externals para timers -------
 volatile unsigned short timer_led = 0;
-
+volatile unsigned char ac_sync_int_flag = 0;
+volatile unsigned short delta_t2 = 0;
 
 // ------- Externals para filtros -------
 volatile unsigned short take_temp_sample = 0;
@@ -79,9 +80,9 @@ unsigned short last_d = 0;
 #define DELTA_D    2
 
 volatile unsigned short delta_t1 = 0;
-volatile unsigned short delta_t2 = 0;
+
 volatile unsigned short delta_t1_bar = 0;
-volatile unsigned char ac_sync_int_flag = 0;
+
 volatile unsigned char enable_internal_sync = 0;
 
 // ------- de los timers -------
@@ -130,11 +131,11 @@ int main(void)
     unsigned short dmax_lout = 0;
     unsigned short dmax_vin = 0;    
 
-#ifdef TEST_FIXED_D
-    unsigned char stopped = 0;
+    char s_lcd [120];
+
+#ifdef INVERTER_MODE
+    ac_sync_state_t ac_sync_state;
 #endif
-    
-    char s_lcd [120];		
 
     //GPIO Configuration.
     GPIO_Config();
@@ -253,91 +254,65 @@ int main(void)
 
     ADC1->CR |= ADC_CR_ADSTART;
 
-    //--- Prueba HARD pin FB ----------
-    // //probar con WITH_TIM14_FB y WITH_TIM1_FB
-    // while (1)
-    // {
-    //     for (ii = 0; ii < DUTY_100_PERCENT; ii++)
-    //     {
-    //         UpdateFB(ii);
-    //         Wait_ms(1);
-    //     }
-    //     for (ii = DUTY_100_PERCENT; ii > 0; ii--)
-    //     {
-    //         UpdateFB(ii);
-    //         Wait_ms(1);
-    //     }
-    // }
-    //--- Fin Prueba HARD pin FB ----------
+    //--- Inverter Mode ----------
+#ifdef INVERTER_MODE
 
-    //--- Prueba HARD pines CTRL_MOSFET ----------
-    //pruebo seniales gate, el defasaje de las mismas y los flancos de I_Sense
-    // UpdateTIMSync (DUTY_FOR_DMAX);
-    // UpdateTIMSync (DUTY_10_PERCENT);    
-    // while (1);
-    //--- Fin Prueba HARD pines CTRL_MOSFET ----------
+    switch (ac_sync_state)
+    {
+    case START_SYNCING:
+        delta_t2 = 10000;
+        TIM17->CNT = delta_t2;
+        TIM17Enable();
+        ac_sync_int_flag = 0;
+        ac_sync_state = WAIT_FOR_FIRST_SYNC;
+        break;
 
-    //--- Prueba HARD pines ADC ----------
-    // while (1)
-    // {
-    //     if (!timer_standby)
-    //     {
-    //         timer_standby = 2000;
-    //         sprintf (s_lcd, "Vin: %d, Vout: %d, I: %d\n",
-    //                  Vin_Sense,
-    //                  Vout_Sense,
-    //                  I_Sense);
-            
-    //         Usart1Send(s_lcd);
-    //     }
-    // }   
-    //--- Fin Prueba HARD pines ADC ----------
+    case WAIT_FOR_FIRST_SYNC:
+        if (ac_sync_int_flag)
+        {
+            ac_sync_int_flag = 0;
+            ac_sync_state = GEN_POS;
 
-    //--- Prueba tension de salida con max d fijo ----------
-    //este loop trabaja en voltage-mode
-    // while (1)
-    // {
-    //     if (sequence_ready)
-    //     {
-    //         sequence_ready_reset;
-                
-    //         if (undersampling < (UNDERSAMPLING_TICKS - 1))
-    //         {
-    //             undersampling++;
-    //         }
-    //         else
-    //         {
-    //             undersampling = 0;
-    //             d = PID_roof (VOUT_110V, Vout_Sense, d, &ez1, &ez2);
-                    
-    //             if (d < 0)
-    //             {
-    //                 d = 0;
-    //                 ez1 = 0;
-    //                 ez2 = 0;
-    //             }
+            HIGH_RIGHT(DUTY_NONE);
+            LOW_LEFT(DUTY_NONE);
 
-    //             if (d > DUTY_5_PERCENT)
-    //                 d = DUTY_5_PERCENT;
+            LOW_RIGHT(DUTY_100_PERCENT);
+            HIGH_LEFT(DUTY_100_PERCENT);
+        }
+        break;
+        
+    case GEN_POS:
+        if (ac_sync_int_flag)
+        {
+            ac_sync_int_flag = 0;
+            ac_sync_state = GEN_NEG;
 
-    //             UpdateTIMSync (d);
-    //         }
-    //     }
+            HIGH_LEFT(DUTY_NONE);
+            LOW_RIGHT(DUTY_NONE);
 
-    //     if (!timer_standby)
-    //     {
-    //         timer_standby = 2000;
-    //         sprintf (s_lcd, "Vin: %d, Vout: %d, I: %d, d: %d\n",
-    //                  Vin_Sense,
-    //                  Vout_Sense,
-    //                  I_Sense,
-    //                  d);
-            
-    //         Usart1Send(s_lcd);
-    //     }
+            LOW_LEFT(DUTY_100_PERCENT);
+            HIGH_RIGHT(DUTY_100_PERCENT);
+        }
+        break;
 
-    // }
-    //--- Fin Prueba tension de salida con max d fijo ----------
+    case GEN_NEG:
+        if (ac_sync_int_flag)
+        {
+            ac_sync_int_flag = 0;
+            ac_sync_state = GEN_POS;
+
+            HIGH_RIGHT(DUTY_NONE);
+            LOW_LEFT(DUTY_NONE);
+
+            LOW_RIGHT(DUTY_100_PERCENT);
+            HIGH_LEFT(DUTY_100_PERCENT);
+        }
+        break;
+    }
+    
+#endif
+    //--- End Inverter Mode ----------
+
                 
 
 #ifdef USE_PUSH_PULL_MODE

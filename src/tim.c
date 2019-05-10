@@ -19,6 +19,7 @@ extern volatile unsigned char timer_1seg;
 extern volatile unsigned short timer_led_comm;
 extern volatile unsigned short wait_ms_var;
 extern volatile unsigned short delta_t2;
+extern volatile unsigned char ac_sync_int_flag;
 
 //--- VARIABLES GLOBALES ---//
 
@@ -328,17 +329,21 @@ void TIM17_IRQHandler (void)	//200uS
 {
     if (TIM17->SR & 0x01)
     {
+        TIM17->ARR = delta_t2;
+        ac_sync_int_flag = 1;
+        
+        // //si me llego la segunda int sin que haya visto AC_SYNC, freno
+        // if (TIM17->ARR > 5000)
+        //     TIM17Disable();
+        // else
+        //     TIM17->ARR = delta_t2;w
+        
+#ifdef USE_LED_FOR_SYNC
         if (LED)
             LED_OFF;
         else
             LED_ON;
-
-        //si me llego la segunda int sin que haya visto AC_SYNC, freno
-        if (TIM17->ARR > 5000)
-            TIM17Disable();
-        else
-            TIM17->ARR = delta_t2;
-        
+#endif
         
         TIM17->SR = 0x00;		//bajar flag
     }    

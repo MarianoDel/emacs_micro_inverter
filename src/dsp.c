@@ -32,6 +32,10 @@ short d_last = 0;
 unsigned short v_ma8 [8];
 unsigned short * p_ma8;
 #endif
+#ifdef USE_MA32_CIRCULAR
+unsigned short v_ma_circular [32];
+unsigned short * p_ma_circular;
+#endif
 /* Module Definitions ---------------------------------------------------------*/
 //todos se dividen por 128
 #define KPV	857			// 6.7 desde python PI_zpk_KpKi.py
@@ -55,6 +59,52 @@ unsigned short RandomGen (unsigned int seed)
 	return (unsigned short) random;
 
 }
+
+#ifdef USE_MA32_CIRCULAR
+//seteo de punteros del filtro circular
+void MA32Circular_Start (void)
+{
+    p_ma_circular = &v_ma_circular[0];
+}
+
+//reset de punteros al filtro circular
+void MA32Circular_Reset (void)
+{
+    unsigned char i;
+    
+    MA32Circular_Start();
+    for (i = 0; i < 32; i++)
+        v_ma_circular[i] = 0;
+}
+
+void MA32Circular_Load (unsigned short new_sample)
+{
+    *p_ma_circular = new_sample;
+
+    if (p_ma_circular < (v_ma_circular + 31))
+        p_ma_circular += 1;
+    else
+        p_ma_circular = &v_ma_circular[0];
+
+}
+
+unsigned short MA32Circular_Calc (void)
+{
+    unsigned int total_ma;
+
+    total_ma = v_ma_circular[0] + v_ma_circular[1] + v_ma_circular[2] + v_ma_circular[3] +
+        v_ma_circular[4] + v_ma_circular[5] + v_ma_circular[6] + v_ma_circular[7] +
+        v_ma_circular[8] + v_ma_circular[9] + v_ma_circular[10] + v_ma_circular[11] +
+        v_ma_circular[12] + v_ma_circular[13] + v_ma_circular[14] + v_ma_circular[15] +
+        v_ma_circular[16] + v_ma_circular[17] + v_ma_circular[18] + v_ma_circular[19] +
+        v_ma_circular[20] + v_ma_circular[21] + v_ma_circular[22] + v_ma_circular[23] +
+        v_ma_circular[24] + v_ma_circular[25] + v_ma_circular[26] + v_ma_circular[27] +
+        v_ma_circular[28] + v_ma_circular[29] + v_ma_circular[30] + v_ma_circular[31];
+
+    return (unsigned short) (total_ma >> 5);
+}
+
+#endif
 
 #ifdef USE_MA8_CIRCULAR
 //seteo de punteros del filtro circular

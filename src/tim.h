@@ -89,23 +89,33 @@
 void TIM_1_Init(void);
 void Update_TIM1_CH1 (unsigned short);
 void Update_TIM1_CH3 (unsigned short);
-void TIM3_IRQHandler (void);
+
 void TIM_3_Init(void);
-void TIM_6_Init (void);
-void TIM14_IRQHandler (void);
-void TIM_14_Init(void);
-void TIM16_IRQHandler (void);
-void TIM_16_Init(void);
-void TIM17_IRQHandler (void);
-void TIM_17_Init(void);
+void TIM3_IRQHandler (void);
 void Update_TIM3_CH1 (unsigned short);
 void Update_TIM3_CH2 (unsigned short);
 void Update_TIM3_CH3 (unsigned short);
 void Update_TIM3_CH4 (unsigned short);
 
+//Only for C8 Devices
+void TIM_6_Init (void);
+void TIM6Enable (void);
+void TIM6Disable (void);
+
+void TIM_14_Init(void);
+void TIM14_IRQHandler (void);
+
+void TIM_16_Init(void);
+void TIM16_IRQHandler (void);
 void OneShootTIM16 (unsigned short);
 void TIM16Enable (void);
 void TIM16Disable (void);
+
+void TIM_17_Init(void);
+void TIM17_IRQHandler (void);
+void TIM17Enable (void);
+void TIM17Disable (void);
+
 
 void Wait_ms (unsigned short wait);
 #endif

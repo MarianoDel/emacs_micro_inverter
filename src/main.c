@@ -78,6 +78,12 @@ short ez2 = 0;
 unsigned short last_d = 0;
 #define DELTA_D    2
 
+volatile unsigned short delta_t1 = 0;
+volatile unsigned short delta_t2 = 0;
+volatile unsigned short delta_t1_bar = 0;
+volatile unsigned char ac_sync_int_flag = 0;
+volatile unsigned char enable_internal_sync = 0;
+
 // ------- de los timers -------
 volatile unsigned short wait_ms_var = 0;
 volatile unsigned short timer_standby;
@@ -98,10 +104,10 @@ volatile unsigned short dmax_permited = 0;
 //--- FUNCIONES DEL MODULO ---//
 void TimingDelay_Decrement (void);
 
-#ifdef VER_2_0
+
 // ------- para el LM311 -------
 extern void EXTI4_15_IRQHandler(void);
-#endif
+
 
 
 //--- Private Definitions ---//
@@ -198,15 +204,43 @@ int main(void)
 
     
     // TIM_1_Init ();	   //lo utilizo para mosfet Ctrol_M_B y para FB si esta definido en hard.h
-    TIM_3_Init ();	   //lo utilizo para mosfet Ctrol_M_A y para synchro ADC
+    TIM_3_Init();	   //lo utilizo para mosfet Ctrol_M_A y para synchro ADC
 
+    TIM_16_Init();
+    TIM16Enable();
+    TIM_17_Init();
+    MA32Circular_Reset();
+    
     LOW_LEFT(DUTY_NONE);
     HIGH_LEFT(DUTY_NONE);
     LOW_RIGHT(DUTY_NONE);
     HIGH_RIGHT(DUTY_50_PERCENT);
-
+    
     EXTIOn();
-    while (1);
+    
+    while (1)
+    {
+        if (ac_sync_int_flag)
+        {
+            ac_sync_int_flag = 0;
+            MA32Circular_Load(delta_t1);
+
+            if (!timer_standby)
+            {
+                timer_standby = 1000;
+                delta_t1_bar = MA32Circular_Calc();
+                delta_t1_bar >>= 1;
+                sprintf(s_lcd, "d_t1: %d d_t2: %d\n", delta_t1_bar, delta_t2);
+                // sprintf(s_lcd, "d_t1: %d\n", delta_t1);
+                Usart1Send(s_lcd);
+
+                //evaluar y activar sync interno
+                enable_internal_sync = 1;
+                
+                
+            }
+        }
+    }
         
     // EnablePreload_MosfetA;
     // EnablePreload_MosfetB;
@@ -841,7 +875,7 @@ void TimingDelay_Decrement(void)
 
 }
 
-#define AC_SYNC_Int        (EXTI->IMR & 0x00000100)
+#define AC_SYNC_Int        (EXTI->PR & 0x00000100)
 #define AC_SYNC_Set        (EXTI->IMR |= 0x00000100)
 #define AC_SYNC_Reset      (EXTI->IMR &= ~0x00000100)
 #define AC_SYNC_Ack        (EXTI->PR |= 0x00000100)
@@ -856,27 +890,30 @@ void TimingDelay_Decrement(void)
 
 void EXTI4_15_IRQHandler(void)
 {
-    // if (LED)
-    //     LED_OFF;
-    // else
-    //     LED_ON;
-    
     if (AC_SYNC_Int)
     {
         if (AC_SYNC_Int_Rising)
         {
             //reseteo tim
-            TIM6->CNT = 0;
+            delta_t2 = TIM16->CNT;
+            TIM16->CNT = 0;
             AC_SYNC_Int_Rising_Reset;
             AC_SYNC_Int_Falling_Set;
-            LED_ON;
+            // LED_ON;
+            if (enable_internal_sync)
+            {
+                TIM17->CNT = 0;
+                TIM17->ARR = delta_t1_bar;
+                TIM17Enable();
+            }
         }
         else if (AC_SYNC_Int_Falling)
         {
-            TIM6->CNT = 0;
+            delta_t1 = TIM16->CNT;
             AC_SYNC_Int_Falling_Reset;
             AC_SYNC_Int_Rising_Set;
-            LED_OFF;
+            // LED_OFF;
+            ac_sync_int_flag = 1;
         }
         AC_SYNC_Ack;
     }

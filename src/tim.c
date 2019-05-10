@@ -18,7 +18,7 @@
 extern volatile unsigned char timer_1seg;
 extern volatile unsigned short timer_led_comm;
 extern volatile unsigned short wait_ms_var;
-
+extern volatile unsigned short delta_t2;
 
 //--- VARIABLES GLOBALES ---//
 
@@ -241,6 +241,16 @@ void TIM_6_Init (void)
     //TIM6->CR1 |= TIM_CR1_CEN;
 }
 
+void TIM6Enable (void)
+{
+    TIM6->CR1 |= TIM_CR1_CEN;
+}
+
+void TIM6Disable (void)
+{
+    TIM6->CR1 &= ~TIM_CR1_CEN;
+}
+
 void TIM14_IRQHandler (void)	//100uS
 {
 
@@ -293,14 +303,9 @@ void TIM_16_Init (void)
     TIM16->CR1 = 0x00;		//clk int / 1; upcounting; uev
     TIM16->ARR = 0xFFFF;
     TIM16->CNT = 0;
-    //TIM16->PSC = 7999;	//tick 1ms
-    //TIM16->PSC = 799;	//tick 100us
     TIM16->PSC = 47;			//tick 1us
     TIM16->EGR = TIM_EGR_UG;
 
-    // Enable timer ver UDIS
-    //	TIM16->DIER |= TIM_DIER_UIE;
-    //	TIM16->CR1 |= TIM_CR1_CEN;
 }
 
 void OneShootTIM16 (unsigned short a)
@@ -322,7 +327,21 @@ void TIM16Disable (void)
 void TIM17_IRQHandler (void)	//200uS
 {
     if (TIM17->SR & 0x01)
+    {
+        if (LED)
+            LED_OFF;
+        else
+            LED_ON;
+
+        //si me llego la segunda int sin que haya visto AC_SYNC, freno
+        if (TIM17->ARR > 5000)
+            TIM17Disable();
+        else
+            TIM17->ARR = delta_t2;
+        
+        
         TIM17->SR = 0x00;		//bajar flag
+    }    
 }
 
 void TIM_17_Init (void)
@@ -331,16 +350,27 @@ void TIM_17_Init (void)
         RCC_TIM17_CLK_ON;
 
     //Configuracion del timer.
-    TIM17->ARR = 400;		//400us
+    TIM17->ARR = 0xFFFF;		//400us
     TIM17->CNT = 0;
     TIM17->PSC = 47;
 
     // Enable timer interrupt ver UDIS
     TIM17->DIER |= TIM_DIER_UIE;
-    TIM17->CR1 |= TIM_CR1_URS | TIM_CR1_CEN;	//solo int cuando hay overflow y one shot
+    TIM17->CR1 |= TIM_CR1_URS;	//solo int cuando hay overflow y one shot
 
     NVIC_EnableIRQ(TIM17_IRQn);
     NVIC_SetPriority(TIM17_IRQn, 8);
 }
+
+void TIM17Enable (void)
+{
+    TIM17->CR1 |= TIM_CR1_CEN;
+}
+
+void TIM17Disable (void)
+{
+    TIM17->CR1 &= ~TIM_CR1_CEN;
+}
+
 
 //--- end of file ---//

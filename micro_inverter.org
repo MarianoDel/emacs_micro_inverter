@@ -45,6 +45,13 @@
    - R5 de 820K pasar a M7 y 820K
    - R8 de 27K a 18K
 
+** quite capacitores del filtro
+   - quite C3 y C4 para fucionar con inverter 50Hz
+     se cargan y generan una corriente en el sentido inverso que hace saltar la proteccion
+     de corriente.
+
+** Agregue C // a C15 y C16
+   - para funcionar en 50Hz necesito mas tiempo activo el boost
 
 * Modos de Funcionamiento
 ** Inversor

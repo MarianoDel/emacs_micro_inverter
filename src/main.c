@@ -207,8 +207,8 @@ int main(void)
     // TIM_1_Init ();	   //lo utilizo para mosfet Ctrol_M_B y para FB si esta definido en hard.h
     TIM_3_Init();	   //lo utilizo para mosfet Ctrol_M_A y para synchro ADC
 
-    // TIM_16_Init();
-    // TIM16Enable();
+    TIM_16_Init();
+    TIM16Enable();
     TIM_17_Init();
     MA32Circular_Reset();
     
@@ -262,7 +262,8 @@ int main(void)
         switch (ac_sync_state)
         {
         case START_SYNCING:
-            delta_t2 = 10000;
+            RELAY_ON;
+            delta_t2 = 9800;
             TIM17->CNT = delta_t2;
             TIM17Enable();
             ac_sync_int_flag = 0;
@@ -273,14 +274,12 @@ int main(void)
             if (ac_sync_int_flag)
             {
                 ac_sync_int_flag = 0;
-                ac_sync_state = GEN_POS;
+                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
                 ChangeLed(LED_GENERATING);
 
                 HIGH_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_NONE);
-
-                LOW_RIGHT(DUTY_ALWAYS);
-                HIGH_LEFT(DUTY_ALWAYS);
+                TIM16->CNT = 0;
             }
             break;
         
@@ -288,35 +287,71 @@ int main(void)
             if (ac_sync_int_flag)
             {
                 ac_sync_int_flag = 0;
-                ac_sync_state = GEN_NEG;
-
+                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
+                TIM16->CNT = 0;
+                
                 HIGH_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_NONE);
 
-                LOW_LEFT(DUTY_ALWAYS);
-                HIGH_RIGHT(DUTY_ALWAYS);
 #ifdef USE_LED_FOR_SYNC_IN_MAIN
                 LED_OFF;
 #endif
             }
             break;
 
+        case WAIT_CROSS_POS_TO_NEG:
+            if (TIM16->CNT >= 200)
+            {
+                LOW_LEFT(DUTY_ALWAYS);
+                HIGH_RIGHT(DUTY_ALWAYS);
+                ac_sync_state = GEN_NEG;
+            }
+            break;
+            
         case GEN_NEG:
             if (ac_sync_int_flag)
             {
                 ac_sync_int_flag = 0;
-                ac_sync_state = GEN_POS;
+                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+                TIM16->CNT = 0;
 
                 HIGH_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_NONE);
 
-                LOW_RIGHT(DUTY_ALWAYS);
-                HIGH_LEFT(DUTY_ALWAYS);
 #ifdef USE_LED_FOR_SYNC_IN_MAIN
                 LED_ON;
 #endif
             }
             break;
+
+        case WAIT_CROSS_NEG_TO_POS:
+            if (TIM16->CNT >= 200)
+            {
+                LOW_RIGHT(DUTY_ALWAYS);
+                HIGH_LEFT(DUTY_ALWAYS);
+                ac_sync_state = GEN_POS;
+            }
+            break;
+            
+        case JUMPER_PROTECTED:
+            if (!timer_standby)
+            {
+                if (!STOP_JUMPER)
+                {
+                    ac_sync_state = JUMPER_PROTECT_OFF;
+                    timer_standby = 400;
+                }
+            }                
+            break;
+
+        case JUMPER_PROTECT_OFF:
+            if (!timer_standby)
+            {
+                //vuelvo a INIT
+                ac_sync_state = START_SYNCING;
+                Usart1Send((char *) "Protect OFF\n");                    
+            }                
+            break;            
 
         case OVERCURRENT_ERROR:
             if (!timer_standby)
@@ -328,8 +363,28 @@ int main(void)
 
         }
 
+        //Cosas que no tienen tanto que ver con las muestras o el estado del programa
+        if ((STOP_JUMPER) &&
+            (ac_sync_state != JUMPER_PROTECTED) &&
+            (ac_sync_state != JUMPER_PROTECT_OFF) &&            
+            (ac_sync_state != OVERCURRENT_ERROR))
+        {
+            RELAY_OFF;
+            HIGH_LEFT(DUTY_NONE);
+            HIGH_RIGHT(DUTY_NONE);
+
+            LOW_RIGHT(DUTY_NONE);
+            LOW_LEFT(DUTY_NONE);
+            
+            ChangeLed(LED_JUMPER_PROTECTED);
+            Usart1Send((char *) "Protect ON\n");
+            timer_standby = 1000;
+            ac_sync_state = JUMPER_PROTECTED;
+        }
+        
         if (overcurrent_shutdown)
         {
+            RELAY_OFF;
             if (overcurrent_shutdown == 1)
                 ChangeLed(LED_OVERCURRENT_POS);
             else

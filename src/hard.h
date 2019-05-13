@@ -203,7 +203,11 @@ typedef enum
     START_SYNCING = 0,
     WAIT_FOR_FIRST_SYNC,
     GEN_POS,
+    WAIT_CROSS_POS_TO_NEG,
     GEN_NEG,
+    WAIT_CROSS_NEG_TO_POS,
+    JUMPER_PROTECTED,
+    JUMPER_PROTECT_OFF,
     OVERCURRENT_ERROR
     
 } ac_sync_state_t;
@@ -240,7 +244,7 @@ typedef enum
 #define LED_STANDBY                   1
 #define LED_GENERATING                2
 #define LED_LOW_VOLTAGE               3
-#define LED_PROTECTED                 4
+#define LED_JUMPER_PROTECTED          4
 #define LED_VIN_ERROR                 5
 #define LED_OVERCURRENT_POS           6
 #define LED_OVERCURRENT_NEG           7

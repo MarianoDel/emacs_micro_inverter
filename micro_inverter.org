@@ -53,6 +53,10 @@
 ** Agregue C // a C15 y C16
    - para funcionar en 50Hz necesito mas tiempo activo el boost
 
+** Para senoidal pura
+   - Puedo colocar C3 de 0.1uF
+     parace que como el ciclo termina en 0 el C se descarga y no trae tantos problemas de corriente
+
 * Modos de Funcionamiento
 ** Inversor
 ** Inversor con realim de corriente

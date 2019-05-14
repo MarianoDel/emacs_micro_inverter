@@ -97,8 +97,14 @@ volatile unsigned short dmax_permited = 0;
 // volatile unsigned char hours = 0;
 // volatile unsigned char minutes = 0;
 
+#define SIZEOF_SIGNAL    50
+unsigned short sinusoidal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
+                                             637,684,728,770,809,844,876,904,929,951,
+                                             968,982,992,998,1000,998,992,982,968,951,
+                                             929,904,876,844,809,770,728,684,637,587,
+                                             535,481,425,368,309,248,187,125,62,0};
 
-
+unsigned short * p_signal;
 
 
 
@@ -297,13 +303,33 @@ int main(void)
                 LED_OFF;
 #endif
             }
+#ifdef INVERTER_MODE_PURE_SINUSOIDAL
+            else
+            {
+                if (TIM16->CNT >= 200)
+                {
+                    TIM16->CNT = 0;
+                    //aca la senial (el ultimo punto) terminaria en 0
+                    if (p_signal < &sinusoidal[(SIZEOF_SIGNAL - 1)])
+                        p_signal++;
+
+                    HIGH_LEFT(*p_signal);
+                }
+            }
+#endif    // INVERTER_MODE_PURE_SINUSOIDAL
             break;
 
         case WAIT_CROSS_POS_TO_NEG:
             if (TIM16->CNT >= 200)
             {
                 LOW_LEFT(DUTY_ALWAYS);
+#ifndef INVERTER_MODE_PURE_SINUSOIDAL
                 HIGH_RIGHT(DUTY_ALWAYS);
+#else
+                TIM16->CNT = 0;
+                p_signal = sinusoidal;
+                HIGH_RIGHT(*p_signal);
+#endif
                 ac_sync_state = GEN_NEG;
             }
             break;
@@ -322,13 +348,33 @@ int main(void)
                 LED_ON;
 #endif
             }
+#ifdef INVERTER_MODE_PURE_SINUSOIDAL
+            else
+            {
+                if (TIM16->CNT >= 200)
+                {
+                    TIM16->CNT = 0;
+                    //aca la senial (el ultimo punto) terminaria en 0
+                    if (p_signal < &sinusoidal[(SIZEOF_SIGNAL - 1)])
+                        p_signal++;
+
+                    HIGH_RIGHT(*p_signal);
+                }
+            }
+#endif    // INVERTER_MODE_PURE_SINUSOIDAL            
             break;
 
         case WAIT_CROSS_NEG_TO_POS:
             if (TIM16->CNT >= 200)
             {
                 LOW_RIGHT(DUTY_ALWAYS);
+#ifndef INVERTER_MODE_PURE_SINUSOIDAL
                 HIGH_LEFT(DUTY_ALWAYS);
+#else
+                TIM16->CNT = 0;
+                p_signal = sinusoidal;
+                HIGH_LEFT(*p_signal);
+#endif
                 ac_sync_state = GEN_POS;
             }
             break;

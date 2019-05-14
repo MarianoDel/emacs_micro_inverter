@@ -1,0 +1,99 @@
+* MICRO INVERTER ETAPA C con stm32f030K6T6
+** Arranque Hardware
+*** DONE Implementar DMA para el ADC
+    CLOSED: [2018-07-23 Mon 11:10]
+*** DONE El muestreo con TIM1 termina muy sobre el nuevo pulso
+    CLOSED: [2018-07-23 Mon 12:53]
+    - Corregir el tiempo de muestreo atrasando o adelentando el sample time
+     Lo paso a 71.5 ciclos y termina muestreando a 24KHz
+
+*** TODO Revisar sensado de corriente - parece no funcionar ok -
+*** TODO Maxima tension de salida - quema el diodo FR307 -
+    - Agregar red Snubber???
+*** TODO Soft start del filtro para Vout a traves de dmax y Vin [2/2]
+    - [X] definir dmax segun la tension de entrada CORREGIR de 20 a 25V tiene el valor de 20
+    - [X] revisar Vout en funcion de dmax con algo de carga
+
+*** TODO Temas del PID
+    - Con un valor fijo de d; ejemplo d = 100 y Vout = 0, sin carga, salta la proteccion de 
+      corriente
+    - Podria implementar un d delta de 5 puntos maximo, para que no avance tan rapido
+    - Me ayuda tambien con el Soft Start
+
+*** TODO Con corriente en QB salta proteccion de QA
+    - 24-07-18 Mejore la pista con cable de red, el sensado ya no pasa por debajo del transformador
+    - 24-07-18 Ahora no aparecen pulsos en de corriente en QB
+*** La bobina de salida ve una diferencia de tension muy alta en arranque
+    - definir dmax respecto de la bobina de salida
+      Vout trafo * Ton = I * Lm
+** Info por el puerto serie
+*** Por el puerto serie debiera enviar info
+    - [ ] potencia estimada
+    - [ ] error estimado
+    - [ ] maximo pwm que esta permitiendo
+    - [ ] d actual q1 y q2
+    - [ ] tension de entrada sensada
+    - [ ] info de corriente (medida q1 y q2 o algo asi)
+
+** DONE Mensaje de Bienvenida
+   CLOSED: [2018-07-23 Mon 12:18]
+
+
+* Cambios Hard Version 1.0
+** Para el sensado V_Sense
+   - cambiar FOD814 por KB817
+   - R5 de 820K pasar a M7 y 820K
+   - R8 de 27K a 18K
+
+** quite capacitores del filtro
+   - quite C3 y C4 para fucionar con inverter 50Hz
+     se cargan y generan una corriente en el sentido inverso que hace saltar la proteccion
+     de corriente.
+
+** Agregue C // a C15 y C16
+   - para funcionar en 50Hz necesito mas tiempo activo el boost
+
+** Para senoidal pura
+   - Puedo colocar C3 de 0.1uF
+     parace que como el ciclo termina en 0 el C se descarga y no trae tantos problemas de corriente
+
+* Modos de Funcionamiento
+** Inversor
+** Inversor con realim de corriente
+** Inversor Conectado a la Red
+
+* Estados del Programa Principal (Inversor)
+** Init
+** Generting
+** Error Overcurrent
+
+* Estados del Programa Principal (Inversor con realim corriente)
+** Init
+** Generting
+   - aca es lo mismo que lo anterior pero realimento
+     por corriente en la carga en vez de poner open loop la tension
+
+** Error Overcurrent
+
+
+* Estados del Programa Principal (Inversor Conectado a la Red)
+** Init
+** Wait For Sync
+** Generting
+** Error Overcurrent
+** Error Islanding
+
+* Modulo de Sync especial
+** AC Sync mide en ambos sentidos
+** Buffer circular de 32
+*** Revisar cada nueva medicion del circuito sync contra el buffer circular
+    - errores mayores a 2% cortar generador
+    - comparar t1 y t2 con int que mide UP DWN
+
+*** Como generar el nuevo sync
+    - viene un ciclo atrasado
+    - revisar t1 y t2, dentro del 2%
+    - luego de un UP flanco en t1 + t2/2
+    - luego de un DWN flanco en t1 + t2/2
+
+*** El sentido de los ciclos determinarlos con el opto de medicion de tension

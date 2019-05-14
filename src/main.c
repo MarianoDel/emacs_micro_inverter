@@ -97,13 +97,24 @@ volatile unsigned short dmax_permited = 0;
 // volatile unsigned char hours = 0;
 // volatile unsigned char minutes = 0;
 
+// #define USE_SIGNAL_SINUSOIDAL
+#define USE_SIGNAL_TRIANGULAR
 #define SIZEOF_SIGNAL    50
-unsigned short sinusoidal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
+
+#ifdef USE_SIGNAL_SINUSOIDAL
+unsigned short mem_signal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
                                              637,684,728,770,809,844,876,904,929,951,
                                              968,982,992,998,1000,998,992,982,968,951,
                                              929,904,876,844,809,770,728,684,637,587,
                                              535,481,425,368,309,248,187,125,62,0};
-
+#endif
+#ifdef USE_SIGNAL_TRIANGULAR
+unsigned short mem_signal [SIZEOF_SIGNAL] = {40,80,120,160,200,240,280,320,360,400,
+                                             440,480,520,560,600,640,680,720,760,800,
+                                             840,880,920,960,1000,960,920,880,840,800,
+                                             760,720,680,640,600,560,520,480,440,400,
+                                             360,320,280,240,200,160,120,80,40,0};
+#endif
 unsigned short * p_signal;
 
 
@@ -310,7 +321,7 @@ int main(void)
                 {
                     TIM16->CNT = 0;
                     //aca la senial (el ultimo punto) terminaria en 0
-                    if (p_signal < &sinusoidal[(SIZEOF_SIGNAL - 1)])
+                    if (p_signal < &mem_signal[(SIZEOF_SIGNAL - 1)])
                         p_signal++;
 
                     HIGH_LEFT(*p_signal);
@@ -327,7 +338,7 @@ int main(void)
                 HIGH_RIGHT(DUTY_ALWAYS);
 #else
                 TIM16->CNT = 0;
-                p_signal = sinusoidal;
+                p_signal = mem_signal;
                 HIGH_RIGHT(*p_signal);
 #endif
                 ac_sync_state = GEN_NEG;
@@ -355,7 +366,7 @@ int main(void)
                 {
                     TIM16->CNT = 0;
                     //aca la senial (el ultimo punto) terminaria en 0
-                    if (p_signal < &sinusoidal[(SIZEOF_SIGNAL - 1)])
+                    if (p_signal < &mem_signal[(SIZEOF_SIGNAL - 1)])
                         p_signal++;
 
                     HIGH_RIGHT(*p_signal);
@@ -372,7 +383,7 @@ int main(void)
                 HIGH_LEFT(DUTY_ALWAYS);
 #else
                 TIM16->CNT = 0;
-                p_signal = sinusoidal;
+                p_signal = mem_signal;
                 HIGH_LEFT(*p_signal);
 #endif
                 ac_sync_state = GEN_POS;

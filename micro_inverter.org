@@ -54,8 +54,20 @@
    - para funcionar en 50Hz necesito mas tiempo activo el boost
 
 ** Para senoidal pura
-   - Puedo colocar C3 de 0.1uF
+   - Puedo colocar C3 de 0.1uF o 0.22uF
      parace que como el ciclo termina en 0 el C se descarga y no trae tantos problemas de corriente
+
+** Cambie R38 R39 para mayor corriente inicial
+   - en R38 y R39 puse 2k7
+   - en R36 y R37 330 ohms
+     esto me da 9A pico y me deja arrancar bien con lamparas halogenas
+
+** AC Sync
+   - queda detectando ints cuando se desconectan los 220Vac
+   - meter un capacitor de 1n a mas en el transistor del opto
+   - o bajar la R de pullup (ahora es interna)
+
+** HAY QUE METER CRISTAL!!!!
 
 * Modos de Funcionamiento
 ** Inversor

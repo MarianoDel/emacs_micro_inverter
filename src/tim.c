@@ -197,6 +197,12 @@ void TIM_3_Init (void)
     TIM3->PSC = 0;
 #elif defined USE_FREQ_24KHZ
     TIM3->PSC = 1;
+#elif defined USE_FREQ_16KHZ
+    TIM3->PSC = 2;
+#elif defined USE_FREQ_12KHZ
+    TIM3->PSC = 3;
+#elif defined USE_FREQ_9_6KHZ
+    TIM3->PSC = 4;
 #else
 #error "No FREQ selected for TIM3 on hard.h"
 #endif

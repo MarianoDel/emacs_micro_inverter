@@ -235,30 +235,50 @@ int main(void)
     HIGH_RIGHT(DUTY_NONE);
     
     EXTIOn();
+
+#ifdef INVERTER_ONLY_SYNC
+    unsigned char cycles_cnt = 0;
     
-    // while (1)
-    // {
-    //     if (ac_sync_int_flag)
-    //     {
-    //         ac_sync_int_flag = 0;
-    //         MA32Circular_Load(delta_t1);
+    while (1)
+    {
+        if (!timer_standby)    //no esta llegando el flag de sincronismo, corto el sync interno
+        {
+            enable_internal_sync = 0;
+            TIM17Disable();
+            LED_OFF;
+        }
+        
+        if (ac_sync_int_flag)
+        {
+            ac_sync_int_flag = 0;
+            MA32Circular_Load(delta_t1);
+            timer_standby = 200;
 
-    //         if (!timer_standby)
-    //         {
-    //             timer_standby = 1000;
-    //             delta_t1_bar = MA32Circular_Calc();
-    //             delta_t1_bar >>= 1;
-    //             sprintf(s_lcd, "d_t1: %d d_t2: %d\n", delta_t1_bar, delta_t2);
-    //             // sprintf(s_lcd, "d_t1: %d\n", delta_t1);
-    //             Usart1Send(s_lcd);
+            delta_t1_bar = MA32Circular_Calc();
+            delta_t1_bar >>= 1;
 
-    //             //evaluar y activar sync interno
-    //             enable_internal_sync = 1;
+            //evaluar y activar sync interno
+            if ((delta_t1_bar < DELTA_T1_BAR_FOR_49HZ) &&
+                (delta_t1_bar > DELTA_T1_BAR_FOR_51HZ))
+                enable_internal_sync = 1;
+            else
+            {
+                enable_internal_sync = 0;
+                TIM17Disable();
+                LED_OFF;
+            }
                 
-                
-    //         }
-    //     }
-    // }
+            if (cycles_cnt >= 100)
+            {
+                cycles_cnt = 0;
+                sprintf(s_lcd, "d_t1: %d d_t2: %d\n", delta_t1_bar, delta_t2);
+                Usart1Send(s_lcd);
+            }
+            else
+                cycles_cnt++;
+        }
+    }
+#endif
         
     // EnablePreload_MosfetA;
     // EnablePreload_MosfetB;
@@ -280,11 +300,19 @@ int main(void)
         {
         case START_SYNCING:
             RELAY_ON;
-            delta_t2 = 9800;
-            TIM17->CNT = delta_t2;
-            TIM17Enable();
-            ac_sync_int_flag = 0;
-            ac_sync_state = WAIT_FOR_FIRST_SYNC;
+            timer_standby = 200;
+            ac_sync_state = WAIT_RELAY_TO_ON;
+            break;
+
+        case WAIT_RELAY_TO_ON:
+            if (!timer_standby)
+            {
+                delta_t2 = 9800;
+                TIM17->CNT = delta_t2;
+                TIM17Enable();
+                ac_sync_int_flag = 0;
+                ac_sync_state = WAIT_FOR_FIRST_SYNC;
+            }
             break;
 
         case WAIT_FOR_FIRST_SYNC:

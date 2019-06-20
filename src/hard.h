@@ -48,14 +48,15 @@
 // SOFTWARE Features -------------------------
 //-- Types of programs ----------
 // #define INVERTER_MODE
-#define INVERTER_MODE_PURE_SINUSOIDAL
+// #define INVERTER_MODE_PURE_SINUSOIDAL
 // #define INVERTER_MODE_CURRENT_FDBK
 // #define INVERTER_MODE_GRID_TIE
+#define INVERTER_ONLY_SYNC
 
 //-- Types of led indications ----------
 // #define USE_LED_FOR_SYNC_IN_MAIN
-// #define USE_LED_FOR_SYNC_IN_INT
-#define USE_LED_FOR_MAIN_STATES
+#define USE_LED_FOR_SYNC_IN_INT
+// #define USE_LED_FOR_MAIN_STATES
 
 //-- Other configs features ----------
 // #define WITH_OVERCURRENT_SHUTDOWN
@@ -63,12 +64,15 @@
 #define WITH_TIM1_FB
 
 //-- Frequency selection ----------
-#define USE_FREQ_48KHZ
+// #define USE_FREQ_48KHZ
 // #define USE_FREQ_24KHZ
+// #define USE_FREQ_16KHZ
+#define USE_FREQ_12KHZ
+// #define USE_FREQ_9_6KHZ
 
 //-- Types of Interrupts ----------
-// #define WITH_AC_SYNC_INT
-#define WITH_OVERCURRENT_SHUTDOWN
+#define WITH_AC_SYNC_INT
+// #define WITH_OVERCURRENT_SHUTDOWN
 
 //---- End of Features Configuration ----------
 
@@ -207,6 +211,7 @@
 typedef enum
 {
     START_SYNCING = 0,
+    WAIT_RELAY_TO_ON,
     WAIT_FOR_FIRST_SYNC,
     GEN_POS,
     WAIT_CROSS_POS_TO_NEG,
@@ -263,7 +268,8 @@ typedef enum
 #define SIZEOF_BUFFTCP	SIZEOF_DATA
 
 
-
+#define DELTA_T1_BAR_FOR_49HZ    2800
+#define DELTA_T1_BAR_FOR_51HZ    500
 
 
 /* Module Functions ------------------------------------------------------------*/

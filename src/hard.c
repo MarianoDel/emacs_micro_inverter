@@ -249,6 +249,7 @@ void WelcomeCodeFeatures (char * str)
     Usart1Send("Only Inverter Mode\n");
     Wait_ms(30);    
 #endif
+
 #ifdef INVERTER_MODE_CURRENT_FDBK
     Usart1Send("Inverter Mode with Current Feedback\n");
     Wait_ms(30);    
@@ -259,6 +260,11 @@ void WelcomeCodeFeatures (char * str)
     Wait_ms(30);    
 #endif
 
+#ifdef INVERTER_ONLY_SYNC
+    Usart1Send("Only Sync with mains.\n");
+    Wait_ms(30);    
+#endif
+    
     // Features mostly on hardware
 #ifdef WITH_OVERCURRENT_SHUTDOWN
     sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_OVERCURRENT_SHUTDOWN));

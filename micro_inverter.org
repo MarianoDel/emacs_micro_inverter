@@ -63,7 +63,7 @@
      esto me da 9A pico y me deja arrancar bien con lamparas halogenas
 
 ** AC Sync
-   - queda detectando ints cuando se desconectan los 220Vac
+   - IC1 queda detectando ints cuando se desconectan los 220Vac
    - meter un capacitor de 1n a mas en el transistor del opto
    - o bajar la R de pullup (ahora es interna)
 

@@ -51,7 +51,8 @@
 // #define INVERTER_MODE_PURE_SINUSOIDAL
 // #define INVERTER_MODE_CURRENT_FDBK
 // #define INVERTER_MODE_GRID_TIE
-#define INVERTER_ONLY_SYNC
+// #define INVERTER_ONLY_SYNC
+#define INVERTER_ONLY_SYNC_AND_POLARITY
 
 //-- Types of led indications ----------
 // #define USE_LED_FOR_SYNC_IN_MAIN
@@ -266,10 +267,6 @@ typedef enum
 #define SIZEOF_DATA512	SIZEOF_DATA1
 #define SIZEOF_DATA256	SIZEOF_DATA
 #define SIZEOF_BUFFTCP	SIZEOF_DATA
-
-
-#define DELTA_T1_BAR_FOR_49HZ    2800
-#define DELTA_T1_BAR_FOR_51HZ    500
 
 
 /* Module Functions ------------------------------------------------------------*/

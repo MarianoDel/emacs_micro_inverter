@@ -1,5 +1,5 @@
 //-----------------------------------------------------
-// #### PROYECTO MICROINVERSOR F030 - Custom Board ####
+// #### MICROINVERTER PROJECT  F030 - Custom Board ####
 // ##
 // ## @Author: Med
 // ## @Editor: Emacs - ggtags
@@ -29,6 +29,8 @@
 
 #include "it.h"
 
+#include "sync.h"
+
 
 
 //--- VARIABLES EXTERNAS ---//
@@ -46,11 +48,16 @@ volatile unsigned char seq_ready = 0;
 
 // ------- Externals para timers -------
 volatile unsigned short timer_led = 0;
-volatile unsigned char ac_sync_int_flag = 0;
-volatile unsigned short delta_t2 = 0;
 
 // ------- Externals para filtros -------
 volatile unsigned short take_temp_sample = 0;
+
+// ------- Externals para synchro -------
+volatile unsigned short timer_no_sync = 0;
+volatile unsigned short delta_t1 = 0;
+volatile unsigned short delta_t1_bar = 0;
+volatile unsigned char ac_sync_int_flag = 0;
+volatile unsigned short delta_t2 = 0;
 
 // ------- Definiciones para los filtros -------
 #define SIZEOF_FILTER    8
@@ -79,9 +86,6 @@ short ez2 = 0;
 unsigned short last_d = 0;
 #define DELTA_D    2
 
-volatile unsigned short delta_t1 = 0;
-
-volatile unsigned short delta_t1_bar = 0;
 volatile unsigned char overcurrent_shutdown = 0;
 volatile unsigned char enable_internal_sync = 0;
 
@@ -150,7 +154,7 @@ int main(void)
 
     char s_lcd [120];
 
-#ifdef INVERTER_MODE
+#if (defined INVERTER_MODE) || (defined INVERTER_ONLY_SYNC_AND_POLARITY)
     ac_sync_state_t ac_sync_state = START_SYNCING;
 #endif
 
@@ -236,6 +240,81 @@ int main(void)
     
     EXTIOn();
 
+#ifdef INVERTER_ONLY_SYNC_AND_POLARITY
+    unsigned char cycles_cnt = 0;
+    
+    while (1)
+    {
+        switch (ac_sync_state)
+        {
+        case START_SYNCING:
+            //Check voltage and polarity
+            // if ((Voltage_is_Good()) && Polarity_is_Good())
+                ac_sync_state++;
+            break;
+
+        case WAIT_RELAY_TO_ON:
+            ac_sync_state++;
+            break;
+
+        case WAIT_FOR_FIRST_SYNC:
+            if (SYNC_Sync_Now())
+            {
+                if (SYNC_Polarity_Check() == POLARITY_POS)
+                {
+                    ac_sync_state = GEN_NEG;
+                    LED_OFF;
+                }
+                else if (SYNC_Polarity_Check() == POLARITY_NEG)
+                {
+                    ac_sync_state = GEN_POS;
+                    LED_ON;
+                }
+            }
+            break;
+        
+        case GEN_POS:
+            if (SYNC_Sync_Now())
+            {
+                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
+                LED_OFF;
+            }
+            break;
+
+        case WAIT_CROSS_POS_TO_NEG:
+            if (SYNC_Polarity_Check() == POLARITY_POS)
+            {
+                ac_sync_state = GEN_NEG;
+            }
+            break;
+            
+        case GEN_NEG:
+            if (SYNC_Sync_Now())
+            {
+                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+            }                
+            break;
+
+        case WAIT_CROSS_NEG_TO_POS:
+            if (SYNC_Polarity_Check() == POLARITY_NEG)
+            {
+                ac_sync_state = GEN_POS;
+                LED_ON;
+            }
+            break;
+
+        default:
+            ac_sync_state = START_SYNCING;
+            break;
+            
+        }
+
+        SYNC_Update_Sync();
+        SYNC_Update_Polarity();
+
+    }
+#endif
+
 #ifdef INVERTER_ONLY_SYNC
     unsigned char cycles_cnt = 0;
     
@@ -279,7 +358,7 @@ int main(void)
         }
     }
 #endif
-        
+    
     // EnablePreload_MosfetA;
     // EnablePreload_MosfetB;
 
@@ -518,6 +597,9 @@ void TimingDelay_Decrement(void)
 
     if (timer_filters)
         timer_filters--;
+
+    if (timer_no_sync)
+        timer_no_sync--;
     
     // //cuenta de a 1 minuto
     // if (secs > 59999)	//pasaron 1 min
@@ -566,21 +648,17 @@ void EXTI4_15_IRQHandler(void)
             TIM16->CNT = 0;
             AC_SYNC_Int_Rising_Reset;
             AC_SYNC_Int_Falling_Set;
-            // LED_ON;
-            if (enable_internal_sync)
-            {
-                TIM17->CNT = 0;
-                TIM17->ARR = delta_t1_bar;
-                TIM17Enable();
-            }
+
+            SYNC_Rising_Edge_Handler();
         }
         else if (AC_SYNC_Int_Falling)
         {
             delta_t1 = TIM16->CNT;
             AC_SYNC_Int_Falling_Reset;
             AC_SYNC_Int_Rising_Set;
-            // LED_OFF;
-            ac_sync_int_flag = 1;
+            // ac_sync_int_flag = 1;
+            
+            SYNC_Falling_Edge_Handler();
         }
         AC_SYNC_Ack;
     }

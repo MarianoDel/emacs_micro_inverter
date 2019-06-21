@@ -93,6 +93,8 @@ SRC += ./src/tim.c
 SRC += ./src/uart.c
 SRC += ./src/dma.c
 
+SRC += ./src/sync.c
+
 
 
 ## Core Support

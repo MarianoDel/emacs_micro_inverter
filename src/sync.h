@@ -45,6 +45,6 @@ void SYNC_Falling_Edge_Handler (void);
 void SYNC_Zero_Crossing_Handler (void);
 polarity_t SYNC_Polarity_Check (void);
 unsigned char SYNC_Sync_Now (void);
-
+void SYNC_Sync_Now_Reset (void);
 
 #endif    /* __SYNC_H_ */

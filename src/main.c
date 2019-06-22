@@ -56,7 +56,6 @@ volatile unsigned short take_temp_sample = 0;
 volatile unsigned short timer_no_sync = 0;
 volatile unsigned short delta_t1 = 0;
 volatile unsigned short delta_t1_bar = 0;
-volatile unsigned char ac_sync_int_flag = 0;
 volatile unsigned short delta_t2 = 0;
 
 // ------- Definiciones para los filtros -------
@@ -240,6 +239,11 @@ int main(void)
     
     EXTIOn();
 
+    while (1)
+    {
+        Usart1Send("Test\n");
+        Wait_ms(1000);
+    }
 #ifdef INVERTER_ONLY_SYNC_AND_POLARITY
     unsigned char cycles_cnt = 0;
     
@@ -270,6 +274,7 @@ int main(void)
                     ac_sync_state = GEN_POS;
                     LED_ON;
                 }
+                SYNC_Sync_Now_Reset();
             }
             break;
         
@@ -278,6 +283,7 @@ int main(void)
             {
                 ac_sync_state = WAIT_CROSS_POS_TO_NEG;
                 LED_OFF;
+                SYNC_Sync_Now_Reset();
             }
             break;
 
@@ -292,6 +298,7 @@ int main(void)
             if (SYNC_Sync_Now())
             {
                 ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+                SYNC_Sync_Now_Reset();
             }                
             break;
 

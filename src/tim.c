@@ -176,8 +176,8 @@ void TIM_3_Init (void)
 
     //Configuracion del timer.
     //TIM3->CR1 = 0x0000;        //clk int / 1; upcounting;
-    //TIM3->CR2 |= TIM_CR2_MMS_1;        //UEV -> TRG0
-    TIM3->CR2 = 0x0000;
+    TIM3->CR2 |= TIM_CR2_MMS_1;        //UEV -> TRG0 (for the ADC sync)
+    // TIM3->CR2 = 0x0000;
     //TIM3->SMCR |= TIM_SMCR_SMS_2 |TIM_SMCR_SMS_1 | TIM_SMCR_TS_1 | TIM_SMCR_TS_0;    //reset mode
     //TIM3->SMCR |= TIM_SMCR_SMS_2;    //reset mode link timer1    OJO no anda
     // TIM3->SMCR |= TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1;    //trigger mode link timer1

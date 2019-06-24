@@ -250,72 +250,94 @@ int main(void)
 
     while (1)
     {
-        // switch (ac_sync_state)
-        // {
-        // case START_SYNCING:
-        //     //Check voltage and polarity
-        //     // if ((Voltage_is_Good()) && Polarity_is_Good())
-        //         ac_sync_state++;
-        //     break;
+        switch (ac_sync_state)
+        {
+        case START_SYNCING:
+            //Check voltage and polarity
+            // if ((Voltage_is_Good()) && Polarity_is_Good())
+            LED_OFF;            
+            ac_sync_state++;
+            break;
 
-        // case WAIT_RELAY_TO_ON:
-        //     ac_sync_state++;
-        //     break;
+        case WAIT_RELAY_TO_ON:
+            ac_sync_state++;
+            break;
 
-        // case WAIT_FOR_FIRST_SYNC:
-        //     if (SYNC_Sync_Now())
-        //     {
-        //         if (SYNC_Polarity_Check() == POLARITY_POS)
-        //         {
-        //             ac_sync_state = GEN_NEG;
-        //             LED_OFF;
-        //         }
-        //         else if (SYNC_Polarity_Check() == POLARITY_NEG)
-        //         {
-        //             ac_sync_state = GEN_POS;
-        //             LED_ON;
-        //         }
-        //         SYNC_Sync_Now_Reset();
-        //     }
-        //     break;
+        case WAIT_FOR_FIRST_SYNC:
+            if (SYNC_Sync_Now())
+            {
+                if (SYNC_Last_Polarity_Check() == POLARITY_POS)
+                {
+                    ac_sync_state = GEN_NEG;
+#ifdef USE_LED_FOR_MAIN_POLARITY
+                    LED_OFF;
+#endif
+                }
+                else if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
+                {
+                    ac_sync_state = GEN_POS;
+#ifdef USE_LED_FOR_MAIN_POLARITY                    
+                    LED_ON;
+#endif
+                }
+                else    //debe haber un error en synchro
+                    ac_sync_state = START_SYNCING;
+                
+                SYNC_Sync_Now_Reset();
+            }
+            break;
         
-        // case GEN_POS:
-        //     if (SYNC_Sync_Now())
-        //     {
-        //         ac_sync_state = WAIT_CROSS_POS_TO_NEG;
-        //         LED_OFF;
-        //         SYNC_Sync_Now_Reset();
-        //     }
-        //     break;
+        case GEN_POS:
+            if (SYNC_Sync_Now())
+            {
+                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
+                SYNC_Sync_Now_Reset();
+            }
 
-        // case WAIT_CROSS_POS_TO_NEG:
-        //     if (SYNC_Polarity_Check() == POLARITY_POS)
-        //     {
-        //         ac_sync_state = GEN_NEG;
-        //     }
-        //     break;
+            //TODO: poner timeout aca para salir
+            break;
+
+        case WAIT_CROSS_POS_TO_NEG:
+            if (SYNC_Last_Polarity_Check() == POLARITY_POS)
+            {
+                ac_sync_state = GEN_NEG;
+#ifdef USE_LED_FOR_MAIN_POLARITY                
+                LED_OFF;
+#endif                
+            }
+            else    //debe haber un error de synchro
+                ac_sync_state = START_SYNCING;
+
+            break;
             
-        // case GEN_NEG:
-        //     if (SYNC_Sync_Now())
-        //     {
-        //         ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-        //         SYNC_Sync_Now_Reset();
-        //     }                
-        //     break;
-
-        // case WAIT_CROSS_NEG_TO_POS:
-        //     if (SYNC_Polarity_Check() == POLARITY_NEG)
-        //     {
-        //         ac_sync_state = GEN_POS;
-        //         LED_ON;
-        //     }
-        //     break;
-
-        // default:
-        //     ac_sync_state = START_SYNCING;
-        //     break;
+        case GEN_NEG:
+            if (SYNC_Sync_Now())
+            {
+                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+                SYNC_Sync_Now_Reset();
+            }
             
-        // }
+            //TODO: poner timeout aca para salir            
+            break;
+
+        case WAIT_CROSS_NEG_TO_POS:
+            if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
+            {
+                ac_sync_state = GEN_POS;
+#ifdef USE_LED_FOR_MAIN_POLARITY                
+                LED_ON;
+#endif
+            }
+            else    //debe haber un error de synchro
+                ac_sync_state = START_SYNCING;
+                    
+            break;
+
+        default:
+            ac_sync_state = START_SYNCING;
+            break;
+            
+        }
 
         SYNC_Update_Sync();
         SYNC_Update_Polarity();
@@ -323,11 +345,12 @@ int main(void)
         if (SYNC_Cycles_Cnt() > 100)
         {
             SYNC_Cycles_Cnt_Reset();
-            sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d\n",
+            sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d vline: %d\n",
                     delta_t1_bar,
                     delta_t2,
-                    SYNC_Polarity_Check(),
-                    ac_sync_state);
+                    SYNC_Last_Polarity_Check(),
+                    ac_sync_state,
+                    SYNC_Vline_Max());
             Usart1Send(s_lcd);            
         }
     }

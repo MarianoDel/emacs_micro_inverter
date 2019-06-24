@@ -24,6 +24,7 @@ extern volatile unsigned short adc_ch[];
 polarity_t last_polarity = POLARITY_UNKNOWN;
 unsigned char check_pulse_polarity = 0;
 unsigned char cycles_cnt = 0;
+unsigned short vline_max = 0;
 
 //-- For Ints Handlers
 volatile unsigned char zero_crossing_now = 0;
@@ -87,10 +88,18 @@ void SYNC_Update_Polarity (void)
             (TIM16->CNT > ((delta_t2 >> 1) + delta_t1_bar)))
         {
             check_pulse_polarity = 0;
+            vline_max = Vline_Sense;
             if (Vline_Sense > VLINE_SENSE_MIN_THRESOLD)
                 last_polarity = POLARITY_POS;
             else
                 last_polarity = POLARITY_NEG;
+
+#ifdef USE_LED_FOR_VLINE_MAX
+            if (LED)
+                LED_OFF;
+            else
+                LED_ON;
+#endif
         }
     }
     else
@@ -98,7 +107,7 @@ void SYNC_Update_Polarity (void)
     
 }
 
-polarity_t SYNC_Polarity_Check (void)
+polarity_t SYNC_Last_Polarity_Check (void)
 {
     return last_polarity;
 }
@@ -113,6 +122,9 @@ void SYNC_Rising_Edge_Handler (void)
         TIM17->CNT = 0;
         TIM17->ARR = delta_t1_bar;
         TIM17Enable();
+#ifdef USE_LED_FOR_SYNC_PULSES
+        LED_ON;
+#endif
     }
 }
 
@@ -120,16 +132,21 @@ void SYNC_Falling_Edge_Handler (void)
 {
     ac_sync_int_flag = 1;
     zero_crossing_now = 0;
+#ifdef USE_LED_FOR_SYNC_PULSES
+    LED_OFF;
+#endif    
 }
 
 void SYNC_Zero_Crossing_Handler (void)
 {
     zero_crossing_now = 1;
     TIM17Disable();
+#ifdef USE_LED_FOR_ZERO_CROSSING
     if (LED)
         LED_OFF;
     else
         LED_ON;
+#endif
 }
 
 unsigned char SYNC_Sync_Now (void)
@@ -151,4 +168,10 @@ void SYNC_Cycles_Cnt_Reset (void)
 {
     cycles_cnt = 0;
 }
+
+unsigned short SYNC_Vline_Max (void)
+{
+    return vline_max;
+}
+
 //--- end of file ---//

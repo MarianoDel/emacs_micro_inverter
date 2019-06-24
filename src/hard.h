@@ -55,8 +55,10 @@
 #define INVERTER_ONLY_SYNC_AND_POLARITY
 
 //-- Types of led indications ----------
-// #define USE_LED_FOR_SYNC_IN_MAIN
-#define USE_LED_FOR_SYNC_IN_INT
+// #define USE_LED_FOR_SYNC_PULSES
+// #define USE_LED_FOR_ZERO_CROSSING
+// #define USE_LED_FOR_VLINE_MAX
+#define USE_LED_FOR_MAIN_POLARITY
 // #define USE_LED_FOR_MAIN_STATES
 
 //-- Other configs features ----------

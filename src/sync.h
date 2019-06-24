@@ -43,7 +43,7 @@ void SYNC_Update_Polarity (void);
 void SYNC_Rising_Edge_Handler (void);
 void SYNC_Falling_Edge_Handler (void);
 void SYNC_Zero_Crossing_Handler (void);
-polarity_t SYNC_Polarity_Check (void);
+polarity_t SYNC_Last_Polarity_Check (void);
 unsigned char SYNC_Sync_Now (void);
 void SYNC_Sync_Now_Reset (void);
 unsigned char SYNC_Cycles_Cnt (void);

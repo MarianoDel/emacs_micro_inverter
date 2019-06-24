@@ -236,89 +236,100 @@ int main(void)
     HIGH_LEFT(DUTY_NONE);
     LOW_RIGHT(DUTY_NONE);
     HIGH_RIGHT(DUTY_NONE);
-    
+
+    //ADC and DMA configuration
+    AdcConfig();
+    DMAConfig();
+    DMA1_Channel1->CCR |= DMA_CCR_EN;
+    ADC1->CR |= ADC_CR_ADSTART;
+    //end of ADC & DMA
+
     EXTIOn();
 
-    while (1)
-    {
-        Usart1Send("Test\n");
-        Wait_ms(1000);
-    }
 #ifdef INVERTER_ONLY_SYNC_AND_POLARITY
-    unsigned char cycles_cnt = 0;
-    
+
     while (1)
     {
-        switch (ac_sync_state)
-        {
-        case START_SYNCING:
-            //Check voltage and polarity
-            // if ((Voltage_is_Good()) && Polarity_is_Good())
-                ac_sync_state++;
-            break;
+        // switch (ac_sync_state)
+        // {
+        // case START_SYNCING:
+        //     //Check voltage and polarity
+        //     // if ((Voltage_is_Good()) && Polarity_is_Good())
+        //         ac_sync_state++;
+        //     break;
 
-        case WAIT_RELAY_TO_ON:
-            ac_sync_state++;
-            break;
+        // case WAIT_RELAY_TO_ON:
+        //     ac_sync_state++;
+        //     break;
 
-        case WAIT_FOR_FIRST_SYNC:
-            if (SYNC_Sync_Now())
-            {
-                if (SYNC_Polarity_Check() == POLARITY_POS)
-                {
-                    ac_sync_state = GEN_NEG;
-                    LED_OFF;
-                }
-                else if (SYNC_Polarity_Check() == POLARITY_NEG)
-                {
-                    ac_sync_state = GEN_POS;
-                    LED_ON;
-                }
-                SYNC_Sync_Now_Reset();
-            }
-            break;
+        // case WAIT_FOR_FIRST_SYNC:
+        //     if (SYNC_Sync_Now())
+        //     {
+        //         if (SYNC_Polarity_Check() == POLARITY_POS)
+        //         {
+        //             ac_sync_state = GEN_NEG;
+        //             LED_OFF;
+        //         }
+        //         else if (SYNC_Polarity_Check() == POLARITY_NEG)
+        //         {
+        //             ac_sync_state = GEN_POS;
+        //             LED_ON;
+        //         }
+        //         SYNC_Sync_Now_Reset();
+        //     }
+        //     break;
         
-        case GEN_POS:
-            if (SYNC_Sync_Now())
-            {
-                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
-                LED_OFF;
-                SYNC_Sync_Now_Reset();
-            }
-            break;
+        // case GEN_POS:
+        //     if (SYNC_Sync_Now())
+        //     {
+        //         ac_sync_state = WAIT_CROSS_POS_TO_NEG;
+        //         LED_OFF;
+        //         SYNC_Sync_Now_Reset();
+        //     }
+        //     break;
 
-        case WAIT_CROSS_POS_TO_NEG:
-            if (SYNC_Polarity_Check() == POLARITY_POS)
-            {
-                ac_sync_state = GEN_NEG;
-            }
-            break;
+        // case WAIT_CROSS_POS_TO_NEG:
+        //     if (SYNC_Polarity_Check() == POLARITY_POS)
+        //     {
+        //         ac_sync_state = GEN_NEG;
+        //     }
+        //     break;
             
-        case GEN_NEG:
-            if (SYNC_Sync_Now())
-            {
-                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-                SYNC_Sync_Now_Reset();
-            }                
-            break;
+        // case GEN_NEG:
+        //     if (SYNC_Sync_Now())
+        //     {
+        //         ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+        //         SYNC_Sync_Now_Reset();
+        //     }                
+        //     break;
 
-        case WAIT_CROSS_NEG_TO_POS:
-            if (SYNC_Polarity_Check() == POLARITY_NEG)
-            {
-                ac_sync_state = GEN_POS;
-                LED_ON;
-            }
-            break;
+        // case WAIT_CROSS_NEG_TO_POS:
+        //     if (SYNC_Polarity_Check() == POLARITY_NEG)
+        //     {
+        //         ac_sync_state = GEN_POS;
+        //         LED_ON;
+        //     }
+        //     break;
 
-        default:
-            ac_sync_state = START_SYNCING;
-            break;
+        // default:
+        //     ac_sync_state = START_SYNCING;
+        //     break;
             
-        }
+        // }
 
         SYNC_Update_Sync();
         SYNC_Update_Polarity();
 
+        if (SYNC_Cycles_Cnt() > 100)
+        {
+            SYNC_Cycles_Cnt_Reset();
+            sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d\n",
+                    delta_t1_bar,
+                    delta_t2,
+                    SYNC_Polarity_Check(),
+                    ac_sync_state);
+            Usart1Send(s_lcd);            
+        }
     }
 #endif
 
@@ -369,13 +380,13 @@ int main(void)
     // EnablePreload_MosfetA;
     // EnablePreload_MosfetB;
 
-    AdcConfig();
+    // AdcConfig();
 
-    //-- DMA configuration.
-    DMAConfig();
-    DMA1_Channel1->CCR |= DMA_CCR_EN;
+    // //-- DMA configuration.
+    // DMAConfig();
+    // DMA1_Channel1->CCR |= DMA_CCR_EN;
 
-    ADC1->CR |= ADC_CR_ADSTART;
+    // ADC1->CR |= ADC_CR_ADSTART;
 
     //--- Inverter Mode ----------
 #ifdef INVERTER_MODE

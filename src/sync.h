@@ -20,17 +20,17 @@
 #define DELTA_T2_FOR_49HZ    10204
 #define DELTA_T2_FOR_51HZ     9804
 
-#define DELTA_T1_BAR_FOR_49HZ 2500    //TODO: ajustar los T1_BAR
-#define DELTA_T1_BAR_FOR_51HZ  800
+#define DELTA_T1_BAR_FOR_49HZ    1152
+#define DELTA_T1_BAR_FOR_51HZ    1048
 
 #define TT_FOR_NO_SYNC    60
 
-#define VLINE_SENSE_MIN_THRESOLD    500
+#define VLINE_SENSE_MIN_THRESOLD    200
 
 
 //--- Exported types ----------------------------
 typedef enum {
-    POLARITY_UNKNOW = 0,
+    POLARITY_UNKNOWN = 0,
     POLARITY_POS,
     POLARITY_NEG
 
@@ -46,5 +46,8 @@ void SYNC_Zero_Crossing_Handler (void);
 polarity_t SYNC_Polarity_Check (void);
 unsigned char SYNC_Sync_Now (void);
 void SYNC_Sync_Now_Reset (void);
+unsigned char SYNC_Cycles_Cnt (void);
+void SYNC_Cycles_Cnt_Reset (void);
+
 
 #endif    /* __SYNC_H_ */

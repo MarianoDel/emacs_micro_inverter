@@ -21,8 +21,9 @@ extern volatile unsigned short delta_t1_bar;
 extern volatile unsigned short adc_ch[];
 
 /* Global variables --------------------------------------*/
-polarity_t last_polarity = POLARITY_UNKNOW;
+polarity_t last_polarity = POLARITY_UNKNOWN;
 unsigned char check_pulse_polarity = 0;
+unsigned char cycles_cnt = 0;
 
 //-- For Ints Handlers
 volatile unsigned char zero_crossing_now = 0;
@@ -46,7 +47,8 @@ void SYNC_Update_Sync (void)
         ac_sync_int_flag = 0;
         timer_no_sync = TT_FOR_NO_SYNC;
         check_pulse_polarity = 1;
-
+        cycles_cnt++;
+        
         //evaluo primero la frecuencia pulso a pulso
         if ((delta_t2 < DELTA_T2_FOR_49HZ) &&
             (delta_t2 > DELTA_T2_FOR_51HZ))
@@ -82,7 +84,7 @@ void SYNC_Update_Polarity (void)
         (sync_pulses_are_good))
     {
         if ((check_pulse_polarity) &&
-            (TIM16->CNT > (delta_t2 - delta_t1_bar)))
+            (TIM16->CNT > ((delta_t2 >> 1) + delta_t1_bar)))
         {
             check_pulse_polarity = 0;
             if (Vline_Sense > VLINE_SENSE_MIN_THRESOLD)
@@ -92,7 +94,7 @@ void SYNC_Update_Polarity (void)
         }
     }
     else
-        last_polarity = POLARITY_UNKNOW;
+        last_polarity = POLARITY_UNKNOWN;
     
 }
 
@@ -124,6 +126,10 @@ void SYNC_Zero_Crossing_Handler (void)
 {
     zero_crossing_now = 1;
     TIM17Disable();
+    if (LED)
+        LED_OFF;
+    else
+        LED_ON;
 }
 
 unsigned char SYNC_Sync_Now (void)
@@ -136,4 +142,13 @@ void SYNC_Sync_Now_Reset (void)
     zero_crossing_now = 0;
 }
 
+unsigned char SYNC_Cycles_Cnt (void)
+{
+    return cycles_cnt;
+}
+
+void SYNC_Cycles_Cnt_Reset (void)
+{
+    cycles_cnt = 0;
+}
 //--- end of file ---//

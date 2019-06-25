@@ -90,14 +90,15 @@ volatile unsigned short dmax_permited = 0;
 // volatile unsigned char hours = 0;
 // volatile unsigned char minutes = 0;
 
-#define USE_SIGNAL_SINUSOIDAL
+// #define USE_SIGNAL_SINUSOIDAL
 // #define USE_SIGNAL_TRIANGULAR
 // #define USE_SIGNAL_CURRENT_SIN_0_5_A
+#define USE_SIGNAL_MODIFIED_SIN
 
 #if (defined USE_SIGNAL_CURRENT_SIN_0_5_A)
 #define SIZEOF_SIGNAL 120
 #endif
-#if (defined USE_SIGNAL_SINUSOIDAL) || (defined USE_SIGNAL_TRIANGULAR)
+#if (defined USE_SIGNAL_SINUSOIDAL) || (defined USE_SIGNAL_TRIANGULAR) || (defined USE_SIGNAL_MODIFIED_SIN)
 #define SIZEOF_SIGNAL 50
 #endif
 
@@ -122,6 +123,15 @@ unsigned short mem_signal [SIZEOF_SIGNAL] = {40,80,120,160,200,240,280,320,360,4
                                              760,720,680,640,600,560,520,480,440,400,
                                              360,320,280,240,200,160,120,80,40,0};
 #endif
+#ifdef USE_SIGNAL_MODIFIED_SIN
+unsigned short mem_signal [SIZEOF_SIGNAL] = {0,0,0,0,333,333,333,333,333,333,
+                                             333,333,666,666,666,666,666,666,666,666,
+                                             1000,1000,1000,1000,1000,1000,1000,1000,666,666,
+                                             666,666,666,666,666,666,333,333,333,333,
+                                             333,333,333,333,0,0,0,0,0,0};
+
+#endif
+
 unsigned short * p_signal;
 
 

@@ -20,6 +20,9 @@ extern volatile unsigned short timer_led_comm;
 extern volatile unsigned short wait_ms_var;
 extern volatile unsigned short delta_t2;
 
+#ifdef INVERTER_MODE
+extern volatile unsigned char ac_sync_int_flag;
+#endif
 
 //--- VARIABLES GLOBALES ---//
 
@@ -358,7 +361,7 @@ void TIM17_IRQHandler (void)
 {
     if (TIM17->SR & 0x01)
     {
-        SYNC_Zero_Crossing_Handler();        
+        SYNC_Zero_Crossing_Handler();
         TIM17->SR = 0x00;    //flag down
     }    
 }

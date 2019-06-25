@@ -245,56 +245,72 @@ unsigned short Hard_GetDmaxLout (unsigned short vin, unsigned short vout)
 void WelcomeCodeFeatures (char * str)
 {
     // Main Program Type
-#ifdef INVERTER_MODE
-    Usart1Send("Only Inverter Mode\n");
+#if (defined INVERTER_MODE_PURE_SINUSOIDAL)
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_MODE_PURE_SINUSOIDAL));
+    Usart1Send(str);
+    Wait_ms(30);        
+#elif defined INVERTER_MODE
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_MODE));    
+    Usart1Send(str);
     Wait_ms(30);    
 #endif
 
 #ifdef INVERTER_MODE_CURRENT_FDBK
-    Usart1Send("Inverter Mode with Current Feedback\n");
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_MODE_CURRENT_FDBK));
+    Usart1Send(str);
     Wait_ms(30);    
 #endif
 
 #ifdef INVERTER_MODE_GRID_TIE
-    Usart1Send("Grid Tie Inverter\n");
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_MODE_GRID_TIE));
+    Usart1Send(str);
     Wait_ms(30);    
 #endif
 
-#ifdef INVERTER_ONLY_SYNC
-    Usart1Send("Only Sync with mains.\n");
+#ifdef INVERTER_ONLY_SYNC_AND_POLARITY
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_ONLY_SYNC_AND_POLARITY));
+    Usart1Send(str);
     Wait_ms(30);    
 #endif
     
     // Features mostly on hardware
-#ifdef WITH_OVERCURRENT_SHUTDOWN
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_OVERCURRENT_SHUTDOWN));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
-#ifdef USE_FREQ_75KHZ
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FREQ_75KHZ));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
 #ifdef USE_FREQ_48KHZ
     sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FREQ_48KHZ));
     Usart1Send(str);
     Wait_ms(30);    
 #endif
-    
-#ifdef USE_LED_IN_INT
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_LED_IN_INT));
+#ifdef USE_FREQ_24KHZ
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FREQ_24KHZ));
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
+#ifdef USE_FREQ_16KHZ
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FREQ_16KHZ));
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
+#ifdef USE_FREQ_12KHZ
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FREQ_12KHZ));
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
+#ifdef USE_FREQ_9_6KHZ
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_FREQ_9_6KHZ));
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
+
+#ifdef WITH_AC_SYNC_INT
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_AC_SYNC_INT));
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
+#ifdef WITH_OVERCURRENT_SHUTDOWN
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_OVERCURRENT_SHUTDOWN));
     Usart1Send(str);
     Wait_ms(30);    
 #endif
     
-#ifdef USE_LED_IN_PROT
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(USE_LED_IN_PROT));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif    
 }
 
 //---- end of file ----//

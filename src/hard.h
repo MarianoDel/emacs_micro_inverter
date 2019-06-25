@@ -48,23 +48,17 @@
 // SOFTWARE Features -------------------------
 //-- Types of programs ----------
 // #define INVERTER_MODE
-// #define INVERTER_MODE_PURE_SINUSOIDAL
+#define INVERTER_MODE_PURE_SINUSOIDAL
 // #define INVERTER_MODE_CURRENT_FDBK
 // #define INVERTER_MODE_GRID_TIE
-// #define INVERTER_ONLY_SYNC
-#define INVERTER_ONLY_SYNC_AND_POLARITY
+// #define INVERTER_ONLY_SYNC_AND_POLARITY
 
 //-- Types of led indications ----------
 // #define USE_LED_FOR_SYNC_PULSES
 // #define USE_LED_FOR_ZERO_CROSSING
 // #define USE_LED_FOR_VLINE_MAX
-#define USE_LED_FOR_MAIN_POLARITY
-// #define USE_LED_FOR_MAIN_STATES
-
-//-- Other configs features ----------
-// #define WITH_OVERCURRENT_SHUTDOWN
-// #define WITH_TIM14_FB
-#define WITH_TIM1_FB
+// #define USE_LED_FOR_MAIN_POLARITY
+#define USE_LED_FOR_MAIN_STATES
 
 //-- Frequency selection ----------
 // #define USE_FREQ_48KHZ
@@ -74,8 +68,8 @@
 // #define USE_FREQ_9_6KHZ
 
 //-- Types of Interrupts ----------
-#define WITH_AC_SYNC_INT
-// #define WITH_OVERCURRENT_SHUTDOWN
+// #define WITH_AC_SYNC_INT
+#define WITH_OVERCURRENT_SHUTDOWN
 
 //---- End of Features Configuration ----------
 

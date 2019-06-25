@@ -67,6 +67,8 @@
    - meter un capacitor de 1n a mas en el transistor del opto
    - o bajar la R de pullup (ahora es interna)
 
+*** aparentemente el error anterior era un micro algo quemado!
+
 ** HAY QUE METER CRISTAL!!!!
 
 * Modos de Funcionamiento

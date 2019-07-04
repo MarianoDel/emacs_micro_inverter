@@ -48,8 +48,8 @@
 // SOFTWARE Features -------------------------
 //-- Types of programs ----------
 // #define INVERTER_MODE
-#define INVERTER_MODE_PURE_SINUSOIDAL
-// #define INVERTER_MODE_CURRENT_FDBK
+// #define INVERTER_MODE_PURE_SINUSOIDAL
+#define INVERTER_MODE_CURRENT_FDBK
 // #define INVERTER_MODE_GRID_TIE
 // #define INVERTER_ONLY_SYNC_AND_POLARITY
 

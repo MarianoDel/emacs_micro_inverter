@@ -14,10 +14,11 @@
 
 
 /* Externals variables ---------------------------------------------------------*/
+#ifdef USE_PID_UPDATED_CONSTANTS
 extern unsigned short pid_param_p;
 extern unsigned short pid_param_i;
 extern unsigned short pid_param_d;
-
+#endif
 
 /* Global variables ---------------------------------------------------------*/
 //------- de los PID ---------
@@ -37,10 +38,22 @@ unsigned short v_ma_circular [32];
 unsigned short * p_ma_circular;
 #endif
 /* Module Definitions ---------------------------------------------------------*/
-//todos se dividen por 128
-#define KPV	857			// 6.7 desde python PI_zpk_KpKi.py
-#define KIV	844			// 6.6 desde python PI_zpk_KpKi.py
-#define KDV	0			// 0
+#define PID_CONSTANT_DIVIDER    7    //todos se dividen por 128
+// #define PID_CONSTANT_DIVIDER    6    //todos se dividen por 64
+
+//from microinverter01.py
+// #define KPV	14    //0.108
+// #define KIV	11    //0.08333
+// #define KDV	0
+
+// #define KPV	-2    //-0.016
+// #define KIV	4    //0.0333
+// #define KDV	0
+
+#define KPV	5    //0.0375
+#define KIV	3    //0.025
+#define KDV	0
+
 
 #define K1V (KPV + KIV + KDV)
 #define K2V (KPV + KDV + KDV)
@@ -293,15 +306,15 @@ short PID (short setpoint, short sample)
 
     //K1
     acc = K1V * error;		//5500 / 32768 = 0.167 errores de hasta 6 puntos
-    val_k1 = acc >> 7;
+    val_k1 = acc >> PID_CONSTANT_DIVIDER;
 
     //K2
     acc = K2V * error_z1;		//K2 = no llega pruebo con 1
-    val_k2 = acc >> 7;			//si es mas grande que K1 + K3 no lo deja arrancar
+    val_k2 = acc >> PID_CONSTANT_DIVIDER;    //si es mas grande que K1 + K3 no lo deja arrancar
 
     //K3
     acc = K3V * error_z2;		//K3 = 0.4
-    val_k3 = acc >> 7;
+    val_k3 = acc >> PID_CONSTANT_DIVIDER;
 
     d = d_last + val_k1 - val_k2 + val_k3;
 
@@ -313,9 +326,17 @@ short PID (short setpoint, short sample)
     return d;
 }
 
+#if (defined USE_PID_UPDATED_CONSTANTS)
 #define K1    (pid_param_p + pid_param_i + pid_param_d)
 #define K2    (pid_param_p + pid_param_d + pid_param_d)
 #define K3    (pid_param_d)
+#elif (defined USE_PID_FIXED_CONSTANTS)
+#define K1    K1V
+#define K2    K2V
+#define K3    K3V
+#else
+#error "Select the PID constants mode on dsp.h"
+#endif
 
 short PID_roof (short setpoint, short sample, short local_last_d, short * e_z1, short * e_z2)
 {
@@ -330,15 +351,15 @@ short PID_roof (short setpoint, short sample, short local_last_d, short * e_z1, 
 
     //K1
     acc = K1 * error;
-    val_k1 = acc >> 7;
+    val_k1 = acc >> PID_CONSTANT_DIVIDER;
 
     //K2
-    acc = K2 * *e_z1;		//K2 = no llega pruebo con 1
-    val_k2 = acc >> 7;			//si es mas grande que K1 + K3 no lo deja arrancar
+    acc = K2 * *e_z1;    //K2 = no llega pruebo con 1
+    val_k2 = acc >> PID_CONSTANT_DIVIDER;    //si es mas grande que K1 + K3 no lo deja arrancar
 
     //K3
-    acc = K3 * *e_z2;		//K3 = 0.4
-    val_k3 = acc >> 7;
+    acc = K3 * *e_z2;    //K3 = 0.4
+    val_k3 = acc >> PID_CONSTANT_DIVIDER;
 
     d = local_last_d + val_k1 - val_k2 + val_k3;
 

@@ -93,21 +93,43 @@ volatile unsigned short dmax_permited = 0;
 // #define USE_SIGNAL_SINUSOIDAL
 // #define USE_SIGNAL_TRIANGULAR
 // #define USE_SIGNAL_CURRENT_SIN_0_5_A
-#define USE_SIGNAL_MODIFIED_SIN
+#define USE_SIGNAL_CURRENT_SIN_1_A
+// #define USE_SIGNAL_MODIFIED_SIN
 
-#if (defined USE_SIGNAL_CURRENT_SIN_0_5_A)
+#if (defined USE_SIGNAL_CURRENT_SIN_0_5_A) || (defined USE_SIGNAL_CURRENT_SIN_1_A)
 #define SIZEOF_SIGNAL 120
 #endif
 #if (defined USE_SIGNAL_SINUSOIDAL) || (defined USE_SIGNAL_TRIANGULAR) || (defined USE_SIGNAL_MODIFIED_SIN)
 #define SIZEOF_SIGNAL 50
 #endif
 
+#ifdef USE_SIGNAL_CURRENT_SIN_1_A
+unsigned short mem_signal [SIZEOF_SIGNAL] = {26,53,80,106,133,160,186,212,238,264,
+                                             290,316,341,366,391,416,440,464,488,511,
+                                             534,557,579,601,622,643,664,684,704,723,
+                                             742,760,777,795,811,827,843,857,872,885,
+                                             899,911,923,934,945,955,964,972,980,988,
+                                             994,1000,1005,1010,1014,1017,1019,1021,1022,1023,
+                                             1022,1021,1019,1017,1014,1010,1005,1000,994,988,
+                                             980,972,964,955,945,934,923,911,899,885,
+                                             872,857,843,827,811,795,777,760,742,723,
+                                             704,684,664,643,622,601,579,557,534,511,
+                                             488,464,440,416,391,366,341,316,290,264,
+                                             238,212,186,160,133,106,80,53,26,0};
+#endif
 #ifdef USE_SIGNAL_CURRENT_SIN_0_5_A
-unsigned short mem_signal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
-                                             637,684,728,770,809,844,876,904,929,951,
-                                             968,982,992,998,1000,998,992,982,968,951,
-                                             929,904,876,844,809,770,728,684,637,587,
-                                             535,481,425,368,309,248,187,125,62,0};
+unsigned short mem_signal [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,119,132,
+                                             145,157,170,183,195,207,219,231,243,255,
+                                             266,278,289,300,311,321,331,341,351,361,
+                                             370,379,388,397,405,413,421,428,435,442,
+                                             449,455,461,466,472,477,481,485,489,493,
+                                             496,499,502,504,506,508,509,510,510,511,
+                                             510,510,509,508,506,504,502,499,496,493,
+                                             489,485,481,477,472,466,461,455,449,442,
+                                             435,428,421,413,405,397,388,379,370,361,
+                                             351,341,331,321,311,300,289,278,266,255,
+                                             243,231,219,207,195,183,170,157,145,132,
+                                             119,106,93,79,66,53,40,26,13,0};
 #endif
 #ifdef USE_SIGNAL_SINUSOIDAL
 unsigned short mem_signal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
@@ -179,26 +201,6 @@ int main(void)
         }
     }
 
-    //--- Leo los parametros de memoria ---//
-
-    // while (1)
-    // {
-    //  if (STOP_JUMPER)
-    //  {
-    //  	LED_OFF;
-    //  }
-    //  else
-    //  {
-    // 	  if (LED)
-    // 	  	LED_OFF;
-    // 	  else
-    // 	  	LED_ON;
-    //
-    // 	  Wait_ms (250);
-    //  }
-    // }
-
-
 //---------- Pruebas de Hardware --------//
     EXTIOff ();
     USART1Config();
@@ -247,7 +249,7 @@ int main(void)
 
 #ifdef INVERTER_MODE_CURRENT_FDBK
     short d = 0;
-    short last_d = 0;
+    // short last_d = 0;
     short ez1 = 0;
     short ez2 = 0;
     
@@ -274,7 +276,7 @@ int main(void)
         case WAIT_FOR_FIRST_SYNC:
             ac_sync_state = WAIT_CROSS_NEG_TO_POS;
             d = 0;
-            last_d = 0;
+            // last_d = 0;
             ez1 = 0;
             ez2 = 0;
             HIGH_RIGHT(DUTY_NONE);
@@ -291,18 +293,29 @@ int main(void)
                 {
                     p_signal++;
 
-                    d = PID_roof(*p_signal, I_Sense_Pos, last_d, &ez1, &ez2);
-
-                    if (d > 0)    //TODO: que pasa si d > duty_max
-                        HIGH_LEFT(d);
+                    d = PID_roof(*p_signal, I_Sense_Pos, d, &ez1, &ez2);
+                    
+                    if (d > 0)
+                    {
+                        if (d < DUTY_100_PERCENT)
+                            HIGH_LEFT(d);
+                        else
+                        {
+                            HIGH_LEFT(DUTY_100_PERCENT);
+                            d = DUTY_100_PERCENT;
+                        }
+                    }
                     else
+                    {
                         HIGH_LEFT(DUTY_NONE);
+                        d = DUTY_NONE;
+                    }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_POS_TO_NEG;
                     d = 0;
-                    last_d = 0;
+                    // last_d = 0;
                     ez1 = 0;
                     ez2 = 0;
                     HIGH_LEFT(DUTY_NONE);
@@ -334,18 +347,29 @@ int main(void)
                 {
                     p_signal++;
 
-                    d = PID_roof(*p_signal, I_Sense_Neg, last_d, &ez1, &ez2);
+                    d = PID_roof(*p_signal, I_Sense_Neg, d, &ez1, &ez2);
 
-                    if (d > 0)    //TODO: que pasa si d > duty_max
-                        HIGH_RIGHT(d);
+                    if (d > 0)
+                    {
+                        if (d < DUTY_100_PERCENT)
+                            HIGH_RIGHT(d);
+                        else
+                        {
+                            HIGH_RIGHT(DUTY_100_PERCENT);
+                            d = DUTY_100_PERCENT;
+                        }
+                    }
                     else
+                    {
                         HIGH_RIGHT(DUTY_NONE);
+                        d = DUTY_NONE;
+                    }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_NEG_TO_POS;
                     d = 0;
-                    last_d = 0;
+                    // last_d = 0;
                     ez1 = 0;
                     ez2 = 0;
                     HIGH_RIGHT(DUTY_NONE);
@@ -452,7 +476,7 @@ int main(void)
         UpdateLed();
 #endif        
     }
-#endif
+#endif    // INVERTER_MODE_CURRENT_FDBK
 
     
 #ifdef INVERTER_ONLY_SYNC_AND_POLARITY
@@ -563,7 +587,7 @@ int main(void)
             Usart1Send(s_lcd);            
         }
     }
-#endif
+#endif     // INVERTER_ONLY_SYNC_AND_POLARITY
     
     
     // EnablePreload_MosfetA;
@@ -763,13 +787,7 @@ int main(void)
 #endif
     }
     
-#endif
-    //--- End Inverter Mode ----------
-
-                
-
-
-
+#endif    // INVERTER_MODE
     
     return 0;
 }

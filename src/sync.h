@@ -38,6 +38,7 @@ typedef enum {
 
 
 //--- Module Functions --------------------------
+void SYNC_InitSetup (void);
 void SYNC_Update_Sync (void);
 void SYNC_Update_Polarity (void);
 void SYNC_Rising_Edge_Handler (void);

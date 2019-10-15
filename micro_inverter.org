@@ -44,6 +44,7 @@
    - cambiar FOD814 por KB817
    - R5 de 820K pasar a M7 y 820K
    - R8 de 27K a 18K
+*** Por que hice lo anterior, el 814no funcionaba????
 
 ** quite capacitores del filtro
    - quite C3 y C4 para fucionar con inverter 50Hz

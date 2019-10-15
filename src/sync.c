@@ -33,12 +33,17 @@ volatile unsigned char sync_pulses_are_good = 0;
 volatile unsigned char frequency_is_good = 0;
 volatile unsigned char ac_sync_int_flag = 0;
 
-
+ma32_u16_data_obj_t delta_t1_filter;
 
 /* Module Definitions ------------------------------------*/
 
 
 /* Module functions --------------------------------------*/
+void SYNC_InitSetup (void)
+{
+    MA32_U16Circular_Reset(&delta_t1_filter);
+}
+
 
 void SYNC_Update_Sync (void)
 {
@@ -58,9 +63,7 @@ void SYNC_Update_Sync (void)
             frequency_is_good = 0;
         
         //evaluar y activar sync interno
-        MA32Circular_Load(delta_t1);
-
-        delta_t1_bar = MA32Circular_Calc();
+        delta_t1_bar = MA32_U16Circular(&delta_t1_filter, delta_t1);
         delta_t1_bar >>= 1;
 
         if ((delta_t1_bar < DELTA_T1_BAR_FOR_49HZ) &&
@@ -79,6 +82,9 @@ void SYNC_Update_Sync (void)
     }
 }
 
+
+// Una vez determinado el synchro chequea la polaridad del pulso y la tension maxima
+// espera medio ciclo para hacer esto
 void SYNC_Update_Polarity (void)
 {
     if ((frequency_is_good) &&

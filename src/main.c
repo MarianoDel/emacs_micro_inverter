@@ -155,7 +155,7 @@ unsigned short mem_signal [SIZEOF_SIGNAL] = {0,0,0,0,333,333,333,333,333,333,
 #endif
 
 unsigned short * p_signal;
-
+pid_data_obj_t current_pid;
 
 
 // Module Functions ----------------------------------------
@@ -231,7 +231,9 @@ int main(void)
     TIM_16_Init();    //free running with tick: 1us
     TIM16Enable();
     TIM_17_Init();    //with int, tick: 1us
-    MA32Circular_Reset();
+
+    // Initial Setup for the synchro module
+    SYNC_InitSetup();
     
     LOW_LEFT(DUTY_NONE);
     HIGH_LEFT(DUTY_NONE);
@@ -248,10 +250,12 @@ int main(void)
     EXTIOn();
 
 #ifdef INVERTER_MODE_CURRENT_FDBK
+    // Initial Setup for PID Controller
+    PID_Small_Ki_Flush_Errors(&current_pid);
+    current_pid.kp = 5;
+    current_pid.ki = 3;
+    current_pid.kd = 0;
     short d = 0;
-    // short last_d = 0;
-    short ez1 = 0;
-    short ez2 = 0;
     
     while (1)
     {
@@ -276,9 +280,6 @@ int main(void)
         case WAIT_FOR_FIRST_SYNC:
             ac_sync_state = WAIT_CROSS_NEG_TO_POS;
             d = 0;
-            // last_d = 0;
-            ez1 = 0;
-            ez2 = 0;
             HIGH_RIGHT(DUTY_NONE);
             LOW_LEFT(DUTY_NONE);
             LOW_RIGHT(DUTY_ALWAYS);
@@ -293,7 +294,9 @@ int main(void)
                 {
                     p_signal++;
 
-                    d = PID_roof(*p_signal, I_Sense_Pos, d, &ez1, &ez2);
+                    current_pid.setpoint = *p_signal;
+                    current_pid.sample = I_Sense_Pos;
+                    d = PID_Small_Ki(&current_pid);
                     
                     if (d > 0)
                     {
@@ -302,22 +305,20 @@ int main(void)
                         else
                         {
                             HIGH_LEFT(DUTY_100_PERCENT);
-                            d = DUTY_100_PERCENT;
+                            current_pid.last_d = DUTY_100_PERCENT;
                         }
                     }
                     else
                     {
                         HIGH_LEFT(DUTY_NONE);
-                        d = DUTY_NONE;
+                        current_pid.last_d = DUTY_NONE;
                     }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_POS_TO_NEG;
-                    d = 0;
-                    // last_d = 0;
-                    ez1 = 0;
-                    ez2 = 0;
+                    PID_Small_Ki_Flush_Errors(&current_pid);
+                    
                     HIGH_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_NONE);
                     LOW_LEFT(DUTY_ALWAYS);
@@ -347,7 +348,9 @@ int main(void)
                 {
                     p_signal++;
 
-                    d = PID_roof(*p_signal, I_Sense_Neg, d, &ez1, &ez2);
+                    current_pid.setpoint = *p_signal;
+                    current_pid.sample = I_Sense_Neg;
+                    d = PID_Small_Ki(&current_pid);
 
                     if (d > 0)
                     {
@@ -356,22 +359,20 @@ int main(void)
                         else
                         {
                             HIGH_RIGHT(DUTY_100_PERCENT);
-                            d = DUTY_100_PERCENT;
+                            current_pid.last_d = DUTY_100_PERCENT;
                         }
                     }
                     else
                     {
                         HIGH_RIGHT(DUTY_NONE);
-                        d = DUTY_NONE;
+                        current_pid.last_d = DUTY_NONE;
                     }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-                    d = 0;
-                    // last_d = 0;
-                    ez1 = 0;
-                    ez2 = 0;
+                    PID_Small_Ki_Flush_Errors(&current_pid);
+
                     HIGH_RIGHT(DUTY_NONE);
                     LOW_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_ALWAYS);

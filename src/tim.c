@@ -123,8 +123,8 @@ void TIM_1_Init (void)
     //Configuracion del timer.
     //TIM1->CR1 |= TIM_CR1_OPM;        //clk int / 1; upcounting; one pulse
     TIM1->CR1 = 0x00;        //clk int / 1;
-    TIM1->CR2 |= TIM_CR2_MMS_1;        //UEV -> TRG0
-    //TIM1->CR2 = 0x00;
+    // TIM1->CR2 |= TIM_CR2_MMS_1;        //UEV -> TRG0
+    TIM1->CR2 = 0x00;
     //TIM1->SMCR |= TIM_SMCR_MSM | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 | TIM_SMCR_TS_1;    //link timer3
     TIM1->SMCR = 0x0000;
 

@@ -112,3 +112,50 @@
     - luego de un DWN flanco en t1 + t2/2
 
 *** El sentido de los ciclos determinarlos con el opto de medicion de tension
+
+* Mediciones 16-10-19
+** ADC + DMA + TIM
+*** Tiempo teorico de conversion ADC con DMA
+    - tiempo de conversion por canal 12bits (sample_time + 12.5) * tick
+    - tiempo de conversion por canal 10bits (sample_time + 10.5) * tick
+    - tiempo de conversion por canal 8bits (sample_time + 8.5) * tick
+
+      | Resolution | Sample Time[samples] | Channels | Clk Freq [MHz] | Time to end [us] |
+      |------------+----------------------+----------+----------------+------------------|
+      |         10 |                 71.5 |        3 |             12 |             20.5 |
+      |            |                      |          |                |                  |
+      #+TBLFM: @2$5=((@2$1+0.5+@2$2)*@2$3/@2$4)
+
+*** Tiempo teorico de toma de resultados
+    - Los resultados (valores ADC) no los tomo justo en el tiempo de conversion,
+      sino como multiplo del timer que dispara las conversiones
+    - Este tiempo "real" de muestreo es el minimo multiplo del timer que supera al 
+      tiempo del ADC
+    
+    - min(Ttim * n) > Tadc
+
+   | freq TIM3 | Ttim[us] | Tadc [us] | Multiplo | T seq_ready [us] | F seq_ready [KHz] |
+   |-----------+----------+-----------+----------+------------------+-------------------|
+   | 12KHz     |    83.33 |      20.5 |        1 |            83.33 |         12.000480 |
+   | 24KHz     |    41.66 |      20.5 |        1 |            41.66 |         24.003841 |
+   | 48KHz     |    20.83 |      20.5 |        1 |            20.83 |         48.007681 |
+   | 70KHz     |    14.28 |      20.5 |        2 |            28.56 |         35.014006 |
+   |           |          |           |          |                  |                   |
+   #+TBLFM: @2$5=(@2$2*@2$4)::@3$5=(@3$2*@3$4)::@4$5=(@4$2*@4$4)::@5$5=(@5$2*@5$4)
+   #+TBLFM: @2$6=1000/@2$5::@3$6=1000/@3$5::@4$6=1000/@4$5::@5$6=1000/@5$5
+
+** Sensado de Tensiones vistos por el micro
+   - las tensiones las puedo verificar por puerto serie
+
+     | Resolution | Sample Time[samples] | Channels | Clk Freq [MHz] |
+     |------------+----------------------+----------+----------------|
+     |         10 |                 71.5 |        3 |             12 |
+
+     | Sensed Channel | Applied Voltage | Relation [pts/V] |
+     |----------------+-----------------+------------------|
+     | V_Sense        |           12.63 |        34.686876 |
+     | I_Sense_Pos    |            34.7 |        24.152601 |
+     | I_Sense_Neg    |            34.7 |        24.152601 |
+
+     #+TBLFM:
+

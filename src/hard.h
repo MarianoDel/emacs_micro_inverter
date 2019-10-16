@@ -49,7 +49,7 @@
 //-- Types of programs ----------
 // #define INVERTER_MODE
 // #define INVERTER_MODE_PURE_SINUSOIDAL
-#define INVERTER_MODE_CURRENT_FDBK
+#define INVERTER_MODE_CURRENT_AND_VOLTAGE_FDBK
 // #define INVERTER_MODE_GRID_TIE
 // #define INVERTER_ONLY_SYNC_AND_POLARITY
 
@@ -264,6 +264,12 @@ typedef enum
 #define SIZEOF_DATA256	SIZEOF_DATA
 #define SIZEOF_BUFFTCP	SIZEOF_DATA
 
+
+#define LED_TOGGLE do { if (LED) \
+                            LED_OFF; \
+                        else         \
+                            LED_ON;  \
+                      } while (0)
 
 /* Module Functions ------------------------------------------------------------*/
 unsigned short GetHysteresis (unsigned char);

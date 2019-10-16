@@ -94,43 +94,57 @@ volatile unsigned short dmax_permited = 0;
 // #define USE_SIGNAL_TRIANGULAR
 // #define USE_SIGNAL_CURRENT_SIN_0_5_A
 #define USE_SIGNAL_CURRENT_SIN_1_A
+#define USE_SIGNAL_VOLTAGE_200V
 // #define USE_SIGNAL_MODIFIED_SIN
 
-#if (defined USE_SIGNAL_CURRENT_SIN_0_5_A) || (defined USE_SIGNAL_CURRENT_SIN_1_A)
+#ifdef USE_FREQ_12KHZ
 #define SIZEOF_SIGNAL 120
-#endif
-#if (defined USE_SIGNAL_SINUSOIDAL) || (defined USE_SIGNAL_TRIANGULAR) || (defined USE_SIGNAL_MODIFIED_SIN)
-#define SIZEOF_SIGNAL 50
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_SIN_1_A
-unsigned short mem_signal [SIZEOF_SIGNAL] = {26,53,80,106,133,160,186,212,238,264,
-                                             290,316,341,366,391,416,440,464,488,511,
-                                             534,557,579,601,622,643,664,684,704,723,
-                                             742,760,777,795,811,827,843,857,872,885,
-                                             899,911,923,934,945,955,964,972,980,988,
-                                             994,1000,1005,1010,1014,1017,1019,1021,1022,1023,
-                                             1022,1021,1019,1017,1014,1010,1005,1000,994,988,
-                                             980,972,964,955,945,934,923,911,899,885,
-                                             872,857,843,827,811,795,777,760,742,723,
-                                             704,684,664,643,622,601,579,557,534,511,
-                                             488,464,440,416,391,366,341,316,290,264,
-                                             238,212,186,160,133,106,80,53,26,0};
+unsigned short mem_signal_current [SIZEOF_SIGNAL] = {26,53,80,106,133,160,186,212,238,264,
+                                                     290,316,341,366,391,416,440,464,488,511,
+                                                     534,557,579,601,622,643,664,684,704,723,
+                                                     742,760,777,795,811,827,843,857,872,885,
+                                                     899,911,923,934,945,955,964,972,980,988,
+                                                     994,1000,1005,1010,1014,1017,1019,1021,1022,1023,
+                                                     1022,1021,1019,1017,1014,1010,1005,1000,994,988,
+                                                     980,972,964,955,945,934,923,911,899,885,
+                                                     872,857,843,827,811,795,777,760,742,723,
+                                                     704,684,664,643,622,601,579,557,534,511,
+                                                     488,464,440,416,391,366,341,316,290,264,
+                                                     238,212,186,160,133,106,80,53,26,0};
 #endif
 #ifdef USE_SIGNAL_CURRENT_SIN_0_5_A
-unsigned short mem_signal [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,119,132,
-                                             145,157,170,183,195,207,219,231,243,255,
-                                             266,278,289,300,311,321,331,341,351,361,
-                                             370,379,388,397,405,413,421,428,435,442,
-                                             449,455,461,466,472,477,481,485,489,493,
-                                             496,499,502,504,506,508,509,510,510,511,
-                                             510,510,509,508,506,504,502,499,496,493,
-                                             489,485,481,477,472,466,461,455,449,442,
-                                             435,428,421,413,405,397,388,379,370,361,
-                                             351,341,331,321,311,300,289,278,266,255,
-                                             243,231,219,207,195,183,170,157,145,132,
-                                             119,106,93,79,66,53,40,26,13,0};
+unsigned short mem_signal_current [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,119,132,
+                                                     145,157,170,183,195,207,219,231,243,255,
+                                                     266,278,289,300,311,321,331,341,351,361,
+                                                     370,379,388,397,405,413,421,428,435,442,
+                                                     449,455,461,466,472,477,481,485,489,493,
+                                                     496,499,502,504,506,508,509,510,510,511,
+                                                     510,510,509,508,506,504,502,499,496,493,
+                                                     489,485,481,477,472,466,461,455,449,442,
+                                                     435,428,421,413,405,397,388,379,370,361,
+                                                     351,341,331,321,311,300,289,278,266,255,
+                                                     243,231,219,207,195,183,170,157,145,132,
+                                                     119,106,93,79,66,53,40,26,13,0};
 #endif
+
+#ifdef USE_SIGNAL_VOLTAGE_200V
+unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,119,132,
+                                                     145,157,170,183,195,207,219,231,243,255,
+                                                     266,278,289,300,311,321,331,341,351,361,
+                                                     370,379,388,397,405,413,421,428,435,442,
+                                                     449,455,461,466,472,477,481,485,489,493,
+                                                     496,499,502,504,506,508,509,510,510,511,
+                                                     510,510,509,508,506,504,502,499,496,493,
+                                                     489,485,481,477,472,466,461,455,449,442,
+                                                     435,428,421,413,405,397,388,379,370,361,
+                                                     351,341,331,321,311,300,289,278,266,255,
+                                                     243,231,219,207,195,183,170,157,145,132,
+                                                     119,106,93,79,66,53,40,26,13,0};
+#endif
+
 #ifdef USE_SIGNAL_SINUSOIDAL
 unsigned short mem_signal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
                                              637,684,728,770,809,844,876,904,929,951,
@@ -154,8 +168,10 @@ unsigned short mem_signal [SIZEOF_SIGNAL] = {0,0,0,0,333,333,333,333,333,333,
 
 #endif
 
-unsigned short * p_signal;
+unsigned short * p_current_ref;
+unsigned short * p_voltage_ref;
 pid_data_obj_t current_pid;
+pid_data_obj_t voltage_pid;
 
 
 // Module Functions ----------------------------------------
@@ -249,14 +265,18 @@ int main(void)
 
     EXTIOn();
 
-#ifdef INVERTER_MODE_CURRENT_FDBK
+#ifdef INVERTER_MODE_CURRENT_AND_VOLTAGE_FDBK
     // Initial Setup for PID Controller
     PID_Small_Ki_Flush_Errors(&current_pid);
+    PID_Small_Ki_Flush_Errors(&voltage_pid);    
     current_pid.kp = 5;
     current_pid.ki = 3;
     current_pid.kd = 0;
+    voltage_pid.kp = 5;
+    voltage_pid.ki = 3;
+    voltage_pid.kd = 0;
     short d = 0;
-    
+
     while (1)
     {
         switch (ac_sync_state)
@@ -289,35 +309,68 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
-                //aca la senial (el ultimo punto) termina en 0
-                if (p_signal < &mem_signal[(SIZEOF_SIGNAL - 1)])
-                {
-                    p_signal++;
 
-                    current_pid.setpoint = *p_signal;
-                    current_pid.sample = I_Sense_Pos;
-                    d = PID_Small_Ki(&current_pid);
-                    
-                    if (d > 0)
+                //Adelanto las seniales de tension y corriente,
+                //la de corriente es la que define la posicion
+                //el d depende de cual deba ajustar
+                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                {
+                    p_current_ref++;
+                    p_voltage_ref++;
+
+                    // si estoy bien en tension juega la de corriente
+                    if (*p_voltage_ref > V_Sense)
                     {
-                        if (d < DUTY_100_PERCENT)
-                            HIGH_LEFT(d);
+                        //loop de corriente
+                        current_pid.setpoint = *p_current_ref;
+                        current_pid.sample = I_Sense_Pos;
+                        d = PID_Small_Ki(&current_pid);
+                    
+                        if (d > 0)
+                        {
+                            if (d < DUTY_100_PERCENT)
+                                HIGH_LEFT(d);
+                            else
+                            {
+                                HIGH_LEFT(DUTY_100_PERCENT);
+                                current_pid.last_d = DUTY_100_PERCENT;
+                            }
+                        }
                         else
                         {
-                            HIGH_LEFT(DUTY_100_PERCENT);
-                            current_pid.last_d = DUTY_100_PERCENT;
+                            HIGH_LEFT(DUTY_NONE);
+                            current_pid.last_d = DUTY_NONE;
                         }
                     }
                     else
                     {
-                        HIGH_LEFT(DUTY_NONE);
-                        current_pid.last_d = DUTY_NONE;
+                        //loop de tension
+                        voltage_pid.setpoint = *p_voltage_ref;
+                        voltage_pid.sample = V_Sense;
+                        d = PID_Small_Ki(&voltage_pid);
+                    
+                        if (d > 0)
+                        {
+                            if (d < DUTY_100_PERCENT)
+                                HIGH_LEFT(d);
+                            else
+                            {
+                                HIGH_LEFT(DUTY_100_PERCENT);
+                                voltage_pid.last_d = DUTY_100_PERCENT;
+                            }
+                        }
+                        else
+                        {
+                            HIGH_LEFT(DUTY_NONE);
+                            voltage_pid.last_d = DUTY_NONE;
+                        }                        
                     }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_POS_TO_NEG;
                     PID_Small_Ki_Flush_Errors(&current_pid);
+                    PID_Small_Ki_Flush_Errors(&voltage_pid);                    
                     
                     HIGH_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_NONE);
@@ -332,7 +385,9 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_NEG;
-                p_signal = mem_signal;
+                p_current_ref = mem_signal_current;
+                p_voltage_ref = mem_signal_voltage;
+                
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_OFF;
 #endif
@@ -343,35 +398,67 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
-                //aca la senial (el ultimo punto) termina en 0
-                if (p_signal < &mem_signal[(SIZEOF_SIGNAL - 1)])
+                //Adelanto las seniales de tension y corriente,
+                //la de corriente es la que define la posicion
+                //el d depende de cual deba ajustar
+                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
                 {
-                    p_signal++;
+                    p_current_ref++;
+                    p_voltage_ref++;
 
-                    current_pid.setpoint = *p_signal;
-                    current_pid.sample = I_Sense_Neg;
-                    d = PID_Small_Ki(&current_pid);
-
-                    if (d > 0)
+                    // si estoy bien en tension juega la de corriente
+                    if (*p_voltage_ref > V_Sense)
                     {
-                        if (d < DUTY_100_PERCENT)
-                            HIGH_RIGHT(d);
+                        //loop de corriente                    
+                        current_pid.setpoint = *p_current_ref;
+                        current_pid.sample = I_Sense_Neg;
+                        d = PID_Small_Ki(&current_pid);
+
+                        if (d > 0)
+                        {
+                            if (d < DUTY_100_PERCENT)
+                                HIGH_RIGHT(d);
+                            else
+                            {
+                                HIGH_RIGHT(DUTY_100_PERCENT);
+                                current_pid.last_d = DUTY_100_PERCENT;
+                            }
+                        }
                         else
                         {
-                            HIGH_RIGHT(DUTY_100_PERCENT);
-                            current_pid.last_d = DUTY_100_PERCENT;
+                            HIGH_RIGHT(DUTY_NONE);
+                            current_pid.last_d = DUTY_NONE;
                         }
                     }
                     else
                     {
-                        HIGH_RIGHT(DUTY_NONE);
-                        current_pid.last_d = DUTY_NONE;
+                        //loop de tension
+                        voltage_pid.setpoint = *p_voltage_ref;
+                        voltage_pid.sample = V_Sense;
+                        d = PID_Small_Ki(&voltage_pid);
+                    
+                        if (d > 0)
+                        {
+                            if (d < DUTY_100_PERCENT)
+                                HIGH_RIGHT(d);
+                            else
+                            {
+                                HIGH_RIGHT(DUTY_100_PERCENT);
+                                voltage_pid.last_d = DUTY_100_PERCENT;
+                            }
+                        }
+                        else
+                        {
+                            HIGH_RIGHT(DUTY_NONE);
+                            voltage_pid.last_d = DUTY_NONE;
+                        }                                                
                     }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_NEG_TO_POS;
                     PID_Small_Ki_Flush_Errors(&current_pid);
+                    PID_Small_Ki_Flush_Errors(&voltage_pid);                    
 
                     HIGH_RIGHT(DUTY_NONE);
                     LOW_LEFT(DUTY_NONE);
@@ -386,7 +473,9 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_POS;
-                p_signal = mem_signal;
+                p_current_ref = mem_signal_current;
+                p_voltage_ref = mem_signal_voltage;
+                
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_ON;
 #endif
@@ -464,9 +553,15 @@ int main(void)
         {
             RELAY_OFF;
             if (overcurrent_shutdown == 1)
+            {
+                Usart1Send("Overcurrent POS\n");
                 ChangeLed(LED_OVERCURRENT_POS);
+            }
             else
+            {
+                Usart1Send("Overcurrent NEG\n");
                 ChangeLed(LED_OVERCURRENT_NEG);
+            }
 
             timer_standby = 10000;
             overcurrent_shutdown = 0;
@@ -477,7 +572,7 @@ int main(void)
         UpdateLed();
 #endif        
     }
-#endif    // INVERTER_MODE_CURRENT_FDBK
+#endif    // INVERTER_MODE_CURRENT_AND_VOLTAGE_FDBK
 
     
 #ifdef INVERTER_ONLY_SYNC_AND_POLARITY

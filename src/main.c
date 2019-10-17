@@ -56,8 +56,6 @@ volatile unsigned short delta_t2 = 0;
 #endif
 
 // ------- Definiciones para los filtros -------
-#define SIZEOF_FILTER    8
-unsigned short vin_vector [SIZEOF_FILTER];
 #ifdef USE_FREQ_75KHZ
 #define UNDERSAMPLING_TICKS    45
 #define UNDERSAMPLING_TICKS_SOFT_START    90
@@ -70,31 +68,21 @@ unsigned short vin_vector [SIZEOF_FILTER];
 
 // Globals -------------------------------------------------
 volatile unsigned char overcurrent_shutdown = 0;
-// volatile short d = 0;
-// short ez1 = 0;
-// short ez2 = 0;
-// // unsigned short dmax = 0;
-// unsigned short last_d = 0;
-// #define DELTA_D    2
 
 
 // ------- de los timers -------
 volatile unsigned short wait_ms_var = 0;
 volatile unsigned short timer_standby;
-//volatile unsigned char display_timer;
 volatile unsigned short timer_meas;
 volatile unsigned char timer_filters = 0;
 
-volatile unsigned short dmax_permited = 0;
-// volatile unsigned short secs = 0;
-// volatile unsigned char hours = 0;
-// volatile unsigned char minutes = 0;
 
 // #define USE_SIGNAL_SINUSOIDAL
 // #define USE_SIGNAL_TRIANGULAR
 // #define USE_SIGNAL_CURRENT_SIN_0_5_A
 #define USE_SIGNAL_CURRENT_SIN_1_A
-#define USE_SIGNAL_VOLTAGE_200V
+// #define USE_SIGNAL_VOLTAGE_200V
+#define USE_SIGNAL_VOLTAGE_180V
 // #define USE_SIGNAL_MODIFIED_SIN
 
 #ifdef USE_FREQ_12KHZ
@@ -145,6 +133,21 @@ unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,11
                                                      119,106,93,79,66,53,40,26,13,0};
 #endif
 
+#ifdef USE_SIGNAL_VOLTAGE_180V
+unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {18,36,54,73,91,109,127,145,163,181,
+                                                     198,216,233,250,267,284,301,317,334,349,
+                                                     365,381,396,411,426,440,454,468,481,494,
+                                                     507,520,532,544,555,566,576,587,596,606,
+                                                     615,623,631,639,646,653,659,665,671,676,
+                                                     680,684,688,691,694,696,697,699,699,700,
+                                                     699,699,697,696,694,691,688,684,680,676,
+                                                     671,665,659,653,646,639,631,623,615,606,
+                                                     596,587,576,566,555,544,532,520,507,494,
+                                                     481,468,454,440,426,411,396,381,365,349,
+                                                     334,317,301,284,267,250,233,216,198,181,
+                                                     163,145,127,109,91,73,54,36,18,0};
+#endif
+
 #ifdef USE_SIGNAL_SINUSOIDAL
 unsigned short mem_signal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
                                              637,684,728,770,809,844,876,904,929,951,
@@ -175,6 +178,8 @@ pid_data_obj_t voltage_pid;
 
 
 // Module Functions ----------------------------------------
+unsigned short CurrentLoop (unsigned short, unsigned short);
+unsigned short VoltageLoop (unsigned short, unsigned short);
 void TimingDelay_Decrement (void);
 extern void EXTI4_15_IRQHandler(void);
 
@@ -265,7 +270,7 @@ int main(void)
 
     EXTIOn();
 
-#ifdef INVERTER_MODE_CURRENT_AND_VOLTAGE_FDBK
+#ifdef INVERTER_MODE_VOLTAGE_AND_CURRENT_FDBK
     // Initial Setup for PID Controller
     PID_Small_Ki_Flush_Errors(&current_pid);
     PID_Small_Ki_Flush_Errors(&voltage_pid);    
@@ -275,7 +280,7 @@ int main(void)
     voltage_pid.kp = 5;
     voltage_pid.ki = 3;
     voltage_pid.kd = 0;
-    short d = 0;
+    unsigned short d = 0;
 
     while (1)
     {
@@ -311,60 +316,26 @@ int main(void)
                 sequence_ready_reset;
 
                 //Adelanto las seniales de tension y corriente,
-                //la de corriente es la que define la posicion
+                //la tension es la que define la posicion
                 //el d depende de cual deba ajustar
-                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
                 {
-                    p_current_ref++;
                     p_voltage_ref++;
+                    p_current_ref++;
 
-                    // si estoy bien en tension juega la de corriente
-                    if (*p_voltage_ref > V_Sense)
-                    {
-                        //loop de corriente
-                        current_pid.setpoint = *p_current_ref;
-                        current_pid.sample = I_Sense_Pos;
-                        d = PID_Small_Ki(&current_pid);
-                    
-                        if (d > 0)
-                        {
-                            if (d < DUTY_100_PERCENT)
-                                HIGH_LEFT(d);
-                            else
-                            {
-                                HIGH_LEFT(DUTY_100_PERCENT);
-                                current_pid.last_d = DUTY_100_PERCENT;
-                            }
-                        }
-                        else
-                        {
-                            HIGH_LEFT(DUTY_NONE);
-                            current_pid.last_d = DUTY_NONE;
-                        }
-                    }
-                    else
-                    {
+                    // mientras este bien de corriente ajusto la tension
+                    // if (*p_current_ref < I_Sense_Pos)
+                    // {
                         //loop de tension
-                        voltage_pid.setpoint = *p_voltage_ref;
-                        voltage_pid.sample = V_Sense;
-                        d = PID_Small_Ki(&voltage_pid);
-                    
-                        if (d > 0)
-                        {
-                            if (d < DUTY_100_PERCENT)
-                                HIGH_LEFT(d);
-                            else
-                            {
-                                HIGH_LEFT(DUTY_100_PERCENT);
-                                voltage_pid.last_d = DUTY_100_PERCENT;
-                            }
-                        }
-                        else
-                        {
-                            HIGH_LEFT(DUTY_NONE);
-                            voltage_pid.last_d = DUTY_NONE;
-                        }                        
-                    }
+                        d = VoltageLoop (*p_voltage_ref, V_Sense);
+                        HIGH_LEFT(d);
+                    // }
+                    // else
+                    // {
+                    //     //loop de corriente
+                    //     d = CurrentLoop (*p_current_ref, I_Sense_Pos);
+                    //     HIGH_LEFT(d);
+                    // }
                 }
                 else
                 {
@@ -398,60 +369,27 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
+
                 //Adelanto las seniales de tension y corriente,
-                //la de corriente es la que define la posicion
+                //la tension es la que define la posicion
                 //el d depende de cual deba ajustar
-                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
                 {
-                    p_current_ref++;
                     p_voltage_ref++;
+                    p_current_ref++;
 
-                    // si estoy bien en tension juega la de corriente
-                    if (*p_voltage_ref > V_Sense)
+                    // mientras este bien de corriente ajusto la tension
+                    if (*p_current_ref < I_Sense_Neg)
                     {
-                        //loop de corriente                    
-                        current_pid.setpoint = *p_current_ref;
-                        current_pid.sample = I_Sense_Neg;
-                        d = PID_Small_Ki(&current_pid);
-
-                        if (d > 0)
-                        {
-                            if (d < DUTY_100_PERCENT)
-                                HIGH_RIGHT(d);
-                            else
-                            {
-                                HIGH_RIGHT(DUTY_100_PERCENT);
-                                current_pid.last_d = DUTY_100_PERCENT;
-                            }
-                        }
-                        else
-                        {
-                            HIGH_RIGHT(DUTY_NONE);
-                            current_pid.last_d = DUTY_NONE;
-                        }
+                        //loop de tension
+                        d = VoltageLoop (*p_voltage_ref, V_Sense);
+                        HIGH_RIGHT(d);
                     }
                     else
                     {
-                        //loop de tension
-                        voltage_pid.setpoint = *p_voltage_ref;
-                        voltage_pid.sample = V_Sense;
-                        d = PID_Small_Ki(&voltage_pid);
-                    
-                        if (d > 0)
-                        {
-                            if (d < DUTY_100_PERCENT)
-                                HIGH_RIGHT(d);
-                            else
-                            {
-                                HIGH_RIGHT(DUTY_100_PERCENT);
-                                voltage_pid.last_d = DUTY_100_PERCENT;
-                            }
-                        }
-                        else
-                        {
-                            HIGH_RIGHT(DUTY_NONE);
-                            voltage_pid.last_d = DUTY_NONE;
-                        }                                                
+                        //loop de corriente
+                        d = CurrentLoop (*p_current_ref, I_Sense_Neg);
+                        HIGH_RIGHT(d);
                     }
                 }
                 else
@@ -572,7 +510,7 @@ int main(void)
         UpdateLed();
 #endif        
     }
-#endif    // INVERTER_MODE_CURRENT_AND_VOLTAGE_FDBK
+#endif    // INVERTER_MODE_VOLTAGE_AND_CURRENT_FDBK
 
     
 #ifdef INVERTER_ONLY_SYNC_AND_POLARITY
@@ -889,6 +827,57 @@ int main(void)
 }
 
 //--- End of Main ---//
+
+unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
+{
+    short d = 0;
+    
+    current_pid.setpoint = setpoint;
+    current_pid.sample = new_sample;
+    d = PID_Small_Ki(&current_pid);
+                    
+    if (d > 0)
+    {
+        if (d > DUTY_100_PERCENT)
+        {
+            d = DUTY_100_PERCENT;
+            current_pid.last_d = DUTY_100_PERCENT;
+        }
+    }
+    else
+    {
+        d = DUTY_NONE;
+        current_pid.last_d = DUTY_NONE;
+    }
+
+    return (unsigned short) d;
+}
+
+
+unsigned short VoltageLoop (unsigned short setpoint, unsigned short new_sample)
+{
+    short d = 0;
+    
+    voltage_pid.setpoint = setpoint;
+    voltage_pid.sample = new_sample;
+    d = PID_Small_Ki(&voltage_pid);
+                    
+    if (d > 0)
+    {
+        if (d > DUTY_100_PERCENT)
+        {
+            d = DUTY_100_PERCENT;
+            voltage_pid.last_d = DUTY_100_PERCENT;
+        }
+    }
+    else
+    {
+        d = DUTY_NONE;
+        voltage_pid.last_d = DUTY_NONE;
+    }
+
+    return (unsigned short) d;
+}
 
 
 void TimingDelay_Decrement(void)

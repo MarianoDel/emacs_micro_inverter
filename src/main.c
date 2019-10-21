@@ -379,9 +379,13 @@ int main(void)
     // voltage_pid.ki = 2;      //0.016
     // voltage_pid.kd = 1320;      //10.32
 
+    // voltage_pid.kp = 5;    //3.2
+    // voltage_pid.ki = 128;      //0.016
+    // voltage_pid.kd = 64;      //10.32
+
     voltage_pid.kp = 5;    //3.2
-    voltage_pid.ki = 128;      //0.016
-    voltage_pid.kd = 64;      //10.32
+    voltage_pid.ki = 32;      //0.016
+    voltage_pid.kd = 16;      //10.32
     unsigned short d = 0;
 
     while (1)

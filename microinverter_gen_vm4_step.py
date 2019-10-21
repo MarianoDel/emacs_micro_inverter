@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 #usar python3
 import numpy as np
-import matplotlib.pyplot as plt
 from sympy import *
+import matplotlib.pyplot as plt
 from scipy.signal import lti, bode, lsim, dbode, zpk2tf, tf2zpk, step2, cont2discrete, dstep, freqz, freqs, dlti, TransferFunction
 from tc_udemm import sympy_to_lti, lti_to_sympy
 
@@ -17,16 +17,16 @@ from tc_udemm import sympy_to_lti, lti_to_sympy
 ##########################################################################
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
-Bode_Planta_Sensor_Analog = False
-Escalon_Sensor_Analog = False
+Bode_Planta_Sensor_Analog = True
+Escalon_Sensor_Analog = True
 Bode_Controlador_Analog = True
 Bode_Sensor_OpenLoop_CloseLoop_Analog = True
 Escalon_CloseLoop_Analog = True
 Respuesta_CloseLoop_All_Inputs_Analog = True
-Bode_Sensor_Tustin_Digital = False
-Escalon_Sensor_Digital = False
+Bode_Sensor_Tustin_Digital = True
+Escalon_Sensor_Digital = True
 Bode_Controlador_Digital = True
-Setpoint_PtP_Digital = False
+Setpoint_PtP_Digital = True
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
 ##########################################################
@@ -141,9 +141,9 @@ if Escalon_Sensor_Analog == True:
 #########################
 # Controlador analogico #
 #########################
-kp_analog = 3
-ki_analog = 3000
-kd_analog = 0.0005
+kp_analog = 3.3
+ki_analog = 192
+kd_analog = 0.00086
 #3.3, 192, 0.00086 puede ir
 #1, 2300, 0 por simulacion puede ir
 #4.2; 100; 0.00086 ajusta bien la bajada
@@ -262,6 +262,12 @@ if Respuesta_CloseLoop_All_Inputs_Analog == True:
 ##################################################################################
 Fsampling = 12000
 undersampling = 10
+
+sensor_TF = sympy_to_lti(Sensor_out_sim)
+print ("sensor con sympy:")
+print (sensor_TF)
+
+
 Fsampling_mult = Fsampling * undersampling
 Tsampling_mult = 1 / Fsampling_mult
 sensor_dig_tustin_n, sensor_dig_tustin_d, td = cont2discrete((sensor_TF.num, sensor_TF.den), Tsampling_mult, method='tustin')

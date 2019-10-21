@@ -52,6 +52,7 @@
 #define INVERTER_MODE_VOLTAGE_AND_CURRENT_FDBK
 // #define INVERTER_MODE_GRID_TIE
 // #define INVERTER_ONLY_SYNC_AND_POLARITY
+// #define HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
 
 //-- Types of led indications ----------
 // #define USE_LED_FOR_SYNC_PULSES
@@ -62,9 +63,9 @@
 
 //-- Frequency selection ----------
 // #define USE_FREQ_48KHZ
-// #define USE_FREQ_24KHZ
+#define USE_FREQ_24KHZ
 // #define USE_FREQ_16KHZ
-#define USE_FREQ_12KHZ
+// #define USE_FREQ_12KHZ
 // #define USE_FREQ_9_6KHZ
 
 //-- Types of Interrupts ----------

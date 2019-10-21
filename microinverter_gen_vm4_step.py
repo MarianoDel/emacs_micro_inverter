@@ -21,36 +21,42 @@ Bode_Planta_Sensor_Analog = False
 Escalon_Sensor_Analog = False
 Bode_Controlador_Analog = True
 Bode_Sensor_OpenLoop_CloseLoop_Analog = True
-Escalon_CloseLoop_Analog = False
-Respuesta_CloseLoop_All_Inputs_Analog = False
+Escalon_CloseLoop_Analog = True
+Respuesta_CloseLoop_All_Inputs_Analog = True
 Bode_Sensor_Tustin_Digital = False
 Escalon_Sensor_Digital = False
-Bode_Controlador_Digital = False
+Bode_Controlador_Digital = True
 Setpoint_PtP_Digital = False
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
-#######################################
-# Elementos de Hardware               #
-# Caracteristica del filtro de salida #
-#######################################
-Lout1 = 930e-6
-Lout2 = 930e-6
-Cout = 0.44e-6
-Rload = 2200
-opto_TF = 0.0066    # alrededor de la tension a usar
+##########################################################
+# Step response of the pulse by pulse converter model.   #
+# Always on CCM. Step from 0 to 1 without feedback       #
+##########################################################
+# From the simulation results:
+fn = 5950
+Max_peak_value = 3
+Final_value = 1.64
+Input_step_value = 1
+opto_TF = 1
 
-Lout = Lout1 + Lout2
-Vinput = 250
+# Auxiliary calcs
+wn = fn * 2 * np.pi
+Mp = Max_peak_value / Final_value - 1
+log_mp_2 = (log(Mp))**2
+psi = sqrt(log_mp_2/(np.pi**2+log_mp_2))
+Mp2 = exp((-psi*np.pi)/sqrt(1-psi**2))
 
-# Etapa de potencia respecto de la salida
+print(f'Mp: {Mp}, psi vale: {psi}, Mp revisado: {Mp2}')
+
+#TF without constant
 s = Symbol('s')
-Y2 = 1 / Rload + s * Cout
-Z2 = 1 / Y2
-Z1 = s * Lout
-Zout = Z2 / (Z1 + Z2)
-Plant_out = Vinput * Zout
-Plant_out_sim = Plant_out.simplify()
 
+Plant_num = Final_value * wn**2 / Input_step_value
+Plant_den = s**2 + 2 * psi * wn * s + wn**2
+Plant_out = Plant_num/Plant_den
+
+Plant_out_sim = Plant_out.simplify()
 print ('Plant_out: ')
 print (Plant_out_sim)
 
@@ -135,9 +141,11 @@ if Escalon_Sensor_Analog == True:
 #########################
 # Controlador analogico #
 #########################
-kp_analog = 1
-ki_analog = 1200
-kd_analog = 0
+kp_analog = 3
+ki_analog = 3000
+kd_analog = 0.0005
+#3.3, 192, 0.00086 puede ir
+#1, 2300, 0 por simulacion puede ir
 #4.2; 100; 0.00086 ajusta bien la bajada
 #3.2; 200; 0.00086 ajusta bastante bien
 

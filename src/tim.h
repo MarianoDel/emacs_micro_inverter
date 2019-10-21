@@ -21,6 +21,7 @@
 #define DUTY_10_PERCENT		100
 #define DUTY_FOR_DMAX           450
 #define DUTY_50_PERCENT		500
+#define DUTY_75_PERCENT		750
 #define DUTY_50_PERCENT_PLUS_ONE		501
 #define DUTY_100_PERCENT        1000
 #define DUTY_ALWAYS        (DUTY_100_PERCENT + 1)

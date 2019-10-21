@@ -87,13 +87,13 @@ volatile unsigned char timer_filters = 0;
 
 #ifdef USE_FREQ_12KHZ
 #define USE_SIGNAL_CURRENT_SIN_1A_12KHZ
-#define USE_SIGNAL_VOLTAGE_180V_12KHZ
+#define USE_SIGNAL_VOLTAGE_185V_12KHZ
 #define SIZEOF_SIGNAL    120
 #endif
 
 #ifdef  USE_FREQ_24KHZ
 #define USE_SIGNAL_CURRENT_SIN_1A_24KHZ
-#define USE_SIGNAL_VOLTAGE_125V_24KHZ
+#define USE_SIGNAL_VOLTAGE_185V_24KHZ
 #define SIZEOF_SIGNAL    240
 #endif
 
@@ -169,7 +169,7 @@ unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,11
                                                      119,106,93,79,66,53,40,26,13,0};
 #endif
 
-#ifdef USE_SIGNAL_VOLTAGE_125V_12KHZ
+#ifdef USE_SIGNAL_VOLTAGE_185V_12KHZ
 unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {18,36,54,73,91,109,127,145,163,181,
                                                      198,216,233,250,267,284,301,317,334,349,
                                                      365,381,396,411,426,440,454,468,481,494,
@@ -184,7 +184,7 @@ unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {18,36,54,73,91,109,127,145,
                                                      163,145,127,109,91,73,54,36,18,0};
 #endif
 
-#ifdef USE_SIGNAL_VOLTAGE_125V_24KHZ
+#ifdef USE_SIGNAL_VOLTAGE_185V_24KHZ
 unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {6,13,20,26,33,40,46,53,60,66,
                                                      73,79,86,93,99,106,112,119,125,132,
                                                      138,145,151,157,164,170,176,183,189,195,

@@ -66,10 +66,10 @@
 #define RCC_TIM17_CLK_OFF 	RCC->APB2ENR &= ~0x00040000
 
 
-#define EnablePreload_MosfetB    (TIM1->CCMR1 |= TIM_CCMR1_OC1PE)
-#define DisablePreload_MosfetB    (TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE)
-#define UpdateTIM_MosfetB(X)    (TIM1->CCR1 = (X))
-
+#define EnablePreload_Mosfet_HighLeft    (TIM3->CCMR1 |= TIM_CCMR1_OC2PE)
+#define DisablePreload_Mosfet_HighLeft    (TIM3->CCMR1 &= ~TIM_CCMR1_OC2PE)
+#define EnablePreload_Mosfet_HighRight    (TIM3->CCMR2 |= TIM_CCMR2_OC4PE)
+#define DisablePreload_Mosfet_HighRight    (TIM3->CCMR2 &= ~TIM_CCMR2_OC4PE)
 
 //--- Exported wrapped functions ---//
 #ifdef WITH_TIM1_FB

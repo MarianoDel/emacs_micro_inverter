@@ -92,8 +92,16 @@ volatile unsigned char timer_filters = 0;
 #endif
 
 #ifdef  USE_FREQ_24KHZ
-#define USE_SIGNAL_CURRENT_SIN_1A_24KHZ
-#define USE_SIGNAL_VOLTAGE_185V_24KHZ
+// Select Current Signal
+#define USE_SIGNAL_CURRENT_SIN_05A_24KHZ
+
+// Select Voltage Signal
+// #define USE_SIGNAL_VOLTAGE_185V_24KHZ
+#define USE_SIGNAL_VOLTAGE_220V_24KHZ
+
+// Select Soft-Start Signal
+#define USE_SIGNAL_SOFT_START_185V_24KHZ
+
 #define SIZEOF_SIGNAL    240
 #endif
 
@@ -139,19 +147,31 @@ unsigned short mem_signal_current [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,12
                                                      120,106,93,80,66,53,40,26,13,0};
 #endif
 
-#ifdef USE_SIGNAL_CURRENT_SIN_0_5_A
-unsigned short mem_signal_current [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,119,132,
-                                                     145,157,170,183,195,207,219,231,243,255,
-                                                     266,278,289,300,311,321,331,341,351,361,
-                                                     370,379,388,397,405,413,421,428,435,442,
-                                                     449,455,461,466,472,477,481,485,489,493,
-                                                     496,499,502,504,506,508,509,510,510,511,
-                                                     510,510,509,508,506,504,502,499,496,493,
-                                                     489,485,481,477,472,466,461,455,449,442,
-                                                     435,428,421,413,405,397,388,379,370,361,
-                                                     351,341,331,321,311,300,289,278,266,255,
-                                                     243,231,219,207,195,183,170,157,145,132,
-                                                     119,106,93,79,66,53,40,26,13,0};
+#ifdef USE_SIGNAL_CURRENT_SIN_05A_24KHZ
+unsigned short mem_signal_current [SIZEOF_SIGNAL] = {8,17,26,34,43,52,60,69,78,86,
+                                                     95,104,112,121,129,138,146,155,163,172,
+                                                     180,189,197,205,214,222,230,238,246,254,
+                                                     262,270,278,286,294,302,310,317,325,332,
+                                                     340,347,355,362,370,377,384,391,398,405,
+                                                     412,419,425,432,439,445,452,458,464,470,
+                                                     477,483,489,494,500,506,512,517,523,528,
+                                                     533,538,543,548,553,558,563,567,572,576,
+                                                     581,585,589,593,597,601,604,608,611,615,
+                                                     618,621,624,627,630,633,636,638,640,643,
+                                                     645,647,649,651,653,654,656,657,659,660,
+                                                     661,662,663,663,664,665,665,665,665,666,
+                                                     665,665,665,665,664,663,663,662,661,660,
+                                                     659,657,656,654,653,651,649,647,645,643,
+                                                     640,638,636,633,630,627,624,621,618,615,
+                                                     611,608,604,601,597,593,589,585,581,576,
+                                                     572,567,563,558,553,548,543,538,533,528,
+                                                     523,517,512,506,500,494,489,483,477,470,
+                                                     464,458,452,445,439,432,425,419,412,405,
+                                                     398,391,384,377,370,362,355,347,340,332,
+                                                     325,317,310,302,294,286,278,270,262,254,
+                                                     246,238,230,222,214,205,197,189,180,172,
+                                                     163,155,146,138,129,121,112,104,95,86,
+                                                     78,69,60,52,43,34,26,17,8,0};
 #endif
 
 #ifdef USE_SIGNAL_VOLTAGE_200V
@@ -186,6 +206,61 @@ unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {18,36,54,73,91,109,127,145,
 
 #ifdef USE_SIGNAL_VOLTAGE_185V_24KHZ
 unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {6,13,20,26,33,40,46,53,60,66,
+                                                     73,79,86,93,99,106,112,119,125,132,
+                                                     138,145,151,157,164,170,176,183,189,195,
+                                                     201,207,213,219,226,231,237,243,249,255,
+                                                     261,266,272,278,283,289,294,300,305,311,
+                                                     316,321,326,331,336,341,346,351,356,361,
+                                                     366,370,375,379,384,388,392,397,401,405,
+                                                     409,413,417,421,424,428,432,435,439,442,
+                                                     445,449,452,455,458,461,464,466,469,472,
+                                                     474,477,479,481,483,485,488,489,491,493,
+                                                     495,496,498,499,501,502,503,504,505,506,
+                                                     507,508,508,509,509,510,510,510,510,511,
+                                                     510,510,510,510,509,509,508,508,507,506,
+                                                     505,504,503,502,501,499,498,496,495,493,
+                                                     491,489,488,485,483,481,479,477,474,472,
+                                                     469,466,464,461,458,455,452,449,445,442,
+                                                     439,435,432,428,424,421,417,413,409,405,
+                                                     401,397,392,388,384,379,375,370,366,361,
+                                                     356,351,346,341,336,331,326,321,316,311,
+                                                     305,300,294,289,283,278,272,266,261,255,
+                                                     249,243,237,231,226,219,213,207,201,195,
+                                                     189,183,176,170,164,157,151,145,138,132,
+                                                     125,119,112,106,99,93,86,79,73,66,
+                                                     60,53,46,40,33,26,20,13,6,0};
+#endif
+
+#ifdef USE_SIGNAL_VOLTAGE_220V_24KHZ
+unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {7,15,23,31,39,47,55,63,71,79,
+                                                     87,95,103,111,119,126,134,142,150,157,
+                                                     165,173,180,188,196,203,211,218,226,233,
+                                                     240,248,255,262,269,276,284,291,298,304,
+                                                     311,318,325,332,338,345,352,358,364,371,
+                                                     377,383,390,396,402,408,414,419,425,431,
+                                                     436,442,447,453,458,463,468,474,479,483,
+                                                     488,493,498,502,507,511,515,520,524,528,
+                                                     532,536,539,543,547,550,553,557,560,563,
+                                                     566,569,572,575,577,580,582,584,587,589,
+                                                     591,593,594,596,598,599,601,602,603,604,
+                                                     605,606,607,608,608,609,609,609,609,610,
+                                                     609,609,609,609,608,608,607,606,605,604,
+                                                     603,602,601,599,598,596,594,593,591,589,
+                                                     587,584,582,580,577,575,572,569,566,563,
+                                                     560,557,553,550,547,543,539,536,532,528,
+                                                     524,520,515,511,507,502,498,493,488,483,
+                                                     479,474,468,463,458,453,447,442,436,431,
+                                                     425,419,414,408,402,396,390,383,377,371,
+                                                     364,358,352,345,338,332,325,318,311,304,
+                                                     298,291,284,276,269,262,255,248,240,233,
+                                                     226,218,211,203,196,188,180,173,165,157,
+                                                     150,142,134,126,119,111,103,95,87,79,
+                                                     71,63,55,47,39,31,23,15,7,0};
+
+#endif
+
+#ifdef USE_SIGNAL_SOFT_START_185V_24KHZ
+unsigned short mem_signal_soft_start [SIZEOF_SIGNAL] = {6,13,20,26,33,40,46,53,60,66,
                                                      73,79,86,93,99,106,112,119,125,132,
                                                      138,145,151,157,164,170,176,183,189,195,
                                                      201,207,213,219,226,231,237,243,249,255,
@@ -323,6 +398,8 @@ int main(void)
     HIGH_LEFT(DUTY_NONE);
     LOW_RIGHT(DUTY_NONE);
     HIGH_RIGHT(DUTY_NONE);
+    EnablePreload_Mosfet_HighLeft;
+    EnablePreload_Mosfet_HighRight;
 
     //ADC and DMA configuration
     AdcConfig();
@@ -364,24 +441,9 @@ int main(void)
     }
 #endif
     
-#ifdef INVERTER_MODE_VOLTAGE_AND_CURRENT_FDBK
+#ifdef INVERTER_MODE_VOLTAGE_FDBK
     // Initial Setup for PID Controller
-    PID_Small_Ki_Flush_Errors(&current_pid);
     PID_Small_Ki_Flush_Errors(&voltage_pid);    
-    current_pid.kp = 5;
-    current_pid.ki = 3;
-    current_pid.kd = 0;
-    // voltage_pid.kp = 367;    //2.87
-    // voltage_pid.ki = 32;    //0.25   
-    // voltage_pid.kd = 768;   //6.0
-
-    // voltage_pid.kp = 409;    //3.2
-    // voltage_pid.ki = 2;      //0.016
-    // voltage_pid.kd = 1320;      //10.32
-
-    // voltage_pid.kp = 5;    //3.2
-    // voltage_pid.ki = 128;      //0.016
-    // voltage_pid.kd = 64;      //10.32
 
     voltage_pid.kp = 5;    //3.2
     voltage_pid.ki = 32;      //0.016
@@ -397,21 +459,68 @@ int main(void)
             // if ((Voltage_is_Good()) && Polarity_is_Good())
             LED_OFF;            
             RELAY_ON;
-            timer_standby = 200;            
+            timer_standby = 200;
+            EnablePreload_Mosfet_HighLeft;
+            EnablePreload_Mosfet_HighRight;
             ac_sync_state++;
             break;
 
         case WAIT_RELAY_TO_ON:
             if (!timer_standby)
             {
-                ac_sync_state++;
+                p_voltage_ref = mem_signal_soft_start;
+                ac_sync_state = FIRST_SOFT_START_CYCLE;
+                d = 0;
+                HIGH_RIGHT(DUTY_NONE);
+                LOW_LEFT(DUTY_NONE);
+                LOW_RIGHT(DUTY_ALWAYS);
             }
             break;
 
+        case FIRST_SOFT_START_CYCLE:    //GEN_POS
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                //Adelanto la senial de tension
+                //el d depende de la tension de entrada (que no puedo medir!!!)
+                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                {
+                    HIGH_LEFT(*p_voltage_ref);
+                    p_voltage_ref++;
+                }
+                else
+                {
+                    p_voltage_ref = mem_signal_soft_start;
+                    ac_sync_state = SECOND_SOFT_START_CYCLE;
+                    HIGH_LEFT(DUTY_NONE);
+                    LOW_RIGHT(DUTY_NONE);
+                    LOW_LEFT(DUTY_ALWAYS);
+                }
+            }
+            break;
+
+        case SECOND_SOFT_START_CYCLE:    //GEN_NEG
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                {
+                    HIGH_RIGHT(*p_voltage_ref);
+                    p_voltage_ref++;
+                }
+                else
+                {
+                    //termino soft-start doy paso al PID
+                    ac_sync_state = WAIT_FOR_FIRST_SYNC;
+                }
+            }
+            break;            
+            
         case WAIT_FOR_FIRST_SYNC:
             ac_sync_state = WAIT_CROSS_NEG_TO_POS;
             d = 0;
-            PID_Small_Ki_Flush_Errors(&current_pid);
             PID_Small_Ki_Flush_Errors(&voltage_pid);                    
 
             HIGH_RIGHT(DUTY_NONE);
@@ -424,32 +533,18 @@ int main(void)
             {
                 sequence_ready_reset;
 
-                //Adelanto las seniales de tension y corriente,
-                //la tension es la que define la posicion
+                //Adelanto la seniale de tension
                 //el d depende de cual deba ajustar
                 if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
                 {
-                    p_voltage_ref++;
-                    p_current_ref++;
 
-                    // mientras este bien de corriente ajusto la tension
-                    // if (*p_current_ref < I_Sense_Pos)
-                    // {
-                        //loop de tension
-                        d = VoltageLoop (*p_voltage_ref, V_Sense);
-                        HIGH_LEFT(d);
-                    // }
-                    // else
-                    // {
-                    //     //loop de corriente
-                    //     d = CurrentLoop (*p_current_ref, I_Sense_Pos);
-                    //     HIGH_LEFT(d);
-                    // }
+                    d = VoltageLoop (*p_voltage_ref, V_Sense);
+                    HIGH_LEFT(d);
+                    p_voltage_ref++;
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_POS_TO_NEG;
-                    PID_Small_Ki_Flush_Errors(&current_pid);
                     PID_Small_Ki_Flush_Errors(&voltage_pid);                    
                     
                     HIGH_LEFT(DUTY_NONE);
@@ -457,7 +552,7 @@ int main(void)
                     LOW_LEFT(DUTY_ALWAYS);
                 }
             }
-            break;
+            break;            
 
         case WAIT_CROSS_POS_TO_NEG:
             //me quedo esperando en 0 un sample
@@ -465,7 +560,6 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_NEG;
-                p_current_ref = mem_signal_current;
                 p_voltage_ref = mem_signal_voltage;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
@@ -479,32 +573,18 @@ int main(void)
             {
                 sequence_ready_reset;
 
-                //Adelanto las seniales de tension y corriente,
-                //la tension es la que define la posicion
+                //Adelanto la seniale de tension,
                 //el d depende de cual deba ajustar
                 if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
                 {
+                    //loop de tension
+                    d = VoltageLoop (*p_voltage_ref, V_Sense);
+                    HIGH_RIGHT(d);
                     p_voltage_ref++;
-                    p_current_ref++;
-
-                    // mientras este bien de corriente ajusto la tension
-                    // if (*p_current_ref < I_Sense_Neg)
-                    // {
-                        //loop de tension
-                        d = VoltageLoop (*p_voltage_ref, V_Sense);
-                        HIGH_RIGHT(d);
-                    // }
-                    // else
-                    // {
-                    //     //loop de corriente
-                    //     d = CurrentLoop (*p_current_ref, I_Sense_Neg);
-                    //     HIGH_RIGHT(d);
-                    // }
                 }
                 else
                 {
                     ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-                    PID_Small_Ki_Flush_Errors(&current_pid);
                     PID_Small_Ki_Flush_Errors(&voltage_pid);                    
 
                     HIGH_RIGHT(DUTY_NONE);
@@ -520,8 +600,253 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_POS;
-                p_current_ref = mem_signal_current;
                 p_voltage_ref = mem_signal_voltage;
+                
+#ifdef USE_LED_FOR_MAIN_POLARITY
+                LED_ON;
+#endif
+            }
+            break;
+
+        case JUMPER_PROTECTED:
+            if (!timer_standby)
+            {
+                if (!STOP_JUMPER)
+                {
+                    ac_sync_state = JUMPER_PROTECT_OFF;
+                    timer_standby = 400;
+                }
+            }                
+            break;
+
+        case JUMPER_PROTECT_OFF:
+            if (!timer_standby)
+            {
+                //vuelvo a INIT
+                ac_sync_state = START_SYNCING;
+                Usart1Send((char *) "Protect OFF\n");                    
+            }                
+            break;            
+
+        case OVERCURRENT_ERROR:
+            if (!timer_standby)
+            {
+                ChangeLed(LED_STANDBY);
+                ac_sync_state = START_SYNCING;
+            }
+            break;
+
+        default:
+            ac_sync_state = START_SYNCING;
+            break;
+            
+        }
+
+        //Cosas que no tienen tanto que ver con las muestras o el estado del programa
+        if ((STOP_JUMPER) &&
+            (ac_sync_state != JUMPER_PROTECTED) &&
+            (ac_sync_state != JUMPER_PROTECT_OFF) &&            
+            (ac_sync_state != OVERCURRENT_ERROR))
+        {
+            RELAY_OFF;
+            HIGH_LEFT(DUTY_NONE);
+            HIGH_RIGHT(DUTY_NONE);
+
+            LOW_RIGHT(DUTY_NONE);
+            LOW_LEFT(DUTY_NONE);
+            
+            ChangeLed(LED_JUMPER_PROTECTED);
+            Usart1Send((char *) "Protect ON\n");
+            timer_standby = 1000;
+            ac_sync_state = JUMPER_PROTECTED;
+        }
+        
+        if (overcurrent_shutdown)
+        {
+            RELAY_OFF;
+            if (overcurrent_shutdown == 1)
+            {
+                Usart1Send("Overcurrent POS\n");
+                ChangeLed(LED_OVERCURRENT_POS);
+            }
+            else
+            {
+                Usart1Send("Overcurrent NEG\n");
+                ChangeLed(LED_OVERCURRENT_NEG);
+            }
+
+            timer_standby = 10000;
+            overcurrent_shutdown = 0;
+            ac_sync_state = OVERCURRENT_ERROR;
+        }
+        
+#ifdef USE_LED_FOR_MAIN_STATES
+        UpdateLed();
+#endif        
+    }
+#endif    // INVERTER_MODE_VOLTAGE_FDBK
+
+
+#ifdef INVERTER_MODE_CURRENT_FDBK
+    // Initial Setup for PID Controller
+    PID_Small_Ki_Flush_Errors(&current_pid);
+
+    current_pid.kp = 5;
+    current_pid.ki = 32;
+    current_pid.kd = 16;
+    unsigned short d = 0;
+
+    while (1)
+    {
+        switch (ac_sync_state)
+        {
+        case START_SYNCING:
+            //Check voltage and polarity
+            // if ((Voltage_is_Good()) && Polarity_is_Good())
+            LED_OFF;            
+            RELAY_ON;
+            timer_standby = 200;
+            EnablePreload_Mosfet_HighLeft;
+            EnablePreload_Mosfet_HighRight;
+            ac_sync_state++;
+            break;
+
+        case WAIT_RELAY_TO_ON:
+            if (!timer_standby)
+            {
+                p_voltage_ref = mem_signal_soft_start;
+                ac_sync_state = FIRST_SOFT_START_CYCLE;
+                d = 0;
+                HIGH_RIGHT(DUTY_NONE);
+                LOW_LEFT(DUTY_NONE);
+                LOW_RIGHT(DUTY_ALWAYS);
+            }
+            break;
+
+        case FIRST_SOFT_START_CYCLE:    //GEN_POS
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                //Adelanto la senial de tension
+                //el d depende de la tension de entrada (que no puedo medir!!!)
+                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                {
+                    HIGH_LEFT(*p_voltage_ref);
+                    p_voltage_ref++;
+                }
+                else
+                {
+                    p_voltage_ref = mem_signal_soft_start;
+                    ac_sync_state = SECOND_SOFT_START_CYCLE;
+                    HIGH_LEFT(DUTY_NONE);
+                    LOW_RIGHT(DUTY_NONE);
+                    LOW_LEFT(DUTY_ALWAYS);
+                }
+            }
+            break;
+
+        case SECOND_SOFT_START_CYCLE:    //GEN_NEG
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                {
+                    HIGH_RIGHT(*p_voltage_ref);
+                    p_voltage_ref++;
+                }
+                else
+                {
+                    //termino soft-start doy paso al PID
+                    ac_sync_state = WAIT_FOR_FIRST_SYNC;
+                }
+            }
+            break;            
+            
+        case WAIT_FOR_FIRST_SYNC:
+            ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+            d = 0;
+            PID_Small_Ki_Flush_Errors(&current_pid);
+
+            HIGH_RIGHT(DUTY_NONE);
+            LOW_LEFT(DUTY_NONE);
+            LOW_RIGHT(DUTY_ALWAYS);
+            break;
+        
+        case GEN_POS:
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                //Adelanto la seniale de corriente,
+                //el d depende de cual deba ajustar
+                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                {
+                    //loop de corriente
+                    d = CurrentLoop (*p_current_ref, I_Sense_Pos);
+                    HIGH_LEFT(d);
+                    p_current_ref++;
+                }
+                else
+                {
+                    ac_sync_state = WAIT_CROSS_POS_TO_NEG;
+                    PID_Small_Ki_Flush_Errors(&current_pid);
+                    
+                    HIGH_LEFT(DUTY_NONE);
+                    LOW_RIGHT(DUTY_NONE);
+                    LOW_LEFT(DUTY_ALWAYS);
+                }
+            }
+            break;            
+
+        case WAIT_CROSS_POS_TO_NEG:
+            //me quedo esperando en 0 un sample
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+                ac_sync_state = GEN_NEG;
+                p_current_ref = mem_signal_current;
+                
+#ifdef USE_LED_FOR_MAIN_POLARITY
+                LED_OFF;
+#endif
+            }
+            break;
+            
+        case GEN_NEG:
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                //Adelanto la senial de corriente,
+                //el d depende de cual deba ajustar
+                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                {
+                    //loop de corriente
+                    d = CurrentLoop (*p_current_ref, I_Sense_Neg);
+                    HIGH_RIGHT(d);
+                    p_current_ref++;
+                }
+                else
+                {
+                    ac_sync_state = WAIT_CROSS_NEG_TO_POS;
+                    PID_Small_Ki_Flush_Errors(&current_pid);
+
+                    HIGH_RIGHT(DUTY_NONE);
+                    LOW_LEFT(DUTY_NONE);
+                    LOW_RIGHT(DUTY_ALWAYS);
+                }
+            }
+            break;
+
+        case WAIT_CROSS_NEG_TO_POS:
+            //me quedo esperando en 0 un sample
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+                ac_sync_state = GEN_POS;
+                p_current_ref = mem_signal_current;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_ON;
@@ -619,8 +944,8 @@ int main(void)
         UpdateLed();
 #endif        
     }
-#endif    // INVERTER_MODE_VOLTAGE_AND_CURRENT_FDBK
-
+#endif    // INVERTER_MODE_CURRENT_FDBK
+    
     
 #ifdef INVERTER_ONLY_SYNC_AND_POLARITY
 
@@ -1081,6 +1406,7 @@ void EXTI4_15_IRQHandler(void)
 #ifdef WITH_OVERCURRENT_SHUTDOWN
     if (OVERCURRENT_POS_Int)
     {
+        DisablePreload_Mosfet_HighLeft;
         HIGH_LEFT(DUTY_NONE);
         //TODO: trabar el TIM3 aca!!!
         overcurrent_shutdown = 1;
@@ -1089,6 +1415,7 @@ void EXTI4_15_IRQHandler(void)
 
     if (OVERCURRENT_NEG_Int)
     {
+        DisablePreload_Mosfet_HighRight;
         HIGH_RIGHT(DUTY_NONE);
         //TODO: trabar el TIM3 aca!!!
         overcurrent_shutdown = 2;

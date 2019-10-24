@@ -330,9 +330,6 @@ extern void EXTI4_15_IRQHandler(void);
 //------------------------------------------//
 int main(void)
 {
-    unsigned char i;
-    unsigned short ii;
-
     char s_lcd [120];
 
     ac_sync_state_t ac_sync_state = START_SYNCING;
@@ -351,7 +348,7 @@ int main(void)
             else
                 LED_ON;
 
-            for (i = 0; i < 255; i++)
+            for (unsigned char i = 0; i < 255; i++)
             {
                 asm (	"nop \n\t"
                         "nop \n\t"
@@ -434,9 +431,36 @@ int main(void)
             
         }
         else
-        {
             Wait_ms(500);
+
+    }
+#endif
+
+#ifdef HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
+    //Respuesta escalon 5ms lado negativo
+    LOW_RIGHT(DUTY_NONE);
+    HIGH_LEFT(DUTY_NONE);
+    LOW_LEFT(DUTY_ALWAYS);
+    LED_OFF;            
+    RELAY_ON;
+    Wait_ms(100);
+
+    while(1)
+    {
+        if (!STOP_JUMPER)
+        {
+            LED_ON;
+            HIGH_RIGHT(DUTY_100_PERCENT);
+            Wait_ms(5);
+            HIGH_RIGHT(DUTY_NONE);
+            LED_OFF;
+            //espero que baje la salida al menos al 10%
+            while (V_Sense > 100);
+            Wait_ms(10);
+            
         }
+        else
+            Wait_ms(500);
 
     }
 #endif
@@ -450,6 +474,11 @@ int main(void)
     voltage_pid.kd = 16;      //10.32
     unsigned short d = 0;
 
+#ifdef ONLY_ONE_KB817
+    //the place for save duty cycles
+    unsigned short d_saved[SIZEOF_SIGNAL] = { 0 };
+#endif
+    
     while (1)
     {
         switch (ac_sync_state)
@@ -541,6 +570,11 @@ int main(void)
                     d = VoltageLoop (*p_voltage_ref, V_Sense);
                     HIGH_LEFT(d);
                     p_voltage_ref++;
+#ifdef ONLY_ONE_KB817
+                    //guardo los d del ciclo positivo
+                    unsigned char d_index = (unsigned char) (p_voltage_ref - mem_signal_voltage);
+                    d_saved[d_index] = d;
+#endif
                 }
                 else
                 {
@@ -578,8 +612,15 @@ int main(void)
                 if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de tension
+#ifdef ONLY_ONE_KB814
                     d = VoltageLoop (*p_voltage_ref, V_Sense);
                     HIGH_RIGHT(d);
+#endif
+#ifdef ONLY_ONE_KB817
+                    //uso el valor guardado en el ciclo positivo
+                    unsigned char d_index = (unsigned char) (p_voltage_ref - mem_signal_voltage);
+                    HIGH_RIGHT(d_saved[d_index]);
+#endif
                     p_voltage_ref++;
                 }
                 else
@@ -888,20 +929,6 @@ int main(void)
             
         }
 
-        // SYNC_Update_Sync();
-        // SYNC_Update_Polarity();
-
-        // if (SYNC_Cycles_Cnt() > 100)
-        // {
-        //     SYNC_Cycles_Cnt_Reset();
-        //     sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d vline: %d\n",
-        //             delta_t1_bar,
-        //             delta_t2,
-        //             SYNC_Last_Polarity_Check(),
-        //             ac_sync_state,
-        //             SYNC_Vline_Max());
-        //     Usart1Send(s_lcd);            
-        // }
         //Cosas que no tienen tanto que ver con las muestras o el estado del programa
         if ((STOP_JUMPER) &&
             (ac_sync_state != JUMPER_PROTECTED) &&
@@ -947,7 +974,7 @@ int main(void)
 #endif    // INVERTER_MODE_CURRENT_FDBK
     
     
-#ifdef INVERTER_ONLY_SYNC_AND_POLARITY
+#ifdef GRID_TIED_ONLY_SYNC_AND_POLARITY
 
     while (1)
     {
@@ -1055,14 +1082,11 @@ int main(void)
             Usart1Send(s_lcd);            
         }
     }
-#endif     // INVERTER_ONLY_SYNC_AND_POLARITY
+#endif     // GRID_TIED_ONLY_SYNC_AND_POLARITY
     
     
-    // EnablePreload_MosfetA;
-    // EnablePreload_MosfetB;
-
-    //--- Inverter Mode ----------
-#ifdef INVERTER_MODE
+    //--- Grid Tied Mode ----------
+#ifdef GRID_TIED_FULL_CONECTED
     
     while (1)
     {

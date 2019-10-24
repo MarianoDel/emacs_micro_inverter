@@ -45,15 +45,20 @@
 //features are activeted here and annouced in hard.c
 #define FEATURES
 
+//-- Types of Voltage Sense ----------
+#define ONLY_ONE_KB817
+// #define ONLY_ONE_KB814
+// #define TWO_KB817
+
 // SOFTWARE Features -------------------------
 //-- Types of programs ----------
-// #define INVERTER_MODE
-// #define INVERTER_MODE_PURE_SINUSOIDAL
-// #define INVERTER_MODE_VOLTAGE_FDBK
-#define INVERTER_MODE_CURRENT_FDBK
-// #define INVERTER_MODE_GRID_TIE
-// #define INVERTER_ONLY_SYNC_AND_POLARITY
 // #define HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
+// #define HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
+#define INVERTER_MODE_VOLTAGE_FDBK
+// #define INVERTER_MODE_CURRENT_FDBK
+// #define GRID_TIED_ONLY_SYNC_AND_POLARITY
+// #define GRID_TIED_FULL_CONECTED
+
 
 //-- Types of led indications ----------
 // #define USE_LED_FOR_SYNC_PULSES
@@ -75,6 +80,30 @@
 
 //---- End of Features Configuration ----------
 
+//---- Some Checks for avoid Configuration Errors ----------
+#ifdef HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
+#ifndef ONLY_ONE_KB814
+#error "This soft needs a KB814 on board for Voltage Sense"
+#endif
+#endif
+
+#ifdef INVERTER_MODE_VOLTAGE_FDBK
+#if !defined ONLY_ONE_KB814 && \
+    !defined ONLY_ONE_KB817
+#error "This soft needs to check the Voltage Sense"
+#endif
+#endif
+
+
+#if (defined INVERTER_MODE_CURRENT_FDBK) || \
+    (defined GRID_TIED_ONLY_SYNC_AND_POLARITY) || \
+    (defined GRID_TIED_FULL_CONECTED)
+#ifndef ONLY_ONE_KB817
+#error "This soft needs only one KB817 on board for Voltage Sense"
+#endif
+#endif
+
+
 //--- Stringtify Utils -----------------------
 #define STRING_CONCAT(str1,str2) #str1 " " #str2
 #define STRING_CONCAT_NEW_LINE(str1,str2) xstr(str1) #str2 "\n"
@@ -92,12 +121,6 @@
 #endif
 
 
-//-------- Others Configurations depending on the formers ------------
-#ifdef INVERTER_MODE_PURE_SINUSOIDAL
-#ifndef INVERTER_MODE
-#define INVERTER_MODE
-#endif
-#endif
 //-------- Hysteresis Conf ------------------------
 
 //-------- PWM Conf ------------------------
@@ -122,35 +145,6 @@
 #define VOUT_300V    660    //ajustado 24-07-18
 #define VOUT_350V    802    //ajustado 24-07-18
 #define VOUT_400V    917    //
-
-//Caracteristicas de la bobina de salida
-// #define LOUT_UHY    130    //DINL2
-// #define LOUT_UHY    330    //doble bobina amarilla
-// #define ILOUT       3      //doble bobina amarilla
-// #define LOUT_UHY    2100    //POL12050 bobinado primario
-// #define ILOUT       1      //POL12050
-#define LOUT_UHY    6400    //nueva bobina ale 6.4mHy
-#define ILOUT       1      //nueva ale
-#define TICK_PWM_NS 21
-#define N_TRAFO     18300
-#define IMAX_INPUT  25
-#define MAX_VOUT    830    //830 -> 362V tension maxima que sale del trafo en puntos ADC
-
-#if ((ILOUT * N_TRAFO) > (IMAX_INPUT * 1000))
-#define I_FOR_CALC_MILLIS (IMAX_INPUT * 1000 * 1000 / N_TRAFO)
-#define I_FOR_CALC (IMAX_INPUT * 1000 / N_TRAFO)
-#else
-#define I_FOR_CALC_MILLIS (ILOUT * 1000)
-#define I_FOR_CALC (IMAX_INPUT * 1000)
-#endif
-
-#define VOUT_SOFT_START    VOUT_110V
-
-#define DMAX_HARDWARE    450
-
-#ifdef TEST_FIXED_D
-#define D_FOR_FIXED    20
-#endif
 
 //------- PIN CONFIG ----------------------
 #ifdef VER_1_0
@@ -287,9 +281,6 @@ unsigned short PowerCalcMean8 (unsigned short * p);
 void ShowPower (char *, unsigned short, unsigned int, unsigned int);
 void ChangeLed (unsigned char);
 void UpdateLed (void);
-unsigned short UpdateDMAX (unsigned short);
-unsigned short UpdateDMAXSF (unsigned short);
-unsigned short UpdateDmaxLout (unsigned short);
 unsigned short VoutTicksToVoltage (unsigned short);
 unsigned short VinTicksToVoltage (unsigned short);
 unsigned short Hard_GetDmaxLout (unsigned short, unsigned short);

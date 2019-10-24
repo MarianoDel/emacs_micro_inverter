@@ -159,3 +159,11 @@
 
      #+TBLFM:
 
+
+* Cambios 23-10-19
+** Para poder Generar con el modo INVERTER_MODE_VOLTAGE_FDBK
+   - tuve que cambiar el KB817, M7 y la Rpol
+     por un KB814 Rpol=330K y Rsensado=2k7
+
+** Para sincronizar los cambios anteriores no me sirven
+   - pierdo la info de la polaridad, tengo que volver a un KB817

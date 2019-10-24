@@ -26,6 +26,7 @@ unsigned char check_pulse_polarity = 0;
 unsigned char cycles_cnt = 0;
 unsigned short vline_max = 0;
 
+
 //-- For Ints Handlers
 volatile unsigned char zero_crossing_now = 0;
 volatile unsigned char voltage_is_good = 1;

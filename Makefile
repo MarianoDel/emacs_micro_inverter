@@ -155,7 +155,7 @@ ASFLAGS = $(MCFLAGS) -g -gdwarf-2 -mthumb  -Wa,-amhls=$(<:.s=.lst) $(ADEFS)
 #CPFLAGS = $(MCFLAGS) $(OPT) -g -gdwarf-2 -mthumb -fomit-frame-pointer -Wall -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DEFS)
 
 # CON INFO PARA DEBUGGER + STRIP CODE
-CPFLAGS = $(MCFLAGS) $(OPT) -g -gdwarf-2 -mthumb -fomit-frame-pointer -Wall -fdata-sections -ffunction-sections -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DDEFS)
+CPFLAGS = $(MCFLAGS) $(OPT) -g -gdwarf-2 -fno-common -mthumb -fomit-frame-pointer -Wall -fdata-sections -ffunction-sections -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DDEFS)
 
 # SIN DEAD CODE, hace el STRIP
 LDFLAGS = $(MCFLAGS) -mthumb -lm --specs=nano.specs -Wl,--gc-sections -nostartfiles -T$(LDSCRIPT) -Wl,-Map=$(FULL_PRJ).map,--cref,--no-warn-mismatch $(LIBDIR)
@@ -222,6 +222,7 @@ clean:
 	rm -f $(FULL_PRJ).bin
 #	rm $(SRC:.c=.c.bak)
 	rm -f $(SRC:.c=.lst)
+	rm -f $(SRC:.c=.su)
 #   rm $(ASRC:.s=.s.bak)
 	rm -f $(ASRC:.s=.lst)
 

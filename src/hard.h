@@ -90,7 +90,7 @@
 #ifdef INVERTER_MODE_VOLTAGE_FDBK
 #if !defined ONLY_ONE_KB814 && \
     !defined ONLY_ONE_KB817
-#error "This soft needs to check the Voltage Sense"
+#error "This soft needs an opto to check the Voltage Sense"
 #endif
 #endif
 
@@ -283,7 +283,6 @@ void ChangeLed (unsigned char);
 void UpdateLed (void);
 unsigned short VoutTicksToVoltage (unsigned short);
 unsigned short VinTicksToVoltage (unsigned short);
-unsigned short Hard_GetDmaxLout (unsigned short, unsigned short);
 void WelcomeCodeFeatures (char *);
     
 #endif /* _HARD_H_ */

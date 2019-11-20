@@ -106,41 +106,6 @@ void UpdateLed (void)
     }
 }
 
-//proteccion para no superar el valor Vin . Ton que puede saturar al trafo
-//con 6T primario
-unsigned short UpdateDMAX (unsigned short a)
-{
-    if (a > VIN_35V)
-        a = 260;
-    else if (a > VIN_30V)
-        a = 297;
-    else if (a > VIN_25V)
-        a = 347;
-    else if (a > VIN_20V)
-        a = 417;
-    else
-        a = 450;
-    
-    return a;
-}
-
-unsigned short UpdateDMAXSF (unsigned short a)
-{
-    //por saturacion en arranque cambio max D
-    if (a > VIN_35V)
-        a = 50;
-    else if (a > VIN_30V)
-        a = 70;
-    else if (a > VIN_25V)
-        a = 90;
-    else if (a > VIN_20V)
-        a = 120;
-    else
-        a = 150;
-
-    return a;
-}
-
 
 //Convierte el valor de ticks ADC Vout a tension
 unsigned short VoutTicksToVoltage (unsigned short sample_adc)

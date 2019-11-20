@@ -115,8 +115,6 @@ void Wait_ms (unsigned short wait)
 //------------------------------------------//
 void TIM_1_Init (void)
 {
-    unsigned int temp = 0;
-
     if (!RCC_TIM1_CLK)
         RCC_TIM1_CLK_ON;
 
@@ -150,11 +148,13 @@ void TIM_1_Init (void)
 
 #if (defined VER_2_0)
 #ifdef WITH_TIM1_FB
+    unsigned int temp = 0;
     temp = GPIOB->AFR[0];
     temp &= 0xFFFFFF0F;
     temp |= 0x00000020;    //PB1 -> AF2
     GPIOB->AFR[0] = temp;
 #endif
+    unsigned int temp = 0;    
     temp = GPIOA->AFR[1];
     temp &= 0xFFFFFFF0;
     temp |= 0x00000002;    //PA8 -> AF2

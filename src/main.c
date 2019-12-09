@@ -77,14 +77,6 @@ volatile unsigned short timer_meas;
 volatile unsigned char timer_filters = 0;
 
 
-// #define USE_SIGNAL_SINUSOIDAL
-// #define USE_SIGNAL_TRIANGULAR
-// #define USE_SIGNAL_CURRENT_SIN_0_5_A
-
-// #define USE_SIGNAL_VOLTAGE_200V
-
-// #define USE_SIGNAL_MODIFIED_SIN
-
 #ifdef USE_FREQ_12KHZ
 // Select Current Signal
 #define USE_SIGNAL_CURRENT_1A
@@ -453,7 +445,7 @@ int main(void)
             {
                 sequence_ready_reset;
 
-                //Adelanto la seniale de tension
+                //Adelanto la seniales de tension
                 //el d depende de cual deba ajustar
                 if (p_voltage_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
@@ -490,6 +482,11 @@ int main(void)
                 sequence_ready_reset;
                 ac_sync_state = GEN_NEG;
                 p_voltage_ref = sin_half_cycle;
+
+#ifdef WITH_KICK_OFF                
+                //para dar un kick inicial mando algo como pwm
+                HIGH_RIGHT(DUTY_10_PERCENT);
+#endif
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_OFF;
@@ -542,6 +539,11 @@ int main(void)
                 sequence_ready_reset;
                 ac_sync_state = GEN_POS;
                 p_voltage_ref = sin_half_cycle;
+
+#ifdef WITH_KICK_OFF
+                //para dar un kick inicial mando algo como pwm
+                HIGH_LEFT(DUTY_10_PERCENT);
+#endif
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_ON;

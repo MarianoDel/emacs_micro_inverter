@@ -167,6 +167,7 @@
 
 ** Para sincronizar los cambios anteriores no me sirven
    - pierdo la info de la polaridad, tengo que volver a un KB817
+
 * Cambios 9-12-19
 ** Mucho ruido en AC_SYNC cuando genera 100W
    AC_SYNC en la parte del foto-transistor va directo al micro

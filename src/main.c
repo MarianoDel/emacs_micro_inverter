@@ -86,204 +86,91 @@ volatile unsigned char timer_filters = 0;
 // #define USE_SIGNAL_MODIFIED_SIN
 
 #ifdef USE_FREQ_12KHZ
-#define USE_SIGNAL_CURRENT_SIN_1A_12KHZ
-#define USE_SIGNAL_VOLTAGE_185V_12KHZ
+// Select Current Signal
+#define USE_SIGNAL_CURRENT_1A
+
+// Select Voltage Signal
+#define USE_SIGNAL_VOLTAGE_185V
+// #define USE_SIGNAL_VOLTAGE_220V
+
+// Select Soft-Start Signal
+#define USE_SIGNAL_SOFT_START_64V
+
 #define SIZEOF_SIGNAL    120
 #endif
 
 #ifdef  USE_FREQ_24KHZ
 // Select Current Signal
-#define USE_SIGNAL_CURRENT_SIN_05A_24KHZ
+#define USE_SIGNAL_CURRENT_05_A
 
 // Select Voltage Signal
-// #define USE_SIGNAL_VOLTAGE_185V_24KHZ
-#define USE_SIGNAL_VOLTAGE_220V_24KHZ
+// #define USE_SIGNAL_VOLTAGE_185V
+#define USE_SIGNAL_VOLTAGE_220V
 
 // Select Soft-Start Signal
-#define USE_SIGNAL_SOFT_START_185V_24KHZ
+#define USE_SIGNAL_SOFT_START_64V
 
 #define SIZEOF_SIGNAL    240
 #endif
 
-#ifdef USE_SIGNAL_CURRENT_SIN_1A_12KHZ
-unsigned short mem_signal_current [SIZEOF_SIGNAL] = {26,53,80,106,133,160,186,212,238,264,
-                                                     290,316,341,366,391,416,440,464,488,511,
-                                                     534,557,579,601,622,643,664,684,704,723,
-                                                     742,760,777,795,811,827,843,857,872,885,
-                                                     899,911,923,934,945,955,964,972,980,988,
-                                                     994,1000,1005,1010,1014,1017,1019,1021,1022,1023,
-                                                     1022,1021,1019,1017,1014,1010,1005,1000,994,988,
-                                                     980,972,964,955,945,934,923,911,899,885,
-                                                     872,857,843,827,811,795,777,760,742,723,
-                                                     704,684,664,643,622,601,579,557,534,511,
-                                                     488,464,440,416,391,366,341,316,290,264,
-                                                     238,212,186,160,133,106,80,53,26,0};
+#if (SIZEOF_SIGNAL == 120)
+unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {26,53,80,106,133,160,186,212,238,264,
+                                                 290,316,341,366,391,416,440,464,488,511,
+                                                 534,557,579,601,622,643,664,684,704,723,
+                                                 742,760,777,795,811,827,843,857,872,885,
+                                                 899,911,923,934,945,955,964,972,980,988,
+                                                 994,1000,1005,1010,1014,1017,1019,1021,1022,1023,
+                                                 1022,1021,1019,1017,1014,1010,1005,1000,994,988,
+                                                 980,972,964,955,945,934,923,911,899,885,
+                                                 872,857,843,827,811,795,777,760,742,723,
+                                                 704,684,664,643,622,601,579,557,534,511,
+                                                 488,464,440,416,391,366,341,316,290,264,
+                                                 238,212,186,160,133,106,80,53,26,0};
+
+
+#elif (SIZEOF_SIGNAL == 240)
+unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,133,
+                                                 146,160,173,186,199,212,225,238,251,264,
+                                                 277,290,303,316,328,341,354,366,379,391,
+                                                 403,416,428,440,452,464,476,488,499,511,
+                                                 523,534,545,557,568,579,590,601,612,622,
+                                                 633,643,654,664,674,684,694,704,713,723,
+                                                 732,742,751,760,769,777,786,795,803,811,
+                                                 819,827,835,843,850,857,865,872,879,885,
+                                                 892,899,905,911,917,923,929,934,939,945,
+                                                 950,955,959,964,968,972,976,980,984,988,
+                                                 991,994,997,1000,1003,1005,1008,1010,1012,1014,
+                                                 1015,1017,1018,1019,1020,1021,1022,1022,1022,1023,
+                                                 1022,1022,1022,1021,1020,1019,1018,1017,1015,1014,
+                                                 1012,1010,1008,1005,1003,1000,997,994,991,988,
+                                                 984,980,976,972,968,964,959,955,950,945,
+                                                 939,934,929,923,917,911,905,899,892,885,
+                                                 879,872,865,857,850,843,835,827,819,811,
+                                                 803,795,786,777,769,760,751,742,732,723,
+                                                 713,704,694,684,674,664,654,643,633,622,
+                                                 612,601,590,579,568,557,545,534,523,511,
+                                                 499,488,476,464,452,440,428,416,403,391,
+                                                 379,366,354,341,328,316,303,290,277,264,
+                                                 251,238,225,212,199,186,173,160,146,133,
+                                                 120,106,93,80,66,53,40,26,13,0};
+
+
+#else
+#error "Select SIZEOF_SIGNAL in main.c"
 #endif
 
-#ifdef USE_SIGNAL_CURRENT_SIN_1A_24KHZ
-unsigned short mem_signal_current [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,133,
-                                                     146,160,173,186,199,212,225,238,251,264,
-                                                     277,290,303,316,328,341,354,366,379,391,
-                                                     403,416,428,440,452,464,476,488,499,511,
-                                                     523,534,545,557,568,579,590,601,612,622,
-                                                     633,643,654,664,674,684,694,704,713,723,
-                                                     732,742,751,760,769,777,786,795,803,811,
-                                                     819,827,835,843,850,857,865,872,879,885,
-                                                     892,899,905,911,917,923,929,934,939,945,
-                                                     950,955,959,964,968,972,976,980,984,988,
-                                                     991,994,997,1000,1003,1005,1008,1010,1012,1014,
-                                                     1015,1017,1018,1019,1020,1021,1022,1022,1022,1023,
-                                                     1022,1022,1022,1021,1020,1019,1018,1017,1015,1014,
-                                                     1012,1010,1008,1005,1003,1000,997,994,991,988,
-                                                     984,980,976,972,968,964,959,955,950,945,
-                                                     939,934,929,923,917,911,905,899,892,885,
-                                                     879,872,865,857,850,843,835,827,819,811,
-                                                     803,795,786,777,769,760,751,742,732,723,
-                                                     713,704,694,684,674,664,654,643,633,622,
-                                                     612,601,590,579,568,557,545,534,523,511,
-                                                     499,488,476,464,452,440,428,416,403,391,
-                                                     379,366,354,341,328,316,303,290,277,264,
-                                                     251,238,225,212,199,186,173,160,146,133,
-                                                     120,106,93,80,66,53,40,26,13,0};
+
+
+#ifdef USE_SIGNAL_VOLTAGE_185V
+#define K_SIGNAL_PEAK_MULTIPLIER    435    //depende de cual es la medicion del sensor de tension
 #endif
 
-#ifdef USE_SIGNAL_CURRENT_SIN_05A_24KHZ
-unsigned short mem_signal_current [SIZEOF_SIGNAL] = {8,17,26,34,43,52,60,69,78,86,
-                                                     95,104,112,121,129,138,146,155,163,172,
-                                                     180,189,197,205,214,222,230,238,246,254,
-                                                     262,270,278,286,294,302,310,317,325,332,
-                                                     340,347,355,362,370,377,384,391,398,405,
-                                                     412,419,425,432,439,445,452,458,464,470,
-                                                     477,483,489,494,500,506,512,517,523,528,
-                                                     533,538,543,548,553,558,563,567,572,576,
-                                                     581,585,589,593,597,601,604,608,611,615,
-                                                     618,621,624,627,630,633,636,638,640,643,
-                                                     645,647,649,651,653,654,656,657,659,660,
-                                                     661,662,663,663,664,665,665,665,665,666,
-                                                     665,665,665,665,664,663,663,662,661,660,
-                                                     659,657,656,654,653,651,649,647,645,643,
-                                                     640,638,636,633,630,627,624,621,618,615,
-                                                     611,608,604,601,597,593,589,585,581,576,
-                                                     572,567,563,558,553,548,543,538,533,528,
-                                                     523,517,512,506,500,494,489,483,477,470,
-                                                     464,458,452,445,439,432,425,419,412,405,
-                                                     398,391,384,377,370,362,355,347,340,332,
-                                                     325,317,310,302,294,286,278,270,262,254,
-                                                     246,238,230,222,214,205,197,189,180,172,
-                                                     163,155,146,138,129,121,112,104,95,86,
-                                                     78,69,60,52,43,34,26,17,8,0};
+#ifdef USE_SIGNAL_VOLTAGE_220V
+#define K_SIGNAL_PEAK_MULTIPLIER    517    //depende de cual es la medicion del sensor de tension
 #endif
 
-#ifdef USE_SIGNAL_VOLTAGE_200V
-unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {13,26,40,53,66,79,93,106,119,132,
-                                                     145,157,170,183,195,207,219,231,243,255,
-                                                     266,278,289,300,311,321,331,341,351,361,
-                                                     370,379,388,397,405,413,421,428,435,442,
-                                                     449,455,461,466,472,477,481,485,489,493,
-                                                     496,499,502,504,506,508,509,510,510,511,
-                                                     510,510,509,508,506,504,502,499,496,493,
-                                                     489,485,481,477,472,466,461,455,449,442,
-                                                     435,428,421,413,405,397,388,379,370,361,
-                                                     351,341,331,321,311,300,289,278,266,255,
-                                                     243,231,219,207,195,183,170,157,145,132,
-                                                     119,106,93,79,66,53,40,26,13,0};
-#endif
-
-#ifdef USE_SIGNAL_VOLTAGE_185V_12KHZ
-unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {18,36,54,73,91,109,127,145,163,181,
-                                                     198,216,233,250,267,284,301,317,334,349,
-                                                     365,381,396,411,426,440,454,468,481,494,
-                                                     507,520,532,544,555,566,576,587,596,606,
-                                                     615,623,631,639,646,653,659,665,671,676,
-                                                     680,684,688,691,694,696,697,699,699,700,
-                                                     699,699,697,696,694,691,688,684,680,676,
-                                                     671,665,659,653,646,639,631,623,615,606,
-                                                     596,587,576,566,555,544,532,520,507,494,
-                                                     481,468,454,440,426,411,396,381,365,349,
-                                                     334,317,301,284,267,250,233,216,198,181,
-                                                     163,145,127,109,91,73,54,36,18,0};
-#endif
-
-#ifdef USE_SIGNAL_VOLTAGE_185V_24KHZ
-unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {6,13,20,26,33,40,46,53,60,66,
-                                                     73,79,86,93,99,106,112,119,125,132,
-                                                     138,145,151,157,164,170,176,183,189,195,
-                                                     201,207,213,219,226,231,237,243,249,255,
-                                                     261,266,272,278,283,289,294,300,305,311,
-                                                     316,321,326,331,336,341,346,351,356,361,
-                                                     366,370,375,379,384,388,392,397,401,405,
-                                                     409,413,417,421,424,428,432,435,439,442,
-                                                     445,449,452,455,458,461,464,466,469,472,
-                                                     474,477,479,481,483,485,488,489,491,493,
-                                                     495,496,498,499,501,502,503,504,505,506,
-                                                     507,508,508,509,509,510,510,510,510,511,
-                                                     510,510,510,510,509,509,508,508,507,506,
-                                                     505,504,503,502,501,499,498,496,495,493,
-                                                     491,489,488,485,483,481,479,477,474,472,
-                                                     469,466,464,461,458,455,452,449,445,442,
-                                                     439,435,432,428,424,421,417,413,409,405,
-                                                     401,397,392,388,384,379,375,370,366,361,
-                                                     356,351,346,341,336,331,326,321,316,311,
-                                                     305,300,294,289,283,278,272,266,261,255,
-                                                     249,243,237,231,226,219,213,207,201,195,
-                                                     189,183,176,170,164,157,151,145,138,132,
-                                                     125,119,112,106,99,93,86,79,73,66,
-                                                     60,53,46,40,33,26,20,13,6,0};
-#endif
-
-#ifdef USE_SIGNAL_VOLTAGE_220V_24KHZ
-unsigned short mem_signal_voltage [SIZEOF_SIGNAL] = {7,15,23,31,39,47,55,63,71,79,
-                                                     87,95,103,111,119,126,134,142,150,157,
-                                                     165,173,180,188,196,203,211,218,226,233,
-                                                     240,248,255,262,269,276,284,291,298,304,
-                                                     311,318,325,332,338,345,352,358,364,371,
-                                                     377,383,390,396,402,408,414,419,425,431,
-                                                     436,442,447,453,458,463,468,474,479,483,
-                                                     488,493,498,502,507,511,515,520,524,528,
-                                                     532,536,539,543,547,550,553,557,560,563,
-                                                     566,569,572,575,577,580,582,584,587,589,
-                                                     591,593,594,596,598,599,601,602,603,604,
-                                                     605,606,607,608,608,609,609,609,609,610,
-                                                     609,609,609,609,608,608,607,606,605,604,
-                                                     603,602,601,599,598,596,594,593,591,589,
-                                                     587,584,582,580,577,575,572,569,566,563,
-                                                     560,557,553,550,547,543,539,536,532,528,
-                                                     524,520,515,511,507,502,498,493,488,483,
-                                                     479,474,468,463,458,453,447,442,436,431,
-                                                     425,419,414,408,402,396,390,383,377,371,
-                                                     364,358,352,345,338,332,325,318,311,304,
-                                                     298,291,284,276,269,262,255,248,240,233,
-                                                     226,218,211,203,196,188,180,173,165,157,
-                                                     150,142,134,126,119,111,103,95,87,79,
-                                                     71,63,55,47,39,31,23,15,7,0};
-
-#endif
-
-#ifdef USE_SIGNAL_SOFT_START_185V_24KHZ
-unsigned short mem_signal_soft_start [SIZEOF_SIGNAL] = {6,13,20,26,33,40,46,53,60,66,
-                                                     73,79,86,93,99,106,112,119,125,132,
-                                                     138,145,151,157,164,170,176,183,189,195,
-                                                     201,207,213,219,226,231,237,243,249,255,
-                                                     261,266,272,278,283,289,294,300,305,311,
-                                                     316,321,326,331,336,341,346,351,356,361,
-                                                     366,370,375,379,384,388,392,397,401,405,
-                                                     409,413,417,421,424,428,432,435,439,442,
-                                                     445,449,452,455,458,461,464,466,469,472,
-                                                     474,477,479,481,483,485,488,489,491,493,
-                                                     495,496,498,499,501,502,503,504,505,506,
-                                                     507,508,508,509,509,510,510,510,510,511,
-                                                     510,510,510,510,509,509,508,508,507,506,
-                                                     505,504,503,502,501,499,498,496,495,493,
-                                                     491,489,488,485,483,481,479,477,474,472,
-                                                     469,466,464,461,458,455,452,449,445,442,
-                                                     439,435,432,428,424,421,417,413,409,405,
-                                                     401,397,392,388,384,379,375,370,366,361,
-                                                     356,351,346,341,336,331,326,321,316,311,
-                                                     305,300,294,289,283,278,272,266,261,255,
-                                                     249,243,237,231,226,219,213,207,201,195,
-                                                     189,183,176,170,164,157,151,145,138,132,
-                                                     125,119,112,106,99,93,86,79,73,66,
-                                                     60,53,46,40,33,26,20,13,6,0};
+#ifdef USE_SIGNAL_SOFT_START_64V
+#define K_SOFT_START_PEAK_MULTIPLIER    150
 #endif
 
 #ifdef USE_SIGNAL_SINUSOIDAL
@@ -497,7 +384,7 @@ int main(void)
         case WAIT_RELAY_TO_ON:
             if (!timer_standby)
             {
-                p_voltage_ref = mem_signal_soft_start;
+                p_voltage_ref = sin_half_cycle;
                 ac_sync_state = FIRST_SOFT_START_CYCLE;
                 d = 0;
                 HIGH_RIGHT(DUTY_NONE);
@@ -513,14 +400,16 @@ int main(void)
 
                 //Adelanto la senial de tension
                 //el d depende de la tension de entrada (que no puedo medir!!!)
-                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                if (p_voltage_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
-                    HIGH_LEFT(*p_voltage_ref);
+                    unsigned int calc = *p_voltage_ref * K_SOFT_START_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    HIGH_LEFT(calc);
                     p_voltage_ref++;
                 }
                 else
                 {
-                    p_voltage_ref = mem_signal_soft_start;
+                    p_voltage_ref = sin_half_cycle;
                     ac_sync_state = SECOND_SOFT_START_CYCLE;
                     HIGH_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_NONE);
@@ -534,9 +423,11 @@ int main(void)
             {
                 sequence_ready_reset;
 
-                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                if (p_voltage_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
-                    HIGH_RIGHT(*p_voltage_ref);
+                    unsigned int calc = *p_voltage_ref * K_SOFT_START_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    HIGH_RIGHT(calc);
                     p_voltage_ref++;
                 }
                 else
@@ -564,15 +455,19 @@ int main(void)
 
                 //Adelanto la seniale de tension
                 //el d depende de cual deba ajustar
-                if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
+                if (p_voltage_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
-
-                    d = VoltageLoop (*p_voltage_ref, V_Sense);
+                    //ajusto el valor de la senoidal a lo que mide el sensor
+                    //de salida
+                    unsigned int calc = *p_voltage_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    
+                    d = VoltageLoop ((unsigned short) calc, V_Sense);
                     HIGH_LEFT(d);
                     p_voltage_ref++;
 #ifdef ONLY_ONE_KB817
                     //guardo los d del ciclo positivo
-                    unsigned char d_index = (unsigned char) (p_voltage_ref - mem_signal_voltage);
+                    unsigned char d_index = (unsigned char) (p_voltage_ref - sin_half_cycle);
                     d_saved[d_index] = d;
 #endif
                 }
@@ -594,7 +489,7 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_NEG;
-                p_voltage_ref = mem_signal_voltage;
+                p_voltage_ref = sin_half_cycle;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_OFF;
@@ -609,16 +504,21 @@ int main(void)
 
                 //Adelanto la seniale de tension,
                 //el d depende de cual deba ajustar
-                if (p_voltage_ref < &mem_signal_voltage[(SIZEOF_SIGNAL - 1)])
+                if (p_voltage_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de tension
 #ifdef ONLY_ONE_KB814
-                    d = VoltageLoop (*p_voltage_ref, V_Sense);
+                    //ajusto el valor de la senoidal a lo que mide el sensor
+                    //de salida
+                    unsigned int calc = *p_voltage_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    
+                    d = VoltageLoop ((unsigned short) calc, V_Sense);
                     HIGH_RIGHT(d);
 #endif
 #ifdef ONLY_ONE_KB817
                     //uso el valor guardado en el ciclo positivo
-                    unsigned char d_index = (unsigned char) (p_voltage_ref - mem_signal_voltage);
+                    unsigned char d_index = (unsigned char) (p_voltage_ref - sin_half_cycle);
                     HIGH_RIGHT(d_saved[d_index]);
 #endif
                     p_voltage_ref++;
@@ -641,7 +541,7 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_POS;
-                p_voltage_ref = mem_signal_voltage;
+                p_voltage_ref = sin_half_cycle;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_ON;
@@ -822,7 +722,7 @@ int main(void)
 
                 //Adelanto la seniale de corriente,
                 //el d depende de cual deba ajustar
-                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de corriente
                     d = CurrentLoop (*p_current_ref, I_Sense_Pos);
@@ -847,7 +747,7 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_NEG;
-                p_current_ref = mem_signal_current;
+                p_current_ref = sin_half_cycle;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_OFF;
@@ -862,7 +762,7 @@ int main(void)
 
                 //Adelanto la senial de corriente,
                 //el d depende de cual deba ajustar
-                if (p_current_ref < &mem_signal_current[(SIZEOF_SIGNAL - 1)])
+                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de corriente
                     d = CurrentLoop (*p_current_ref, I_Sense_Neg);
@@ -887,7 +787,7 @@ int main(void)
             {
                 sequence_ready_reset;
                 ac_sync_state = GEN_POS;
-                p_current_ref = mem_signal_current;
+                p_current_ref = sin_half_cycle;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY
                 LED_ON;

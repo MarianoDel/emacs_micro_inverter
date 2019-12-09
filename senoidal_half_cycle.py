@@ -3,8 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-muestras = 240
-Vmax = 666
+muestras = 120
+Vmax = 1023
 
 s_sen = np.zeros(muestras)
 

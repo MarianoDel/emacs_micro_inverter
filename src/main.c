@@ -889,7 +889,7 @@ int main(void)
             break;
 
         case WAIT_RELAY_TO_ON:
-            ac_sync_state++;
+            ac_sync_state = WAIT_FOR_FIRST_SYNC;
             break;
 
         case WAIT_FOR_FIRST_SYNC:

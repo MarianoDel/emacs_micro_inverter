@@ -49,6 +49,6 @@ unsigned char SYNC_Sync_Now (void);
 void SYNC_Sync_Now_Reset (void);
 unsigned char SYNC_Cycles_Cnt (void);
 void SYNC_Cycles_Cnt_Reset (void);
-
+unsigned short SYNC_Vline_Max (void);
 
 #endif    /* __SYNC_H_ */

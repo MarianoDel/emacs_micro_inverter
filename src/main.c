@@ -48,7 +48,7 @@ volatile unsigned short timer_led = 0;
 volatile unsigned short take_temp_sample = 0;
 
 // -- Externals for synchro --------------------------------
-#ifdef INVERTER_ONLY_SYNC_AND_POLARITY
+#ifdef GRID_TIED_ONLY_SYNC_AND_POLARITY
 volatile unsigned short timer_no_sync = 0;
 volatile unsigned short delta_t1 = 0;
 volatile unsigned short delta_t1_bar = 0;
@@ -885,7 +885,6 @@ int main(void)
         case START_SYNCING:
             //Check voltage and polarity
             // if ((Voltage_is_Good()) && Polarity_is_Good())
-            LED_OFF;            
             ac_sync_state++;
             break;
 
@@ -1301,6 +1300,7 @@ void TimingDelay_Decrement(void)
 #define OVERCURRENT_NEG_Int        (EXTI->PR & 0x00000020)
 #define OVERCURRENT_NEG_Ack        (EXTI->PR |= 0x00000020)
 
+// #define TIM16_HYSTERESIS    100
 void EXTI4_15_IRQHandler(void)
 {
 #ifdef WITH_AC_SYNC_INT
@@ -1315,15 +1315,20 @@ void EXTI4_15_IRQHandler(void)
             AC_SYNC_Int_Falling_Set;
 
             SYNC_Rising_Edge_Handler();
+#ifdef USE_LED_FOR_AC_PULSES
+            LED_ON;
+#endif
         }
         else if (AC_SYNC_Int_Falling)
         {
             delta_t1 = TIM16->CNT;
             AC_SYNC_Int_Falling_Reset;
             AC_SYNC_Int_Rising_Set;
-            // ac_sync_int_flag = 1;
             
             SYNC_Falling_Edge_Handler();
+#ifdef USE_LED_FOR_AC_PULSES            
+            LED_OFF;
+#endif
         }
         AC_SYNC_Ack;
     }

@@ -15,20 +15,6 @@
 #define VER_1_0    //version original
 
 
-#define VOUT_SETPOINT    VOUT_200V
-#define VOUT_HIGH_MODE_CHANGE    VOUT_205V
-#define VOUT_LOW_MODE_CHANGE    VOUT_195V
-
-#define DUTY_TO_CHANGE_CURRENT_MODE    25
-#define DUTY_TO_CHANGE_VOLTAGE_MODE    18
-
-#define VOUT_OVERVOLTAGE_THRESHOLD_TO_DISCONNECT    VOUT_400V
-#define VOUT_OVERVOLTAGE_THRESHOLD_TO_RECONNECT    VOUT_350V
-
-// #define VIN_UNDERVOLTAGE_THRESHOLD_TO_DISCONNECT    VIN_17V
-#define VIN_UNDERVOLTAGE_THRESHOLD_TO_DISCONNECT    VIN_10V
-#define VIN_UNDERVOLTAGE_THRESHOLD_TO_RECONNECT    VIN_12V
-
 //---- Configuration for Hardware Versions -------
 #ifdef VER_2_0
 #define HARDWARE_VERSION_2_0
@@ -54,17 +40,18 @@
 //-- Types of programs ----------
 // #define HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
 // #define HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
-#define INVERTER_MODE_VOLTAGE_FDBK
+// #define INVERTER_MODE_VOLTAGE_FDBK
 // #define INVERTER_MODE_CURRENT_FDBK
-// #define GRID_TIED_ONLY_SYNC_AND_POLARITY
+#define GRID_TIED_ONLY_SYNC_AND_POLARITY
 // #define GRID_TIED_FULL_CONECTED
 
 
 //-- Types of led indications ----------
+#define USE_LED_FOR_AC_PULSES
 // #define USE_LED_FOR_SYNC_PULSES
 // #define USE_LED_FOR_ZERO_CROSSING
 // #define USE_LED_FOR_VLINE_MAX
-#define USE_LED_FOR_MAIN_POLARITY
+// #define USE_LED_FOR_MAIN_POLARITY
 // #define USE_LED_FOR_MAIN_STATES
 
 //-- Frequency selection ----------
@@ -75,7 +62,7 @@
 // #define USE_FREQ_9_6KHZ
 
 //-- Types of Interrupts ----------
-// #define WITH_AC_SYNC_INT
+#define WITH_AC_SYNC_INT
 #define WITH_OVERCURRENT_SHUTDOWN
 
 //---- End of Features Configuration ----------
@@ -100,6 +87,13 @@
     (defined GRID_TIED_FULL_CONECTED)
 #ifndef ONLY_ONE_KB817
 #error "This soft needs only one KB817 on board for Voltage Sense"
+#endif
+#endif
+
+#if (defined GRID_TIED_ONLY_SYNC_AND_POLARITY) || \
+    (defined GRID_TIED_FULL_CONECTED)
+#ifndef WITH_AC_SYNC_INT
+#error "This soft needs AC_SYNC_INT active to get grid sync"
 #endif
 #endif
 

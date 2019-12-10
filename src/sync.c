@@ -146,14 +146,8 @@ void SYNC_Falling_Edge_Handler (void)
 
 void SYNC_Zero_Crossing_Handler (void)
 {
-#ifdef INVERTER_ONLY_SYNC_AND_POLARITY
     zero_crossing_now = 1;
     TIM17Disable();
-#endif
-#ifdef INVERTER_MODE
-    cycles_cnt++;
-    zero_crossing_now = 1;
-#endif
 
 #ifdef USE_LED_FOR_ZERO_CROSSING
     if (LED)

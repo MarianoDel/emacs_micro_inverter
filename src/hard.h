@@ -47,9 +47,9 @@
 
 
 //-- Types of led indications ----------
-#define USE_LED_FOR_AC_PULSES
+// #define USE_LED_FOR_AC_PULSES
 // #define USE_LED_FOR_SYNC_PULSES
-// #define USE_LED_FOR_ZERO_CROSSING
+#define USE_LED_FOR_ZERO_CROSSING
 // #define USE_LED_FOR_VLINE_MAX
 // #define USE_LED_FOR_MAIN_POLARITY
 // #define USE_LED_FOR_MAIN_STATES

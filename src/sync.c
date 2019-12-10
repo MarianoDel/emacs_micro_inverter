@@ -182,4 +182,15 @@ unsigned short SYNC_Vline_Max (void)
     return vline_max;
 }
 
+unsigned char SYNC_All_Good (void)
+{
+    if (frequency_is_good &&
+         sync_pulses_are_good &&
+         voltage_is_good)
+        return 1;
+    else
+        return 0;
+}
+         
+
 //--- end of file ---//

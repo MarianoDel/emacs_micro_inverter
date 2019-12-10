@@ -48,7 +48,7 @@ volatile unsigned short timer_led = 0;
 volatile unsigned short take_temp_sample = 0;
 
 // -- Externals for synchro --------------------------------
-#ifdef GRID_TIED_ONLY_SYNC_AND_POLARITY
+#if ((defined GRID_TIED_ONLY_SYNC_AND_POLARITY) || (defined GRID_TIED_FULL_CONECTED))
 volatile unsigned short timer_no_sync = 0;
 volatile unsigned short delta_t1 = 0;
 volatile unsigned short delta_t1_bar = 0;
@@ -883,13 +883,12 @@ int main(void)
         switch (ac_sync_state)
         {
         case START_SYNCING:
-            //Check voltage and polarity
-            // if ((Voltage_is_Good()) && Polarity_is_Good())
             ac_sync_state++;
             break;
 
         case WAIT_RELAY_TO_ON:
             ac_sync_state = WAIT_FOR_FIRST_SYNC;
+            SYNC_Sync_Now_Reset();            
             break;
 
         case WAIT_FOR_FIRST_SYNC:
@@ -988,128 +987,171 @@ int main(void)
     
     //--- Grid Tied Mode ----------
 #ifdef GRID_TIED_FULL_CONECTED
+    // Initial Setup for PID Controller
+    PID_Small_Ki_Flush_Errors(&current_pid);
+
+    current_pid.kp = 5;
+    current_pid.ki = 32;
+    current_pid.kd = 16;
+    unsigned short d = 0;
     
     while (1)
     {
         switch (ac_sync_state)
         {
         case START_SYNCING:
-            RELAY_ON;
-            timer_standby = 200;
-            ac_sync_state = WAIT_RELAY_TO_ON;
+            //Check voltage and polarity
+            if (SYNC_All_Good())
+            {
+                RELAY_ON;
+                timer_standby = 200;
+                EnablePreload_Mosfet_HighLeft;
+                EnablePreload_Mosfet_HighRight;
+
+                ac_sync_state = WAIT_RELAY_TO_ON;
+            }
             break;
 
         case WAIT_RELAY_TO_ON:
             if (!timer_standby)
             {
                 SYNC_Sync_Now_Reset();
-                TIM17->CNT = 0;
-                TIM17->ARR = 9800;
-                TIM17Enable();
                 ac_sync_state = WAIT_FOR_FIRST_SYNC;
             }
             break;
 
         case WAIT_FOR_FIRST_SYNC:
+            //por cuestiones de seguridad empiezo siempre por positivo
             if (SYNC_Sync_Now())
             {
-                SYNC_Sync_Now_Reset();
-                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-                ChangeLed(LED_GENERATING);
+                if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
+                {
+                    ChangeLed(LED_GENERATING);
+                    ac_sync_state = WAIT_CROSS_NEG_TO_POS;
 
-                HIGH_RIGHT(DUTY_NONE);
-                LOW_LEFT(DUTY_NONE);
-                TIM16->CNT = 0;
+                    HIGH_RIGHT(DUTY_NONE);
+                    LOW_LEFT(DUTY_NONE);
+                    LOW_RIGHT(DUTY_ALWAYS);
+                    sequence_ready_reset;
+
+#ifdef USE_LED_FOR_MAIN_POLARITY                    
+                    LED_ON;
+#endif
+                }
+                else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
+                {
+                    //no hago nada
+                    //quiero empezar siempre por positivo
+                }
+                else    //debe haber un error en synchro
+                    ac_sync_state = START_SYNCING;
+                
+                SYNC_Sync_Now_Reset();
             }
             break;
         
         case GEN_POS:
-            if (SYNC_Sync_Now())
+            if (sequence_ready)
             {
-                SYNC_Sync_Now_Reset();
-                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
-                TIM16->CNT = 0;
-                
-                HIGH_LEFT(DUTY_NONE);
-                LOW_RIGHT(DUTY_NONE);
+                sequence_ready_reset;
 
-#ifdef USE_LED_FOR_MAIN_POLARITY
-                LED_OFF;
-#endif
-            }
-#ifdef INVERTER_MODE_PURE_SINUSOIDAL
-            else
-            {
-                if (TIM16->CNT >= 200)
+                //Adelanto la seniales de corriente,
+                //el d depende de cual deba ajustar
+                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
-                    TIM16->CNT = 0;
-                    //aca la senial (el ultimo punto) terminaria en 0
-                    if (p_signal < &mem_signal[(SIZEOF_SIGNAL - 1)])
-                        p_signal++;
-
-                    HIGH_LEFT(*p_signal);
+                    //loop de corriente
+                    unsigned int calc = *p_current_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    
+                    d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+                    HIGH_LEFT(d);
+                    p_current_ref++;
                 }
             }
-#endif    // INVERTER_MODE_PURE_SINUSOIDAL
+            
+            if (SYNC_Sync_Now())
+            {
+                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
+                SYNC_Sync_Now_Reset();
+
+                HIGH_LEFT(DUTY_NONE);
+                LOW_RIGHT(DUTY_NONE);
+                LOW_LEFT(DUTY_ALWAYS);
+                sequence_ready_reset;                
+            }
+
+            //TODO: poner timeout para salir aca o revisar POLARITY_UNKNOWN
             break;
 
         case WAIT_CROSS_POS_TO_NEG:
-            if (TIM16->CNT >= 200)
+            //espero un sequence_ready para asegurar valores conocidos en el pwm
+            if (sequence_ready)
             {
-                LOW_LEFT(DUTY_ALWAYS);
-#ifndef INVERTER_MODE_PURE_SINUSOIDAL
-                HIGH_RIGHT(DUTY_ALWAYS);
-#else
-                TIM16->CNT = 0;
-                p_signal = mem_signal;
-                HIGH_RIGHT(*p_signal);
-#endif
-                ac_sync_state = GEN_NEG;
+                sequence_ready_reset;
+                if (SYNC_Last_Polarity_Check() == POLARITY_POS)
+                {
+                    PID_Small_Ki_Flush_Errors(&current_pid);
+                    p_current_ref = sin_half_cycle;
+                    ac_sync_state = GEN_NEG;
+                    
+#ifdef USE_LED_FOR_MAIN_POLARITY                
+                    LED_OFF;
+#endif                
+                }
+                else    //debe haber un error de synchro
+                    ac_sync_state = START_SYNCING;
             }
             break;
             
         case GEN_NEG:
+            if (sequence_ready)
+            {
+                sequence_ready_reset;
+
+                //Adelanto la senial de corriente,
+                //el d depende de cual deba ajustar
+                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
+                {
+                    //loop de corriente
+                    unsigned int calc = *p_current_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    
+                    d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+                    HIGH_RIGHT(d);
+                    p_current_ref++;
+                }
+            }
+
             if (SYNC_Sync_Now())
             {
-                SYNC_Sync_Now_Reset();
                 ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-                TIM16->CNT = 0;
+                SYNC_Sync_Now_Reset();
 
                 HIGH_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_NONE);
-
-#ifdef USE_LED_FOR_MAIN_POLARITY
-                LED_ON;
-#endif
-            }
-#ifdef INVERTER_MODE_PURE_SINUSOIDAL
-            else
-            {
-                if (TIM16->CNT >= 200)
-                {
-                    TIM16->CNT = 0;
-                    //aca la senial (el ultimo punto) terminaria en 0
-                    if (p_signal < &mem_signal[(SIZEOF_SIGNAL - 1)])
-                        p_signal++;
-
-                    HIGH_RIGHT(*p_signal);
-                }
-            }
-#endif    // INVERTER_MODE_PURE_SINUSOIDAL            
+                LOW_RIGHT(DUTY_ALWAYS);
+                sequence_ready_reset;
+            }            
+            //TODO: poner timeout para salir aca o revisar POLARITY_UNKNOWN            
             break;
 
         case WAIT_CROSS_NEG_TO_POS:
-            if (TIM16->CNT >= 200)
+            //espero un sequence_ready para asegurar valores conocidos en el pwm
+            if (sequence_ready)
             {
-                LOW_RIGHT(DUTY_ALWAYS);
-#ifndef INVERTER_MODE_PURE_SINUSOIDAL
-                HIGH_LEFT(DUTY_ALWAYS);
-#else
-                TIM16->CNT = 0;
-                p_signal = mem_signal;
-                HIGH_LEFT(*p_signal);
+                sequence_ready_reset;
+                if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
+                {
+                    PID_Small_Ki_Flush_Errors(&current_pid);
+                    p_current_ref = sin_half_cycle;
+                    ac_sync_state = GEN_POS;
+                
+#ifdef USE_LED_FOR_MAIN_POLARITY                
+                    LED_ON;
 #endif
-                ac_sync_state = GEN_POS;
+                }
+                else    //debe haber un error de synchro
+                    ac_sync_state = START_SYNCING;
             }
             break;
             
@@ -1143,6 +1185,21 @@ int main(void)
 
         }
 
+        SYNC_Update_Sync();
+        SYNC_Update_Polarity();
+
+        if (SYNC_Cycles_Cnt() > 100)
+        {
+            SYNC_Cycles_Cnt_Reset();
+            sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d vline: %d\n",
+                    delta_t1_bar,
+                    delta_t2,
+                    SYNC_Last_Polarity_Check(),
+                    ac_sync_state,
+                    SYNC_Vline_Max());
+            Usart1Send(s_lcd);            
+        }
+
         //Cosas que no tienen tanto que ver con las muestras o el estado del programa
         if ((STOP_JUMPER) &&
             (ac_sync_state != JUMPER_PROTECTED) &&
@@ -1166,9 +1223,15 @@ int main(void)
         {
             RELAY_OFF;
             if (overcurrent_shutdown == 1)
+            {
+                Usart1Send("Overcurrent POS\n");
                 ChangeLed(LED_OVERCURRENT_POS);
+            }
             else
+            {
+                Usart1Send("Overcurrent NEG\n");
                 ChangeLed(LED_OVERCURRENT_NEG);
+            }
 
             timer_standby = 10000;
             overcurrent_shutdown = 0;
@@ -1180,7 +1243,7 @@ int main(void)
 #endif
     }
     
-#endif    // INVERTER_MODE
+#endif    // GRID_TIE_FULL_CONNECTED
     
     return 0;
 }

@@ -167,9 +167,19 @@
 
 ** Para sincronizar los cambios anteriores no me sirven
    - pierdo la info de la polaridad, tengo que volver a un KB817
+     en IC2
 
 * Cambios 9-12-19
 ** Mucho ruido en AC_SYNC cuando genera 100W
    AC_SYNC en la parte del foto-transistor va directo al micro
    esto tiene alta impedancia y no filtra ruidos, agrego 1nF ceramico // al foto-transistor
 
+
+
+* Lista de todos los cambios a la placa
+** De mas nuevo a mas viejo
+   - 1nF // al opto de V_Sense IC1
+   - IC2 KB817 con M7 y 470k metal en serie, R8 2k7
+   - en R38 y R39 puse 2k7
+   - en R36 y R37 330 ohms
+   - R28 y R29 8k2

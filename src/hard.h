@@ -41,9 +41,9 @@
 // #define HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
 // #define HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
 // #define INVERTER_MODE_VOLTAGE_FDBK
-// #define INVERTER_MODE_CURRENT_FDBK
+#define INVERTER_MODE_CURRENT_FDBK
 // #define GRID_TIED_ONLY_SYNC_AND_POLARITY
-#define GRID_TIED_FULL_CONECTED
+// #define GRID_TIED_FULL_CONECTED
 
 
 //-- Types of led indications ----------
@@ -62,7 +62,7 @@
 // #define USE_FREQ_9_6KHZ
 
 //-- Types of Interrupts ----------
-#define WITH_AC_SYNC_INT
+// #define WITH_AC_SYNC_INT
 #define WITH_OVERCURRENT_SHUTDOWN
 
 //---- End of Features Configuration ----------

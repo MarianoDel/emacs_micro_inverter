@@ -93,7 +93,9 @@ volatile unsigned char timer_filters = 0;
 
 #ifdef  USE_FREQ_24KHZ
 // Select Current Signal
-#define USE_SIGNAL_CURRENT_05_A
+// #define USE_SIGNAL_CURRENT_05_A
+#define USE_SIGNAL_CURRENT_075_A
+// #define USE_SIGNAL_CURRENT_1_A
 
 // Select Voltage Signal
 // #define USE_SIGNAL_VOLTAGE_185V
@@ -152,13 +154,30 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,13
 #endif
 
 
+#ifdef USE_SIGNAL_CURRENT_05_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    465   // depende de cual es la medicion del opamp de corriente
+                                           // respecto de la ipk de salida VI_Sense = 3 . Ipeak
+                                           // puntos ADC = 3 . Ipeak . 1023 / 3.3
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_075_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    697   // 0.75 Apk
+                                           // respecto de la ipk de salida VI_Sense = 3 . Ipeak
+                                           // puntos ADC = 3 . Ipeak . 1023 / 3.3
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_1_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    930   // 1 Apk
+                                           // respecto de la ipk de salida VI_Sense = 3 . Ipeak
+                                           // puntos ADC = 3 . Ipeak . 1023 / 3.3
+#endif
 
 #ifdef USE_SIGNAL_VOLTAGE_185V
-#define K_SIGNAL_PEAK_MULTIPLIER    435    //depende de cual es la medicion del sensor de tension
+#define KV_SIGNAL_PEAK_MULTIPLIER    435    //depende de cual es la medicion del sensor de tension
 #endif
 
 #ifdef USE_SIGNAL_VOLTAGE_220V
-#define K_SIGNAL_PEAK_MULTIPLIER    517    //depende de cual es la medicion del sensor de tension
+#define KV_SIGNAL_PEAK_MULTIPLIER    517    //depende de cual es la medicion del sensor de tension
 #endif
 
 #ifdef USE_SIGNAL_SOFT_START_64V
@@ -451,7 +470,7 @@ int main(void)
                 {
                     //ajusto el valor de la senoidal a lo que mide el sensor
                     //de salida
-                    unsigned int calc = *p_voltage_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    unsigned int calc = *p_voltage_ref * KV_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
                     
                     d = VoltageLoop ((unsigned short) calc, V_Sense);
@@ -507,7 +526,7 @@ int main(void)
 #ifdef ONLY_ONE_KB814
                     //ajusto el valor de la senoidal a lo que mide el sensor
                     //de salida
-                    unsigned int calc = *p_voltage_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    unsigned int calc = *p_voltage_ref * KV_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
                     
                     d = VoltageLoop ((unsigned short) calc, V_Sense);
@@ -657,7 +676,7 @@ int main(void)
         case WAIT_RELAY_TO_ON:
             if (!timer_standby)
             {
-                p_voltage_ref = mem_signal_soft_start;
+                p_current_ref = sin_half_cycle;
                 ac_sync_state = FIRST_SOFT_START_CYCLE;
                 d = 0;
                 HIGH_RIGHT(DUTY_NONE);
@@ -673,14 +692,17 @@ int main(void)
 
                 //Adelanto la senial de tension
                 //el d depende de la tension de entrada (que no puedo medir!!!)
-                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
-                    HIGH_LEFT(*p_voltage_ref);
-                    p_voltage_ref++;
+                    unsigned int calc = *p_current_ref * K_SOFT_START_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+
+                    HIGH_LEFT(calc);
+                    p_current_ref++;
                 }
                 else
                 {
-                    p_voltage_ref = mem_signal_soft_start;
+                    p_current_ref = sin_half_cycle;
                     ac_sync_state = SECOND_SOFT_START_CYCLE;
                     HIGH_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_NONE);
@@ -694,10 +716,13 @@ int main(void)
             {
                 sequence_ready_reset;
 
-                if (p_voltage_ref < &mem_signal_soft_start[(SIZEOF_SIGNAL - 1)])
+                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
-                    HIGH_RIGHT(*p_voltage_ref);
-                    p_voltage_ref++;
+                    unsigned int calc = *p_current_ref * K_SOFT_START_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+
+                    HIGH_RIGHT(calc);
+                    p_current_ref++;
                 }
                 else
                 {
@@ -727,7 +752,10 @@ int main(void)
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de corriente
-                    d = CurrentLoop (*p_current_ref, I_Sense_Pos);
+                    unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+
                     HIGH_LEFT(d);
                     p_current_ref++;
                 }
@@ -767,7 +795,10 @@ int main(void)
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de corriente
-                    d = CurrentLoop (*p_current_ref, I_Sense_Neg);
+                    unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
+                    calc = calc >> 10;
+                    
+                    d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
                     HIGH_RIGHT(d);
                     p_current_ref++;
                 }
@@ -1033,10 +1064,6 @@ int main(void)
                     LOW_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_ALWAYS);
                     sequence_ready_reset;
-
-#ifdef USE_LED_FOR_MAIN_POLARITY                    
-                    LED_ON;
-#endif
                 }
                 else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
@@ -1060,7 +1087,7 @@ int main(void)
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de corriente
-                    unsigned int calc = *p_current_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
                     
                     d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
@@ -1113,7 +1140,7 @@ int main(void)
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
                     //loop de corriente
-                    unsigned int calc = *p_current_ref * K_SIGNAL_PEAK_MULTIPLIER;
+                    unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
                     
                     d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);

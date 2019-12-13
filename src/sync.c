@@ -67,8 +67,8 @@ void SYNC_Update_Sync (void)
         delta_t1_bar = MA32_U16Circular(&delta_t1_filter, delta_t1);
         delta_t1_bar >>= 1;
 
-        if ((delta_t1_bar < DELTA_T1_BAR_FOR_49HZ) &&
-            (delta_t1_bar > DELTA_T1_BAR_FOR_51HZ))
+        if ((delta_t1_bar < DELTA_T1_BAR_MAX) &&
+            (delta_t1_bar > DELTA_T1_BAR_MIN))
             sync_pulses_are_good = 1;
         else
             sync_pulses_are_good = 0;

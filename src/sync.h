@@ -20,10 +20,11 @@
 #define DELTA_T2_FOR_49HZ    10204
 #define DELTA_T2_FOR_51HZ     9804
 
+// ancho minimo y maximo que permito del pulso de sync
 // #define DELTA_T1_BAR_FOR_49HZ    1152
 // #define DELTA_T1_BAR_FOR_51HZ    1048
-#define DELTA_T1_BAR_FOR_49HZ    1200
-#define DELTA_T1_BAR_FOR_51HZ    1000
+#define DELTA_T1_BAR_MAX    1200
+#define DELTA_T1_BAR_MIN    600
 
 #define TT_FOR_NO_SYNC    60
 

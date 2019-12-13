@@ -93,8 +93,8 @@ volatile unsigned char timer_filters = 0;
 
 #ifdef  USE_FREQ_24KHZ
 // Select Current Signal
-// #define USE_SIGNAL_CURRENT_05_A
-#define USE_SIGNAL_CURRENT_075_A
+#define USE_SIGNAL_CURRENT_05_A
+// #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
 
 // Select Voltage Signal
@@ -1001,6 +1001,28 @@ int main(void)
         SYNC_Update_Sync();
         SYNC_Update_Polarity();
 
+        //Cosas que no tienen tanto que ver con las muestras o el estado del programa
+        if (!timer_standby)
+        {
+            if (!STOP_JUMPER)
+            {
+                if (!RELAY)
+                {
+                    RELAY_ON;
+                    timer_standby = 500;
+                }
+            }
+            else
+            {
+                if (RELAY)
+                {
+                    RELAY_OFF;
+                    timer_standby = 500;
+                }
+            }
+        }
+            
+        
         if (SYNC_Cycles_Cnt() > 100)
         {
             SYNC_Cycles_Cnt_Reset();
@@ -1018,6 +1040,7 @@ int main(void)
     
     //--- Grid Tied Mode ----------
 #ifdef GRID_TIED_FULL_CONECTED
+
     // Initial Setup for PID Controller
     PID_Small_Ki_Flush_Errors(&current_pid);
 
@@ -1031,18 +1054,30 @@ int main(void)
         switch (ac_sync_state)
         {
         case START_SYNCING:
+            EnablePreload_Mosfet_HighLeft;
+            EnablePreload_Mosfet_HighRight;
+
+            LOW_LEFT(DUTY_NONE);
+            HIGH_LEFT(DUTY_NONE);
+            LOW_RIGHT(DUTY_NONE);
+            HIGH_RIGHT(DUTY_NONE);
+            LED_OFF;
+
+            PID_Small_Ki_Flush_Errors(&current_pid);
+
+            ac_sync_state = SWITCH_RELAY_TO_ON;
+            break;
+
+        case SWITCH_RELAY_TO_ON:
             //Check voltage and polarity
             if (SYNC_All_Good())
             {
                 RELAY_ON;
                 timer_standby = 200;
-                EnablePreload_Mosfet_HighLeft;
-                EnablePreload_Mosfet_HighRight;
-
                 ac_sync_state = WAIT_RELAY_TO_ON;
             }
             break;
-
+            
         case WAIT_RELAY_TO_ON:
             if (!timer_standby)
             {
@@ -1094,6 +1129,10 @@ int main(void)
                     HIGH_LEFT(d);
                     p_current_ref++;
                 }
+                else
+                    //termino de generar la senoidal, corto el mosfet
+                    LOW_RIGHT(DUTY_NONE);
+
             }
             
             if (SYNC_Sync_Now())
@@ -1147,6 +1186,10 @@ int main(void)
                     HIGH_RIGHT(d);
                     p_current_ref++;
                 }
+                else
+                    //termino de generar la senoidal, corto el mosfet
+                    LOW_LEFT(DUTY_NONE);
+                
             }
 
             if (SYNC_Sync_Now())

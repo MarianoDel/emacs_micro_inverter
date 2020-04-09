@@ -35,10 +35,6 @@ unsigned char how_many_blinks = 0;
 #define STRING2(x) #x
 #define STRING(x) STRING2(x)
 // #define STRING_CONCAT(str1,str2) #str1 " " #str2
-// #pragma message "Corriente para calculos"
-// #pragma message(STRING_CONCAT("Corriente para calculos",I_FOR_CALC))
-// #pragma message(STRING_CONCAT("Corriente para calculos",STRING(I_FOR_CALC)))
-#pragma message(STRING(I_FOR_CALC))
 
 /* Module Functions ------------------------------------------------------------*/
 

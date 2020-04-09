@@ -61,6 +61,10 @@
 // #define USE_FREQ_12KHZ
 // #define USE_FREQ_9_6KHZ
 
+//-- How many cycles between the relay conection and the generation phase
+//even number for a complete mains cycle
+#define CYCLES_BEFORE_START    50
+
 //-- Types of Interrupts ----------
 #define WITH_AC_SYNC_INT
 #define WITH_OVERCURRENT_SHUTDOWN
@@ -200,6 +204,7 @@ typedef enum
     START_SYNCING = 0,
     SWITCH_RELAY_TO_ON,
     WAIT_RELAY_TO_ON,
+    WAIT_SYNC_FEW_CYCLES_BEFORE_START,
     FIRST_SOFT_START_CYCLE,
     SECOND_SOFT_START_CYCLE,
     WAIT_FOR_FIRST_SYNC,

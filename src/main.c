@@ -47,13 +47,6 @@ volatile unsigned short timer_led = 0;
 // -- Externals used for analog or digital filters ---------
 volatile unsigned short take_temp_sample = 0;
 
-// -- Externals for synchro --------------------------------
-#if ((defined GRID_TIED_ONLY_SYNC_AND_POLARITY) || (defined GRID_TIED_FULL_CONECTED))
-volatile unsigned short timer_no_sync = 0;
-volatile unsigned short delta_t1 = 0;
-volatile unsigned short delta_t1_bar = 0;
-volatile unsigned short delta_t2 = 0;
-#endif
 
 // ------- Definiciones para los filtros -------
 #ifdef USE_FREQ_75KHZ
@@ -93,7 +86,8 @@ volatile unsigned char timer_filters = 0;
 
 #ifdef  USE_FREQ_24KHZ
 // Select Current Signal
-#define USE_SIGNAL_CURRENT_05_A
+#define USE_SIGNAL_CURRENT_01_A
+// #define USE_SIGNAL_CURRENT_05_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
 
@@ -154,6 +148,12 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,13
 #endif
 
 
+#ifdef USE_SIGNAL_CURRENT_01_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    279   // 0.1 Apk
+                                           // respecto de la ipk de salida VI_Sense = 3 . Ipeak
+                                           // puntos ADC = 3 . Ipeak . 1023 / 3.3
+#endif
+
 #ifdef USE_SIGNAL_CURRENT_05_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    465   // depende de cual es la medicion del opamp de corriente
                                            // respecto de la ipk de salida VI_Sense = 3 . Ipeak
@@ -184,28 +184,6 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,13
 #define K_SOFT_START_PEAK_MULTIPLIER    150
 #endif
 
-#ifdef USE_SIGNAL_SINUSOIDAL
-unsigned short mem_signal [SIZEOF_SIGNAL] = {62,125,187,248,309,368,425,481,535,587,
-                                             637,684,728,770,809,844,876,904,929,951,
-                                             968,982,992,998,1000,998,992,982,968,951,
-                                             929,904,876,844,809,770,728,684,637,587,
-                                             535,481,425,368,309,248,187,125,62,0};
-#endif
-#ifdef USE_SIGNAL_TRIANGULAR
-unsigned short mem_signal [SIZEOF_SIGNAL] = {40,80,120,160,200,240,280,320,360,400,
-                                             440,480,520,560,600,640,680,720,760,800,
-                                             840,880,920,960,1000,960,920,880,840,800,
-                                             760,720,680,640,600,560,520,480,440,400,
-                                             360,320,280,240,200,160,120,80,40,0};
-#endif
-#ifdef USE_SIGNAL_MODIFIED_SIN
-unsigned short mem_signal [SIZEOF_SIGNAL] = {0,0,0,0,333,333,333,333,333,333,
-                                             333,333,666,666,666,666,666,666,666,666,
-                                             1000,1000,1000,1000,1000,1000,1000,1000,666,666,
-                                             666,666,666,666,666,666,333,333,333,333,
-                                             333,333,333,333,0,0,0,0,0,0};
-
-#endif
 
 unsigned short * p_current_ref;
 unsigned short * p_voltage_ref;
@@ -214,6 +192,7 @@ pid_data_obj_t voltage_pid;
 
 
 // Module Functions ----------------------------------------
+void PWM_Off (void);
 unsigned short CurrentLoop (unsigned short, unsigned short);
 unsigned short VoltageLoop (unsigned short, unsigned short);
 void TimingDelay_Decrement (void);
@@ -289,10 +268,7 @@ int main(void)
     // Initial Setup for the synchro module
     SYNC_InitSetup();
     
-    LOW_LEFT(DUTY_NONE);
-    HIGH_LEFT(DUTY_NONE);
-    LOW_RIGHT(DUTY_NONE);
-    HIGH_RIGHT(DUTY_NONE);
+    PWM_Off();
     EnablePreload_Mosfet_HighLeft;
     EnablePreload_Mosfet_HighRight;
 
@@ -1048,23 +1024,22 @@ int main(void)
     current_pid.ki = 32;
     current_pid.kd = 16;
     unsigned short d = 0;
+    unsigned short cycles_before_start = CYCLES_BEFORE_START;
     
     while (1)
     {
         switch (ac_sync_state)
         {
         case START_SYNCING:
-            EnablePreload_Mosfet_HighLeft;
-            EnablePreload_Mosfet_HighRight;
-
-            LOW_LEFT(DUTY_NONE);
-            HIGH_LEFT(DUTY_NONE);
-            LOW_RIGHT(DUTY_NONE);
-            HIGH_RIGHT(DUTY_NONE);
+            PWM_Off();
             LED_OFF;
 
+            EnablePreload_Mosfet_HighLeft;
+            EnablePreload_Mosfet_HighRight;
             PID_Small_Ki_Flush_Errors(&current_pid);
 
+            SYNC_Restart();
+            cycles_before_start = CYCLES_BEFORE_START;
             ac_sync_state = SWITCH_RELAY_TO_ON;
             break;
 
@@ -1082,10 +1057,41 @@ int main(void)
             if (!timer_standby)
             {
                 SYNC_Sync_Now_Reset();
-                ac_sync_state = WAIT_FOR_FIRST_SYNC;
+                ac_sync_state = WAIT_SYNC_FEW_CYCLES_BEFORE_START;
             }
             break;
 
+            // few cycles before actual begin
+        case WAIT_SYNC_FEW_CYCLES_BEFORE_START:
+            if (SYNC_Sync_Now())
+            {
+                if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
+                {
+                    //ahora es positiva la polaridad, prendo el led
+#ifdef USE_LED_FOR_MAIN_POLARITY                    
+                    LED_ON;
+#endif
+                }
+                else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
+                {
+                    //ahora es negativa la polaridad, apago el led
+#ifdef USE_LED_FOR_MAIN_POLARITY
+                    LED_OFF;
+#endif
+
+                    //reviso si debo empezar a generar
+                    if (cycles_before_start)
+                        cycles_before_start--;
+                    else
+                        ac_sync_state = WAIT_FOR_FIRST_SYNC;
+                }
+                else    //debe haber un error en synchro
+                    ac_sync_state = START_SYNCING;
+                
+                SYNC_Sync_Now_Reset();
+            }            
+            break;
+            
         case WAIT_FOR_FIRST_SYNC:
             //por cuestiones de seguridad empiezo siempre por positivo
             if (SYNC_Sync_Now())
@@ -1145,8 +1151,27 @@ int main(void)
                 LOW_LEFT(DUTY_ALWAYS);
                 sequence_ready_reset;                
             }
+            else if (!SYNC_All_Good())
+            {
+                PWM_Off();
+                RELAY_OFF;
+                ac_sync_state = START_SYNCING;
 
-            //TODO: poner timeout para salir aca o revisar POLARITY_UNKNOWN
+                //aviso el tipo de error
+                if (!SYNC_Frequency_Check())
+                    sprintf(s_lcd, "bad freq pos: %d\n", SYNC_delta_t2());
+
+                else if (!SYNC_Pulses_Check())
+                    sprintf(s_lcd, "bad sync pulses pos: %d\n", SYNC_delta_t1());
+
+                else if (!SYNC_Vline_Check())
+                    sprintf(s_lcd, "bad vline voltage pos: %d\n", SYNC_vline_max());
+                else
+                    sprintf(s_lcd, "unknow error in pos\n");
+                
+                Usart1Send(s_lcd);
+                SYNC_Sync_Now_Reset();
+            }
             break;
 
         case WAIT_CROSS_POS_TO_NEG:
@@ -1192,6 +1217,7 @@ int main(void)
                 
             }
 
+            //reviso todo el tiempo si debo cambiar de ciclo o si todo sigue bien
             if (SYNC_Sync_Now())
             {
                 ac_sync_state = WAIT_CROSS_NEG_TO_POS;
@@ -1201,8 +1227,29 @@ int main(void)
                 LOW_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_ALWAYS);
                 sequence_ready_reset;
-            }            
-            //TODO: poner timeout para salir aca o revisar POLARITY_UNKNOWN            
+            }
+            else if (!SYNC_All_Good())
+            {
+                PWM_Off();
+                RELAY_OFF;
+                ac_sync_state = START_SYNCING;
+
+                //aviso el tipo de error
+                if (!SYNC_Frequency_Check())
+                    sprintf(s_lcd, "bad freq neg: %d\n", SYNC_delta_t2());
+
+                else if (!SYNC_Pulses_Check())
+                    sprintf(s_lcd, "bad sync pulses neg: %d\n", SYNC_delta_t1());
+
+                else if (!SYNC_Vline_Check())
+                    sprintf(s_lcd, "bad vline voltage neg: %d\n", SYNC_vline_max());
+                else
+                    sprintf(s_lcd, "unknow error in neg\n");
+                
+                Usart1Send(s_lcd);
+                SYNC_Sync_Now_Reset();
+            }
+            
             break;
 
         case WAIT_CROSS_NEG_TO_POS:
@@ -1262,8 +1309,8 @@ int main(void)
         {
             SYNC_Cycles_Cnt_Reset();
             sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d vline: %d\n",
-                    delta_t1_bar,
-                    delta_t2,
+                    SYNC_delta_t1_half_bar(),
+                    SYNC_delta_t2_bar(),
                     SYNC_Last_Polarity_Check(),
                     ac_sync_state,
                     SYNC_Vline_Max());
@@ -1319,6 +1366,22 @@ int main(void)
 }
 
 //--- End of Main ---//
+
+
+void PWM_Off (void)
+{
+    DisablePreload_Mosfet_HighLeft;
+    DisablePreload_Mosfet_HighRight;
+
+    LOW_LEFT(DUTY_NONE);
+    HIGH_LEFT(DUTY_NONE);
+    LOW_RIGHT(DUTY_NONE);
+    HIGH_RIGHT(DUTY_NONE);
+
+    EnablePreload_Mosfet_HighLeft;
+    EnablePreload_Mosfet_HighRight;
+}
+
 
 unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
 {
@@ -1441,9 +1504,6 @@ void EXTI4_15_IRQHandler(void)
     {
         if (AC_SYNC_Int_Rising)
         {
-            //reseteo tim
-            delta_t2 = TIM16->CNT;
-            TIM16->CNT = 0;
             AC_SYNC_Int_Rising_Reset;
             AC_SYNC_Int_Falling_Set;
 
@@ -1454,7 +1514,6 @@ void EXTI4_15_IRQHandler(void)
         }
         else if (AC_SYNC_Int_Falling)
         {
-            delta_t1 = TIM16->CNT;
             AC_SYNC_Int_Falling_Reset;
             AC_SYNC_Int_Rising_Set;
             

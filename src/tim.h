@@ -16,23 +16,25 @@
 
 //--- Exported types ---//
 //--- Exported constants ---//
+#define DUTY_FOR_DMAX    DUTY_45_PERCENT
+#define DUTY_ALWAYS    (DUTY_100_PERCENT + 1)
+
 #define DUTY_NONE		0
 #define DUTY_5_PERCENT		50
 #define DUTY_10_PERCENT		100
-#define DUTY_FOR_DMAX           450
+#define DUTY_45_PERCENT         450
 #define DUTY_50_PERCENT		500
 #define DUTY_75_PERCENT		750
 #define DUTY_50_PERCENT_PLUS_ONE		501
 #define DUTY_100_PERCENT        1000
-#define DUTY_ALWAYS        (DUTY_100_PERCENT + 1)
 
 #define DUTY_FB_25A    395    //esto es 1.17V que equivale a 25Apico en el primario
 
-#define ENABLE_TIM1			TIM1->CR1 |= TIM_CR1_CEN;
-#define DISABLE_TIM1			TIM1->CR1 &= ~TIM_CR1_CEN;
+#define ENABLE_TIM1    (TIM1->CR1 |= TIM_CR1_CEN)
+#define DISABLE_TIM1    (TIM1->CR1 &= ~TIM_CR1_CEN)
 
-#define ENABLE_TIM3			TIM3->CR1 |= TIM_CR1_CEN;
-#define DISABLE_TIM3			TIM3->CR1 &= ~TIM_CR1_CEN;
+#define ENABLE_TIM3    (TIM3->CR1 |= TIM_CR1_CEN)
+#define DISABLE_TIM3    (TIM3->CR1 &= ~TIM_CR1_CEN)
 
 
 

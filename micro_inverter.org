@@ -181,5 +181,5 @@
    - 1nF // al opto de V_Sense IC1
    - IC2 KB817 con M7 y 470k metal en serie, R8 2k7
    - en R38 y R39 puse 2k7
-   - en R36 y R37 330 ohms
-   - R28 y R29 8k2
+   - en R36 y R37 330 ohms    (con esto y lo de arriba la sobrecorriente es 8.9Apk, tendría que ajustar a 4Apk)
+   - R28 y R29 8k2    (con esto llevo el sensado de corriente a 3V/Apk)

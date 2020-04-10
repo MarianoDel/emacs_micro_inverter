@@ -1068,14 +1068,14 @@ int main(void)
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
                     //ahora es positiva la polaridad, prendo el led
-#ifdef USE_LED_FOR_MAIN_POLARITY                    
+#ifdef USE_LED_FOR_MAIN_POLARITY_BEFORE_GEN
                     LED_ON;
 #endif
                 }
                 else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
                     //ahora es negativa la polaridad, apago el led
-#ifdef USE_LED_FOR_MAIN_POLARITY
+#ifdef USE_LED_FOR_MAIN_POLARITY_BEFORE_GEN
                     LED_OFF;
 #endif
 
@@ -1154,6 +1154,9 @@ int main(void)
             else if (!SYNC_All_Good())
             {
                 PWM_Off();
+#ifdef USE_LED_FOR_PROTECTIONS
+                LED_ON;
+#endif
                 RELAY_OFF;
                 ac_sync_state = START_SYNCING;
 
@@ -1170,6 +1173,9 @@ int main(void)
                     sprintf(s_lcd, "unknow error in pos\n");
                 
                 Usart1Send(s_lcd);
+#ifdef USE_LED_FOR_PROTECTIONS
+                LED_OFF;
+#endif                
                 SYNC_Sync_Now_Reset();
             }
             break;
@@ -1231,6 +1237,9 @@ int main(void)
             else if (!SYNC_All_Good())
             {
                 PWM_Off();
+#ifdef USE_LED_FOR_PROTECTIONS
+                LED_ON;
+#endif                
                 RELAY_OFF;
                 ac_sync_state = START_SYNCING;
 
@@ -1247,6 +1256,9 @@ int main(void)
                     sprintf(s_lcd, "unknow error in neg\n");
                 
                 Usart1Send(s_lcd);
+#ifdef USE_LED_FOR_PROTECTIONS
+                LED_OFF;
+#endif                
                 SYNC_Sync_Now_Reset();
             }
             

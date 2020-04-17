@@ -17,17 +17,12 @@ from tc_udemm import sympy_to_lti, lti_to_sympy
 ##########################################################################
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
-Bode_Planta_Sensor_Analog = False
-Escalon_Sensor_Analog = False
-Bode_Controlador_Analog = False
+Bode_Planta_Sensor_Analog = True
+Escalon_Sensor_Analog = True
+Bode_Controlador_Analog = True
 Bode_Sensor_OpenLoop_CloseLoop_Analog = True
-Escalon_CloseLoop_Analog = False
-Respuesta_CloseLoop_All_Inputs_Analog = False
-Bode_Sensor_Tustin_Digital = True
-Escalon_Sensor_Digital = False
-Bode_Controlador_Digital = True
-Bode_Sensor_OpenLoop_CloseLoop_Digital = True
-Setpoint_PtP_Digital = False
+Escalon_CloseLoop_Analog = True
+Respuesta_CloseLoop_All_Inputs_Analog = True
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
 #TF without constant
@@ -104,7 +99,7 @@ if Bode_Planta_Sensor_Analog == True:
 #####################################
 # Desde aca hago pruebas temporales #
 #####################################
-tiempo_de_simulacion = 0.01
+tiempo_de_simulacion = 0.1
 t = np.linspace(0, tiempo_de_simulacion, num=2000)
 u = np.ones_like(t)
 t, y, x = lsim(sensor_TF, u, t)
@@ -148,15 +143,20 @@ if Escalon_Sensor_Analog == True:
 # Controlador analogico #
 #########################
 kp_analog = 0.005    # -46dB ganancia media
-ki_analog = 31.4     # cero en 1000Hz
-kd_analog = 75e-9      # segundo cero en 10600Hz
+ki_analog = 0.314     # cero en 10Hz
+kd_analog = 0.0    #75e-9      # segundo cero en 10600Hz
 
 #3.3, 192, 0.00086 puede ir
 #1, 2300, 0 por simulacion puede ir
 #4.2; 100; 0.00086 ajusta bien la bajada
 #3.2; 200; 0.00086 ajusta bastante bien
 
-controller = kp_analog + ki_analog/s + s*kd_analog
+# controller = kp_analog + ki_analog/s + s*kd_analog
+
+########################
+# Or Custom Controller #
+########################
+controller = (6.28*0.04)/(6.28*10000*6.28*170)*(s+6.28*10000)*(s+6.28*170)
 controller_TF = sympy_to_lti(controller)
 print ("controller con sympy:")
 print (controller_TF)
@@ -263,288 +263,6 @@ if Respuesta_CloseLoop_All_Inputs_Analog == True:
     plt.show()
 
 
-##################################################################################
-# Convierto Planta por Tustin a una frecuencia mucho mas alta que la de muestreo #
-# para que no afecte polos o ceros                                               #                         
-##################################################################################
-Fsampling = 24000
-undersampling = 0
-
-sensor_TF = sympy_to_lti(Sensor_out_sim)
-print ("sensor con sympy:")
-print (sensor_TF)
-
-if undersampling != 0:
-    Fsampling_mult = Fsampling * undersampling
-    Tsampling_mult = 1 / Fsampling_mult
-else:
-    Fsampling_mult = Fsampling
-    Tsampling_mult = 1 / Fsampling_mult
-    
-sensor_dig_tustin_n, sensor_dig_tustin_d, td = cont2discrete((sensor_TF.num, sensor_TF.den), Tsampling_mult, method='tustin')
-
-#normalizo con TransferFunction
-print ("Sensor Digital Tustin:")
-sensor_dig_tustin = TransferFunction(sensor_dig_tustin_n, sensor_dig_tustin_d, dt=td)
-print (sensor_dig_tustin)
-
-w, mag, phase = dbode(sensor_dig_tustin, n = 10000)
-
-if Bode_Sensor_Tustin_Digital == True:
-    fig, (ax1, ax2) = plt.subplots(2,1)
-
-    ax1.semilogx(w/(2*np.pi), mag, 'g')
-    ax1.set_title('Sensor Digital Tustin')
-    ax1.set_ylabel('Amplitude P D2 [dB]', color='g')
-    ax1.set_xlabel('Frequency [Hz]')
-    ax1.set_ylim(ymin=-20, ymax=50)
-
-    ax2.semilogx(w/(2*np.pi), phase, 'g')
-    ax2.set_ylabel('Phase', color='g')
-    ax2.set_xlabel('Frequency [Hz]')
-
-    plt.tight_layout()
-    plt.show()
-
-#############################################
-# Verifico Respuesta Escalon Planta Digital #
-#############################################
-# t = np.linspace(0, 0.01, num=2000)
-tout, yout = dstep([sensor_dig_tustin.num, sensor_dig_tustin.den, td], t=t)
-yout1 = np.transpose(yout)
-yout0 = yout1[0]
-yout = yout0[:tout.size]
-
-if Escalon_Sensor_Digital == True:
-    fig, ax = plt.subplots()
-    ax.set_title('Respuesta escalon de la Planta Digital')
-    ax.set_ylabel('Tension del Sensor')
-    ax.set_xlabel('Tiempo [s]')
-    ax.grid()
-    ax.plot(tout, yout)
-
-    plt.tight_layout()
-    plt.show()
-
-##############################################
-# Grafico de Bode con Polos y Ceros de sympy #
-##############################################
 
 
-########################
-# Ecuacion PID Digital #
-########################
-# kp = kp_analog
-# ki = ki_analog
-# kd = kd_analog
-kp = 1.0 / 128
-ki = 1.0
-kd = 0.0
-ki_dig = ki / Fsampling
-kp_dig = kp - ki_dig / 2
-kd_dig = kd * Fsampling
-
-if kp_dig < 0:
-    kp_dig = 0
-    
-k1 = kp_dig + ki_dig + kd_dig
-k2 = -kp_dig - 2*kd_dig
-k3 = kd_dig
-
-#este es el pid
-b_pid = [k1, k2, k3]
-a_pid = [1, -1]
-print ("")
-print ("kp_dig: " + str(kp_dig) + " ki_dig: " + str(ki_dig) + " kd_dig: " + str(kd_dig))
-print ("")
-
-pid_dig = TransferFunction(b_pid, a_pid, dt=td)
-print ("PID Digital:")
-print (pid_dig)
-
-w, mag, phase = dbode(pid_dig, n = 10000)
-
-if Bode_Controlador_Digital == True:
-    fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.semilogx(w/(2*np.pi), mag, 'c')
-    ax1.set_title('PID Digital')
-    ax1.set_ylabel('Amplitude P D2 [dB]', color='c')
-    ax1.set_xlabel('Frequency [Hz]')
-
-    ax2.semilogx(w/(2*np.pi), phase, 'c')
-    ax2.set_ylabel('Phase', color='c')
-    ax2.set_xlabel('Frequency [Hz]')
-
-    plt.tight_layout()
-    plt.show()
-
-
-if Bode_Sensor_OpenLoop_CloseLoop_Digital == True:
-    plant_dig = lti_to_sympy(sensor_dig_tustin)
-    contr_dig = lti_to_sympy(pid_dig)
-    ol_dig = plant_dig * contr_dig
-    open_loop_dig = sympy_to_lti(ol_dig)
-    close_loop_dig = sympy_to_lti(ol_dig/(1+ol_dig))
-
-    #normalizo con TransferFunction
-    open_loop_dig = TransferFunction(open_loop_dig.num, open_loop_dig.den, dt=td)    
-    close_loop_dig = TransferFunction(close_loop_dig.num, close_loop_dig.den, dt=td)
-
-    w, mag_ol, phase_ol = dbode(open_loop_dig, n = 10000)
-    w, mag_cl, phase_cl = dbode(close_loop_dig, n = 10000)    
-
-    fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.semilogx(w/(2*np.pi), mag_ol, 'b')
-    ax1.semilogx(w/(2*np.pi), mag_cl, 'y')    
-    ax1.set_title('Digital OpenLoop Blue, CloseLoop Yellow')
-    ax1.set_ylabel('Amplitude P D2 [dB]', color='b')
-    ax1.set_xlabel('Frequency [Hz]')
-    ax1.set_ylim(ymin=-40, ymax=40)
-
-    ax2.semilogx(w/(2*np.pi), phase_ol, 'b')
-    ax2.semilogx(w/(2*np.pi), phase_cl, 'y')    
-    ax2.set_ylabel('Phase', color='b')
-    ax2.set_xlabel('Frequency [Hz]')
-
-    plt.tight_layout()
-    plt.show()
-    
-
-#########################################
-# Realimento punto a punto con setpoint #
-#########################################
-# Respuesta escalon de la planta punto a punto
-tiempo_de_simulacion = 0.01
-print('td:')
-print (td)
-t = np.arange(0, tiempo_de_simulacion, td)
-
-# Tustin
-b_sensor = np.transpose(sensor_dig_tustin_n)
-a_sensor = np.transpose(sensor_dig_tustin_d)
-
-vin_plant = np.zeros(t.size)
-vout_plant = np.zeros(t.size)
-
-
-############################################
-# Armo la senial que quiero en el SETPOINT #
-############################################
-fmains = 50
-s_sen = np.zeros(t.size)
-
-for i in range(np.size(s_sen)):
-    s_sen[i] = np.sin(2 * np.pi * fmains * tiempo_de_simulacion * (i/t.size))
-
-for i in range (np.size(s_sen)):
-    if s_sen[i] < 0:
-        s_sen[i] = -s_sen[i]
-
-# vin_setpoint = np.ones(t.size)
-vin_setpoint = s_sen
-
-if Setpoint_PtP_Digital == True:
-    fig, ax = plt.subplots()
-    ax.set_title('Setpoint')
-    ax.set_xlabel('t [s]')
-    ax.grid()
-    ax.plot(t, vin_setpoint, 'y')
-    plt.tight_layout()
-    plt.show()
-
-
-d = np.zeros(t.size)
-error = np.zeros(t.size)
-
-
-#####################
-# Con undersampling #
-#####################
-if undersampling != 0:
-    max_d_pwm = 1.0
-    under_index = 0
-    for i in range(2, len(vin_plant)):
-        ###################################################
-        # primero calculo el error, siempre punto a punto #
-        ###################################################
-        error[i] = vin_setpoint[i] - vout_plant[i-1]
-
-        ###################
-        # aplico lazo PID #
-        ###################
-        if under_index < undersampling:
-            #nada
-            under_index = under_index + 1
-            d[i] = d[i-1]
-        else:
-            under_index = 0
-            d[i] = b_pid[0] * error[i] + b_pid[1] * error[i-1] + b_pid[2] * error[i-2] - a_pid[1] * d[i-1]
-
-        if d[i] > max_d_pwm:
-            d[i] = max_d_pwm
-
-        if d[i] < 0:
-            d[i] = 0
-
-    
-        ########################################
-        # aplico la transferencia de la planta #
-        ########################################
-        vin_plant[i] = d[i]
-        vout_plant[i] = b_sensor[0]*vin_plant[i] \
-                        + b_sensor[1]*vin_plant[i-1] \
-                        + b_sensor[2]*vin_plant[i-2] \
-                        - a_sensor[1]*vout_plant[i-1] \
-                        - a_sensor[2]*vout_plant[i-2]
-
-
-#####################
-# Sin undersampling #
-#####################
-if undersampling == 0:
-    max_d_pwm = 1.0
-
-    for i in range(2, len(vin_plant)):
-        ###################################################
-        # primero calculo el error, siempre punto a punto #
-        ###################################################
-        error[i] = vin_setpoint[i] - vout_plant[i-1]
-
-        ###################
-        # aplico lazo PID #
-        ###################
-        d[i] = b_pid[0] * error[i] + b_pid[1] * error[i-1] + b_pid[2] * error[i-2] - a_pid[1] * d[i-1]
-
-        if d[i] > max_d_pwm:
-            d[i] = max_d_pwm
-
-        if d[i] < 0:
-            d[i] = 0
-
-    
-        ########################################
-        # aplico la transferencia de la planta #
-        ########################################
-        vin_plant[i] = d[i]
-        vout_plant[i] = b_sensor[0]*vin_plant[i] \
-                        + b_sensor[1]*vin_plant[i-1] \
-                        + b_sensor[2]*vin_plant[i-2] \
-                        - a_sensor[1]*vout_plant[i-1] \
-                        - a_sensor[2]*vout_plant[i-2]
-
-               
-if Respuesta_CloseLoop_All_Inputs_Digital == True:     
-    fig, ax = plt.subplots()
-    ax.set_title('Respuesta Realimentada punto a punto')
-    ax.set_ylabel('Tension en Sensor')
-    ax.set_xlabel('Tiempo en muestras')
-    ax.grid()
-    ax.plot(t, d, 'r', label="d")
-    ax.plot(t, error, 'g', label="error")
-    ax.plot(t, vin_setpoint, 'y', label="sp")
-    # ax.stem(t, vout_plant)
-    ax.plot(t, vout_plant, 'c', label="out")
-    ax.legend(loc='upper left')
-    plt.tight_layout()
-    plt.show()
 

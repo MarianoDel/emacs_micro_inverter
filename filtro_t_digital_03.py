@@ -18,16 +18,16 @@ from tc_udemm import sympy_to_lti, lti_to_sympy
 ##########################################################################
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
-Bode_Planta_Sensor_Analog = True
-Escalon_Sensor_Analog = True
-Bode_Controlador_Analog = True
-Bode_Sensor_OpenLoop_CloseLoop_Analog = True
-Escalon_CloseLoop_Analog = True
-Respuesta_CloseLoop_All_Inputs_Analog = True
-Bode_Sensor_Digital = True
-Escalon_Sensor_Digital = True
-Escalon_Sensor_Digital_Recursivo = True
-Pre_Distorted_PtP_Digital_Signals = True
+Bode_Planta_Sensor_Analog = False
+Escalon_Sensor_Analog = False
+Bode_Controlador_Analog = False
+Bode_Sensor_OpenLoop_CloseLoop_Analog = False
+Escalon_CloseLoop_Analog = False
+Respuesta_CloseLoop_All_Inputs_Analog = False
+Bode_Sensor_Digital = False
+Escalon_Sensor_Digital = False
+Escalon_Sensor_Digital_Recursivo = False
+Pre_Distorted_PtP_Digital_Signals = False
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
 #TF without constant
@@ -501,6 +501,13 @@ error_z2 = np.zeros(t.size)
 for j in range(loops):
     # Veo el error que tuve
     error = vin_setpoint - vout_plant
+    for i in range(t.size):
+        if error[i] > 0:
+            if error[i] < 0.1:
+                error[i] = 0
+        else:
+            if error[i] > -0.1:
+                error[i] = 0
 
     ###############################
     # PID y limite del duty cycle #
@@ -564,3 +571,96 @@ if Respuesta_CloseLoop_All_Inputs_Digital == True:
     plt.tight_layout()
     plt.show()
 
+
+
+
+# #####################
+# # Con undersampling #
+# #####################
+# if undersampling != 0:
+#     max_d_pwm = 1.0
+#     under_index = 0
+#     for i in range(2, len(vin_plant)):
+#         ###################################################
+#         # primero calculo el error, siempre punto a punto #
+#         ###################################################
+#         error[i] = vin_setpoint[i] - vout_plant[i-1]
+
+#         ###################
+#         # aplico lazo PID #
+#         ###################
+#         if under_index < undersampling:
+#             #nada
+#             under_index = under_index + 1
+#             d[i] = d[i-1]
+#         else:
+#             under_index = 0
+#             d[i] = b_pid[0] * error[i] + b_pid[1] * error[i-1] + b_pid[2] * error[i-2] - a_pid[1] * d[i-1]
+
+#         if d[i] > max_d_pwm:
+#             d[i] = max_d_pwm
+
+#         if d[i] < 0:
+#             d[i] = 0
+
+    
+#         ########################################
+#         # aplico la transferencia de la planta #
+#         ########################################
+#         vin_plant[i] = d[i]
+#         vout_plant[i] = b_sensor[0]*vin_plant[i] \
+#                         + b_sensor[1]*vin_plant[i-1] \
+#                         + b_sensor[2]*vin_plant[i-2] \
+#                         - a_sensor[1]*vout_plant[i-1] \
+#                         - a_sensor[2]*vout_plant[i-2]
+
+
+# #####################
+# # Sin undersampling #
+# #####################
+# if undersampling == 0:
+#     max_d_pwm = 1.0
+
+#     for i in range(2, len(vin_plant)):
+#         ###################################################
+#         # primero calculo el error, siempre punto a punto #
+#         ###################################################
+#         error[i] = vin_setpoint[i] - vout_plant[i-1]
+
+#         ###################
+#         # aplico lazo PID #
+#         ###################
+#         d[i] = b_pid[0] * error[i] + b_pid[1] * error[i-1] + b_pid[2] * error[i-2] - a_pid[1] * d[i-1]
+
+#         if d[i] > max_d_pwm:
+#             d[i] = max_d_pwm
+
+#         if d[i] < 0:
+#             d[i] = 0
+
+    
+#         ########################################
+#         # aplico la transferencia de la planta #
+#         ########################################
+#         vin_plant[i] = d[i]
+#         vout_plant[i] = b_sensor[0]*vin_plant[i] \
+#                         + b_sensor[1]*vin_plant[i-1] \
+#                         + b_sensor[2]*vin_plant[i-2] \
+#                         - a_sensor[1]*vout_plant[i-1] \
+#                         - a_sensor[2]*vout_plant[i-2]
+
+               
+# if Respuesta_CloseLoop_All_Inputs_Digital == True:     
+#     fig, ax = plt.subplots()
+#     ax.set_title('Respuesta Realimentada punto a punto')
+#     ax.set_ylabel('Tension en Sensor')
+#     ax.set_xlabel('Tiempo en muestras')
+#     ax.grid()
+#     ax.plot(t, d, 'r', label="d")
+#     ax.plot(t, error, 'g', label="error")
+#     ax.plot(t, vin_setpoint, 'y', label="sp")
+#     # ax.stem(t, vout_plant)
+#     ax.plot(t, vout_plant, 'c', label="out")
+#     ax.legend(loc='upper left')
+#     plt.tight_layout()
+#     plt.show()

@@ -9,4 +9,5 @@ GPATH
 GRTAGS
 GTAGS
 *.zip
+*.pyc
 

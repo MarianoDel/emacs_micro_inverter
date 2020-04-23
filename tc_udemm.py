@@ -7,7 +7,7 @@ from scipy.signal import lti, step, bode, zpk2tf
 
 
 
-#### FUNCIONES TC-2017 ESTIGARRIBIA y SALARIATO ####
+#### FUNCIONES TC_2017 ESTIGARRIBIA y SALARIATO ####
 #Multiplico funciones
 def multiplico_sistemas(sys1, sys2):
 
@@ -59,7 +59,57 @@ def realimento (alpha, beta):
     return sys
 
 
-### FUNCONES DE INTERNET ########
+#### FUNCIONES TC_2018 JORGE AJLIN, LEO MATEO, MAXI SCHUTZ ####
+import matplotlib.pyplot as plt
+
+def plot_s_plane (sys):
+    if isinstance(sys, signal.lti) == True:
+        fig, ax = plt.subplots()    
+        ax.plot(sys.zeros.real, sys.zeros.imag, 'ob', label='Zeros')
+        ax.plot(sys.poles.real, sys.poles.imag, 'xr', label='Poles')
+        ax.axhline(y=0, color='grey')
+        ax.axvline(x=0, color='grey')
+        ymin_axis, ymax_axis = ax.get_ylim()
+        x1_tupple = (0, ymin_axis)
+        y1_tupple = (0, ymin_axis)
+        x2_tupple = (0, -ymax_axis)
+        y2_tupple = (0, ymax_axis)
+
+        ax.plot(x1_tupple, y1_tupple, '--', \
+                 clip_on=True, scalex=False, \
+                 scaley=False, color='grey', linewidth=1)
+
+        ax.plot(x2_tupple, y2_tupple, '--', \
+                 clip_on=True, scalex=False, \
+                 scaley=False, color='grey', linewidth=1)        
+
+        ax.legend(loc='lower right')    
+        ax.grid(True,which="both")
+        plt.title('S-Plane Poles and Zeros')
+        plt.show()
+
+        
+#### FUNCIONES TC_2019 CHRISTIAN AGUILAR ####
+def plot_argand (sys):
+    if (isinstance(sys, signal.lti) == True or
+        isinstance(sys, signal.dlti) == True):
+        fig, ax = plt.subplots()
+        Y = [np.exp (1j*theta) for theta in np.linspace(0, 2*np.pi, 200)]
+        Y = np.array(Y)
+        ax.plot(Y.real,Y.imag, 'blue')
+        ax.plot(sys.zeros.real, sys.zeros.imag, 'ob', label='Zeros')
+        ax.plot(sys.poles.real, sys.poles.imag, 'xr', label='Poles')
+        ax.set_ylabel('Imaginary')
+        ax.set_xlabel('Real')
+    
+        ax.legend(loc='lower right')    
+        ax.grid(True,which="both")
+        ax.axhline(y=0, color='grey')
+        ax.axvline(x=0, color='grey')
+        plt.title('Z-Plane Poles and Zeros')
+        plt.show()
+
+### FUNCIONES DE INTERNET ########
 from scipy import signal
 import sympy as sy
 

@@ -13,22 +13,24 @@ from tc_udemm import sympy_to_lti, lti_to_sympy
         Funcion: Generador de senial senoidal
         Modo: Voltage Mode - VM
         Feedback: por tension de salida, sensada a traves del Rsense
+        MA32 en el duty cycle
 """
 
 ##########################################################################
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
-Bode_Planta_Sensor_Analog = True
-Escalon_Sensor_Analog = True
-Bode_Controlador_Analog = True
-Bode_Sensor_OpenLoop_CloseLoop_Analog = True
-Escalon_CloseLoop_Analog = True
-Respuesta_CloseLoop_All_Inputs_Analog = True
-Bode_Sensor_Digital = True
-Escalon_Sensor_Digital = True
-Escalon_Sensor_Digital_Recursivo = True
-Pre_Distorted_PtP_Digital_Signals = True
-Respuesta_CloseLoop_All_Inputs_Digital = True
+Bode_Planta_Sensor_Analog = False
+Escalon_Sensor_Analog = False
+Bode_Controlador_Analog = False
+Bode_Sensor_OpenLoop_CloseLoop_Analog = False
+Escalon_CloseLoop_Analog = False
+Respuesta_CloseLoop_All_Inputs_Analog = False
+Bode_Sensor_Digital = False
+Escalon_Sensor_Digital = False
+Escalon_Sensor_Digital_Recursivo = False
+Pre_Distorted_PtP_Digital_Signals = False
+Respuesta_CloseLoop_All_Inputs_Digital = False
+Respuesta_CloseLoop_Predistorted_Input_Digital = True
 
 #TF without constant
 s = Symbol('s')
@@ -470,6 +472,7 @@ vin_setpoint_looped = np.zeros(t_looped.size)
 vout_plant_looped = np.zeros(t_looped.size)
 vin_plant_d_looped = np.zeros(t_looped.size)
 d_looped = np.zeros(t_looped.size)
+error_looped = np.zeros(t_looped.size)
 
 """ 
     Only for PI dig:
@@ -496,33 +499,10 @@ vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
 
 d_z1 = np.zeros(t.size)
 error_z1 = np.zeros(t.size)
-error_z2 = np.zeros(t.size)
+error = np.zeros(t.size)
 
 for j in range(loops):
-    # Veo el error que tuve
-    error = vin_setpoint - vout_plant
-
-    ###############################
-    # PID y limite del duty cycle #
-    ###############################
-    for i in range(1, t.size):
-        d[i] = b_pid[0] * error[i] \
-               + b_pid[1] * error_z1[i] \
-               + b_pid[2] * error_z2[i] \
-               - a_pid[1] * d_z1[i]
-
-    d_z1 = d
-    error_z2 = error_z1
-    error_z1 = error
-
-    d = d + error * 0.001
-    for k in range(d.size):
-        if d[k] < 0:
-            d[k] = 0
-
-        if d[k] > 1:
-            d[k] = 0
-
+        
     for i in range(3, len(vin_plant)):
         ########################################
         # aplico la transferencia de la planta #
@@ -537,13 +517,47 @@ for j in range(loops):
                         - a_sensor[3]*vout_plant[i-3]
 
 
+    # Veo el error que tuve
+    error = vin_setpoint - vout_plant
+
+    # ###############################
+    # # PID y limite del duty cycle #
+    # ###############################
+    # for i in range(1, t.size):
+    #     d[i] = b_pid[0] * error[i] \
+    #            + b_pid[1] * error_z1[i] \
+    #            + b_pid[2] * error_z2[i] \
+    #            - a_pid[1] * d_z1[i]
+
+    # d_z1 = d
+    # error_z2 = error_z1
+    # error_z1 = error
+
+    d = d + error * 0.0001    #integral del error
+    # d = error * 0.05    #proporcional al error    
+    # d = d + error * 0.0001 + error * 0.01 - error_z1 * 0.01   #PI del error
+    # error_z1 = error
+    
+    # filtro ma2
+    # for k in range(1, d.size):
+    #     d[k] = (d[k] + d[k-1])/2.0
+        
+    # maximos y minimos
+    for k in range(d.size):
+        if d[k] > 1.0:
+            d[k] = 1.0
+
+        if d[k] < 0.0:
+            d[k] = 0.0
+        
     # guardo valores al vector general
     for i in range (t.size):
         vin_plant_looped[i+j*t.size] = vin_plant[i]
         vin_setpoint_looped[i+j*t.size] = vin_setpoint[i]
         vout_plant_looped[i+j*t.size] = vout_plant[i]
         vin_plant_d_looped[i+j*t.size] = vin_plant_d[i]
-        d_looped[i+j*t.size] = d[i]
+        d_looped[i+j*t.size] = d[i]*100
+        error_looped[i+j*t.size] = error[i]
 
 
 if Respuesta_CloseLoop_All_Inputs_Digital == True:     
@@ -552,15 +566,160 @@ if Respuesta_CloseLoop_All_Inputs_Digital == True:
     ax.set_ylabel('Tension en Sensor')
     ax.set_xlabel('Tiempo en muestras')
     ax.grid()
-    ax.plot(t_looped, d_looped, 'r', label="d")
+    ax.plot(t_looped, d_looped, 'r', label="d x 100")
     ax.plot(t_looped, vin_setpoint_looped, 'y', label="sp")
     # ax.stem(t, vout_plant)
     ax.plot(t_looped, vout_plant_looped, 'c', label="out")
     ax.plot(t_looped, vin_plant_d_looped, 'm', label="in")
+    ax.plot(t_looped, error_looped, 'b', label="error")    
     # ax.plot(t, vin_plant, 'm', label="in")    
     # ax.stem(t, vin_plant, 'm', label="in")    
     # ax.set_ylim(ymin=-10, ymax=360)
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.show()
+
+
+########################################################
+# Guardo una secuencia anterior y pruebo Pre-Distorted #
+########################################################
+# me quedo con una secuencia d para hacer una pre-distorcion
+which_loop = 999
+d_predistorted = d_looped[which_loop*t.size:(which_loop+1)*t.size]
+d_predistorted = d_predistorted / 100    #compenso escala de grafico anterior
+d_predistorted_1000 = d_predistorted * 1000
+print (d_predistorted_1000.astype(int))
+print (d_predistorted_1000.size)
+
+# filtro ma4
+for k in range(3, d.size):
+    d_predistorted_1000[k] = (d_predistorted_1000[k] \
+                              + d_predistorted_1000[k-1] \
+                              + d_predistorted_1000[k-2] \
+                              + d_predistorted_1000[k-3] )/4.0
+
+print (d_predistorted_1000.astype(int))    
+
+vout_plant = np.zeros(t.size)
+d = d_predistorted_1000 / 1000.0
+# d = d_predistorted
+vin_plant[0:3] = 0
+vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
+error = np.zeros(t.size)
+
+for i in range(3, len(vin_plant)):
+    ########################################
+    # aplico la transferencia de la planta #
+    ########################################
+    vin_plant_d[i] = d[i] * vin_plant[i]
+    vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
+                    + b_sensor[1]*vin_plant_d[i-1] \
+                    + b_sensor[2]*vin_plant_d[i-2] \
+                    + b_sensor[3]*vin_plant_d[i-3] \
+                    - a_sensor[1]*vout_plant[i-1] \
+                    - a_sensor[2]*vout_plant[i-2] \
+                    - a_sensor[3]*vout_plant[i-3]
+
+
+    # Veo el error que tuve
+    error = vin_setpoint - vout_plant
+
+if Respuesta_CloseLoop_All_Inputs_Digital == True:     
+    fig, ax = plt.subplots()
+    ax.set_title(f'Resultados en Pre-Distorted')
+    ax.set_ylabel('Tension')
+    ax.set_xlabel('Tiempo en muestras')
+    ax.grid()
+    ax.plot(t, d, 'r', label="d")
+    ax.plot(t, vin_setpoint, 'y', label="sp")
+    # ax.stem(t, vout_plant)
+    ax.plot(t, vout_plant, 'c', label="out")
+    ax.plot(t, vin_plant_d, 'm', label="in")
+    ax.plot(t, error, 'b', label="error")    
+    # ax.plot(t, vin_plant, 'm', label="in")    
+    # ax.stem(t, vin_plant, 'm', label="in")    
+    # ax.set_ylim(ymin=-10, ymax=360)
+    ax.legend(loc='upper left')
+    plt.tight_layout()
+    plt.show()
+
+########################################
+# Aplico un ciclo propio pre-distorted #
+########################################
+d = np.array([ 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+               3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
+               4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
+               5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
+               6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,
+               8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
+               12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+               14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+               18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
+               21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
+               18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
+               14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
+               7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,
+               3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
+               1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+               0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+               0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+               -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
+               -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
+               -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,])
+
+d = d /1000.0
+            
+
+vout_plant = np.zeros(t.size)
+vin_plant[0:3] = 0
+vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
+error = np.zeros(t.size)
+
+for i in range(3, len(vin_plant)):
+    ########################################
+    # aplico la transferencia de la planta #
+    ########################################
+    vin_plant_d[i] = d[i] * vin_plant[i]
+    vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
+                    + b_sensor[1]*vin_plant_d[i-1] \
+                    + b_sensor[2]*vin_plant_d[i-2] \
+                    + b_sensor[3]*vin_plant_d[i-3] \
+                    - a_sensor[1]*vout_plant[i-1] \
+                    - a_sensor[2]*vout_plant[i-2] \
+                    - a_sensor[3]*vout_plant[i-3]
+
+
+    # Veo el error que tuve
+    error = vin_setpoint - vout_plant
+
+if Respuesta_CloseLoop_Predistorted_Input_Digital == True:     
+    fig, ax = plt.subplots()
+    ax.set_title(f'My Pre-Distorted')
+    ax.set_ylabel('Tension')
+    ax.set_xlabel('Tiempo en muestras')
+    ax.grid()
+    ax.plot(t, d*100, 'r', label="d x 100")
+    ax.plot(t, vin_setpoint, 'y', label="sp")
+    # ax.stem(t, vout_plant)
+    ax.plot(t, vout_plant, 'c', label="out")
+    ax.plot(t, vin_plant_d, 'm', label="in")
+    ax.plot(t, error, 'b', label="error")    
+    # ax.plot(t, vin_plant, 'm', label="in")    
+    # ax.stem(t, vin_plant, 'm', label="in")    
+    # ax.set_ylim(ymin=-10, ymax=360)
+    ax.legend(loc='upper left')
+    plt.tight_layout()
+    plt.show()
+
+# piso techo y ma4
+# [ 0  1  2  1  2  2  2  2  2  2  2  2  2  2  2  2  2  2  1  2  2  2  1  2
+#   3  2  2  2  3  2  2  3  3  3  2  3  4  3  3  4  5  3  3  5  5  4  4  5
+#   6  4  4  6  6  4  5  7  6  5  5  7  7  5  6  8  7  6  7  9  8  6  8 10
+#   8  7  9 10  9  8 10 11  9  9 11 12 10 10 12 13 11 11 13 14 12 12 15 14
+#  12 13 16 15 13 15 17 16 14 16 18 17 15 17 19 17 16 18 20 18 17 19 20 18
+#  18 20 20 18 18 21 20 18 19 21 20 18 19 20 19 17 18 20 18 16 17 18 17 15
+#  16 17 15 13 15 15 13 11 13 13 10  9 11 10  8  7  9  8  6  5  7  6  4  4
+#   5  4  3  3  4  2  2  2  3  2  1  1  2  1  1  1  2  1  1  1  1  1  1  1
+#   1  1  0  1  1  0  0  1  1  0  0  1  0  0  0  1  0  0  0  0  0  0  0  0
+#   0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0]
 

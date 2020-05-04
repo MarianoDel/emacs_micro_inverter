@@ -150,24 +150,28 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,13
 
 #ifdef USE_SIGNAL_CURRENT_01_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    279   // 0.1 Apk
+#define KI_SIGNAL_50_PERCENT         140   // 0.05 Apk
                                            // respecto de la ipk de salida VI_Sense = 3 . Ipeak
                                            // puntos ADC = 3 . Ipeak . 1023 / 3.3
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_05_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    465   // depende de cual es la medicion del opamp de corriente
+#define KI_SIGNAL_50_PERCENT         232   // 0.25 Apk
                                            // respecto de la ipk de salida VI_Sense = 3 . Ipeak
                                            // puntos ADC = 3 . Ipeak . 1023 / 3.3
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_075_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    697   // 0.75 Apk
+#define KI_SIGNAL_50_PERCENT         349   // 0.37 Apk
                                            // respecto de la ipk de salida VI_Sense = 3 . Ipeak
                                            // puntos ADC = 3 . Ipeak . 1023 / 3.3
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_1_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    930   // 1 Apk
+#define KI_SIGNAL_50_PERCENT         465   // 0.5 Apk
                                            // respecto de la ipk de salida VI_Sense = 3 . Ipeak
                                            // puntos ADC = 3 . Ipeak . 1023 / 3.3
 #endif
@@ -194,6 +198,8 @@ pid_data_obj_t voltage_pid;
 // Module Functions ----------------------------------------
 void PWM_Off (void);
 unsigned short CurrentLoop (unsigned short, unsigned short);
+void CurrentLoop_Change_to_LowGain (void);
+void CurrentLoop_Change_to_HighGain (void);
 unsigned short VoltageLoop (unsigned short, unsigned short);
 void TimingDelay_Decrement (void);
 extern void EXTI4_15_IRQHandler(void);
@@ -1019,10 +1025,13 @@ int main(void)
 
     // Initial Setup for PID Controller
     PID_Small_Ki_Flush_Errors(&current_pid);
+    CurrentLoop_Change_to_LowGain();
+    typedef enum {
+        PID_LOW_GAIN = 0,
+        PID_HIGH_GAIN
+    } pid_gain_st;
 
-    current_pid.kp = 5;
-    current_pid.ki = 32;
-    current_pid.kd = 16;
+    pid_gain_st pid_gain_state = PID_LOW_GAIN;
     unsigned short d = 0;
     unsigned short cycles_before_start = CYCLES_BEFORE_START;
     
@@ -1122,7 +1131,9 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
-
+#ifdef USE_LED_FOR_PID_CALCS
+                LED_ON;
+#endif
                 //Adelanto la seniales de corriente,
                 //el d depende de cual deba ajustar
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
@@ -1130,6 +1141,28 @@ int main(void)
                     //loop de corriente
                     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
+
+                    unsigned int calc_gain = *p_current_ref * KI_SIGNAL_50_PERCENT;
+                    calc_gain = calc_gain >> 10;
+                    
+                    switch (pid_gain_state)
+                    {
+                    case PID_LOW_GAIN:
+                        if (*p_current_ref > calc_gain)
+                        {
+                            pid_gain_state = PID_HIGH_GAIN;
+                            CurrentLoop_Change_to_HighGain();
+                        }
+                        break;
+
+                    case PID_HIGH_GAIN:
+                        if (*p_current_ref < calc_gain)
+                        {
+                            pid_gain_state = PID_LOW_GAIN;
+                            CurrentLoop_Change_to_LowGain();
+                        }
+                        break;
+                    }
                     
                     d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
                     HIGH_LEFT(d);
@@ -1138,8 +1171,11 @@ int main(void)
                 else
                     //termino de generar la senoidal, corto el mosfet
                     LOW_RIGHT(DUTY_NONE);
-
-            }
+                
+#ifdef USE_LED_FOR_PID_CALCS
+                LED_OFF;
+#endif
+            }    //end of sequence_ready
             
             if (SYNC_Sync_Now())
             {
@@ -1189,6 +1225,7 @@ int main(void)
                 {
                     PID_Small_Ki_Flush_Errors(&current_pid);
                     p_current_ref = sin_half_cycle;
+                    CurrentLoop_Change_to_LowGain();
                     ac_sync_state = GEN_NEG;
                     
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -1204,7 +1241,9 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
-
+#ifdef USE_LED_FOR_PID_CALCS
+                LED_ON;
+#endif
                 //Adelanto la senial de corriente,
                 //el d depende de cual deba ajustar
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
@@ -1212,6 +1251,28 @@ int main(void)
                     //loop de corriente
                     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
+                    
+                    unsigned int calc_gain = *p_current_ref * KI_SIGNAL_50_PERCENT;
+                    calc_gain = calc_gain >> 10;
+                    
+                    switch (pid_gain_state)
+                    {
+                    case PID_LOW_GAIN:
+                        if (*p_current_ref > calc_gain)
+                        {
+                            pid_gain_state = PID_HIGH_GAIN;
+                            CurrentLoop_Change_to_HighGain();
+                        }
+                        break;
+
+                    case PID_HIGH_GAIN:
+                        if (*p_current_ref < calc_gain)
+                        {
+                            pid_gain_state = PID_LOW_GAIN;
+                            CurrentLoop_Change_to_LowGain();
+                        }
+                        break;
+                    }
                     
                     d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
                     HIGH_RIGHT(d);
@@ -1221,7 +1282,10 @@ int main(void)
                     //termino de generar la senoidal, corto el mosfet
                     LOW_LEFT(DUTY_NONE);
                 
-            }
+#ifdef USE_LED_FOR_PID_CALCS
+                LED_OFF;
+#endif                
+            }    //end of sequence_ready
 
             //reviso todo el tiempo si debo cambiar de ciclo o si todo sigue bien
             if (SYNC_Sync_Now())
@@ -1273,6 +1337,7 @@ int main(void)
                 {
                     PID_Small_Ki_Flush_Errors(&current_pid);
                     p_current_ref = sin_half_cycle;
+                    CurrentLoop_Change_to_LowGain();
                     ac_sync_state = GEN_POS;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -1418,6 +1483,22 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
     }
 
     return (unsigned short) d;
+}
+
+
+void CurrentLoop_Change_to_HighGain (void)
+{
+    current_pid.kp = 5;
+    current_pid.ki = 320;
+    current_pid.kd = 0;    
+}
+
+
+void CurrentLoop_Change_to_LowGain (void)
+{
+    current_pid.kp = 5;
+    current_pid.ki = 32;
+    current_pid.kd = 16;    
 }
 
 

@@ -24,11 +24,11 @@ Polos_Ceros_Digital = False
 Escalon_Sensor_Digital = False
 Escalon_Sensor_Digital_Recursivo = False
 Bode_Controlador_Digital = True
-Bode_Sensor_OpenLoop_CloseLoop_Digital = True
-Polos_Ceros_CloseLoop_Digital = True
-Escalon_CloseLoop_Digital = True
-Vinput_PtP_Digital = True
-Setpoint_PtP_Digital = True
+Bode_Sensor_OpenLoop_CloseLoop_Digital = False
+Polos_Ceros_CloseLoop_Digital = False
+Escalon_CloseLoop_Digital = False
+Vinput_PtP_Digital = False
+Setpoint_PtP_Digital = False
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
 #TF without constant

@@ -53,7 +53,8 @@
 // #define USE_LED_FOR_VLINE_MAX
 // #define USE_LED_FOR_MAIN_POLARITY
 // #define USE_LED_FOR_MAIN_POLARITY_BEFORE_GEN    //este y el de arriba los puedo combinar
-#define USE_LED_FOR_PROTECTIONS
+// #define USE_LED_FOR_PROTECTIONS
+#define USE_LED_FOR_PID_CALCS
 // #define USE_LED_FOR_MAIN_STATES
 
 //-- Frequency selection ----------

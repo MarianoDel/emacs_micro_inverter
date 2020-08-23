@@ -26,7 +26,7 @@ extern volatile unsigned short adc_ch[];
 
 
 /* Global variables ------------------------------------------------------------*/
-//para el led
+// para el led
 led_state_t led_state = START_BLINKING;
 unsigned char blink = 0;
 unsigned char how_many_blinks = 0;

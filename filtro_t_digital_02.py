@@ -5,6 +5,7 @@ from sympy import *
 import matplotlib.pyplot as plt
 from scipy.signal import lti, bode, lsim, dbode, zpk2tf, tf2zpk, step2, cont2discrete, dstep, freqz, freqs, dlti, TransferFunction
 from tc_udemm import sympy_to_lti, lti_to_sympy
+from pid_tf import PID_float, PID_int
 
 """
         ESTE ARCHIVO USA UN CONTROL PID ENTRE CICLOS DE 100HZ - sin undersamplig -
@@ -13,24 +14,24 @@ from tc_udemm import sympy_to_lti, lti_to_sympy
         Funcion: Generador de senial senoidal
         Modo: Voltage Mode - VM
         Feedback: por tension de salida, sensada a traves del Rsense
-        MA32 en el duty cycle
+
+        Nuevo 22-08-2020:
+        La TF Planta analogica es tension en Rsense
+        La TF Sensor analogica es tension en Rsense * Opamp
+        para 1V de entrada
 """
 
 ##########################################################################
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
 Bode_Planta_Sensor_Analog = False
-Escalon_Sensor_Analog = False
-Bode_Controlador_Analog = False
-Bode_Sensor_OpenLoop_CloseLoop_Analog = False
-Escalon_CloseLoop_Analog = False
-Respuesta_CloseLoop_All_Inputs_Analog = False
 Bode_Sensor_Digital = False
 Escalon_Sensor_Digital = False
 Escalon_Sensor_Digital_Recursivo = False
-Pre_Distorted_PtP_Digital_Signals = False
-Respuesta_CloseLoop_All_Inputs_Digital = False
-Respuesta_CloseLoop_Predistorted_Input_Digital = True
+Vin_Setpoint_PtP_Digital_Signals = False
+Respuesta_CloseLoop_All_Inputs_Digital_PID_Float = True
+Respuesta_CloseLoop_All_Inputs_Digital_PID_Int = True
+
 
 #TF without constant
 s = Symbol('s')
@@ -38,8 +39,8 @@ s = Symbol('s')
 # desde Vinput (sin Vinput) al sensor de corriente
 Rload = 2.0
 Rsense = 0.33
-L1 = 3e-3
-L2 = 3e-3
+L1 = 1.8e-3
+L2 = 1.8e-3
 C = 0.44e-6
 Amp_gain = 9.2
 Vinput = 350    #promedio un input entre 350 cuando no hay contra fem y 20 con contra fem máxima
@@ -94,7 +95,7 @@ if Bode_Planta_Sensor_Analog == True:
     fig, (ax1, ax2) = plt.subplots(2,1)
     ax1.semilogx (w/6.28, mag_p, 'b-', linewidth="1")
     ax1.semilogx (w/6.28, mag_s, 'g-', linewidth="1")
-    ax1.set_title('Magnitude')
+    ax1.set_title('Sensor TF green - Planta Rsense blue')
 
     ax2.semilogx (w/6.28, phase_p, 'b-', linewidth="1")
     ax2.semilogx (w/6.28, phase_s, 'g-', linewidth="1")
@@ -103,172 +104,10 @@ if Bode_Planta_Sensor_Analog == True:
     plt.tight_layout()
     plt.show()
 
-#####################################
-# Desde aca hago pruebas temporales #
-#####################################
-tiempo_de_simulacion = 0.01
-t = np.linspace(0, tiempo_de_simulacion, num=2000)
-u = np.ones_like(t)
-t, y, x = lsim(sensor_TF, u, t)
-
-if Escalon_Sensor_Analog == True:
-    fig.clear()
-    fig, ax = plt.subplots()
-    ax.set_title('Respuesta de la Planta vista desde el sensor')
-    ax.set_ylabel('Vsensor')
-    ax.set_xlabel('Tiempo [s]')
-    ax.grid()
-    ax.plot(t, y, 'g-')
-    ax.plot(t, u, color='orange')
-
-    plt.tight_layout()
-    plt.show()
-
-
-#########################
-# Controlador Propuesto #
-#########################
-"""    
-        PID Analogico
-        PID completo Tf = Kp + Ki/s + s Kd    Tf = 1/s * (s**2 Kd + s Kp + Ki)
-        muy dificil analizar, basicamente polo en origen y dos ceros
-        los dos ceros, segun los parametros elegidos, pueden llegar a ser complejos conjugados
-
-        si fuese solo PI tengo Tf = 1/s * Kp * (s + Ki/Kp)
-        esto es polo en origen w = 1; cero en w = Ki/Kp; ganancia Kp
-
-        si fuese solo PD tengo Tf = Kd * (s + Kp/Kd)
-        esto es cero en w = Kp/Kd y ganancia Kd
-        o la ganancia es Kp??
-
-        Conclusion:
-        elijo Kp para la ganancia media, ej 0dB Kp = 1
-        elijo primer cero, ej 15.9Hz, Ki = 100
-        elijo segundo cero, ej 1590Hz, Kd = 0.0001
-"""
-#########################
-# Controlador analogico #
-#########################
-kp_analog = 0.005    # -46dB ganancia media
-ki_analog = 31.4     # cero en 1000Hz
-kd_analog = 75e-9      # segundo cero en 10600Hz
-
-#3.3, 192, 0.00086 puede ir
-#1, 2300, 0 por simulacion puede ir
-#4.2; 100; 0.00086 ajusta bien la bajada
-#3.2; 200; 0.00086 ajusta bastante bien
-
-controller = kp_analog + ki_analog/s + s*kd_analog
-controller_TF = sympy_to_lti(controller)
-print ("controller con sympy:")
-print (controller_TF)
-
-
-###########################################
-# Respuesta en Frecuencia del Controlador #
-###########################################
-w, mag, phase = bode(controller_TF, wfreq)
-
-if Bode_Controlador_Analog == True:
-    fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.semilogx (w/(2*np.pi), mag, 'b-', linewidth="1")
-    ax1.set_title('Controller Tf - Magnitude')
-
-    ax2.semilogx (w/(2*np.pi), phase, 'b-', linewidth="1")
-    ax2.set_title('Phase')
-
-    plt.tight_layout()
-    plt.show()
-
-
-#######################################################
-# Multiplico Transferencias para OpenLoop y CloseLoop #
-#######################################################
-c = lti_to_sympy(controller_TF)
-p = lti_to_sympy(sensor_TF)
-
-ol = c * p
-cl = ol/(1+ol)
-
-open_loop = sympy_to_lti(ol)
-open_loop = TransferFunction(open_loop.num, open_loop.den)   #normalizo ol
-close_loop = sympy_to_lti(cl)
-close_loop = TransferFunction(close_loop.num, close_loop.den)   #normalizo cl
-
-w, mag_ol, phase_ol = bode(open_loop, wfreq)
-w, mag_cl, phase_cl = bode(close_loop, wfreq)
-
-if Bode_Sensor_OpenLoop_CloseLoop_Analog == True:
-    fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.semilogx(w/(2*np.pi), mag_ol, 'b')
-    ax1.semilogx(w/(2*np.pi), mag_cl, 'y')
-    ax1.set_title('Analog OpenLoop Blue, CloseLoop Yellow')
-    ax1.set_ylabel('Amplitude P D2 [dB]', color='b')
-    ax1.set_xlabel('Frequency [Hz]')
-    # ax1.set_ylim([-40, 40])
-
-    ax2.semilogx(w/(2*np.pi), phase_ol, 'b')
-    ax2.semilogx(w/(2*np.pi), phase_cl, 'y')
-    ax2.set_ylabel('Phase', color='r')
-    ax2.set_xlabel('Frequency [Hz]')
-
-    plt.tight_layout()
-    plt.show()
-
-
-######################################
-# Realimento y veo Respuesta escalon #
-######################################
-t = np.linspace(0, tiempo_de_simulacion, num=2000)
-t, y = step2(close_loop, T=t)
-
-if Escalon_CloseLoop_Analog == True:
-    # fig.clear()
-    fig, ax = plt.subplots()
-    ax.set_title('Respuesta escalon Close Loop')
-    ax.set_ylabel('Vout')
-    ax.set_xlabel('Tiempo [s]')
-    ax.grid()
-    ax.plot(t, y)
-
-    plt.tight_layout()
-    plt.show()
-
-#####################################################
-# Realimento y veo Respuesta a Senoidal rectificada #
-#####################################################
-fmains = 50
-s_sen = np.zeros(t.size)
-
-for i in range(np.size(s_sen)):
-    s_sen[i] = np.sin(2 * np.pi * fmains * tiempo_de_simulacion * (i/t.size))
-
-for i in range (np.size(s_sen)):
-    if s_sen[i] < 0:
-        s_sen[i] = -s_sen[i]
-
-# vin_setpoint = np.ones(t.size)
-vin_setpoint = s_sen
-t, y, x = lsim(close_loop, vin_setpoint, t)
-
-if Respuesta_CloseLoop_All_Inputs_Analog == True:
-    # fig.clear()
-    fig, ax = plt.subplots()
-    ax.set_title('Respuesta escalon Close Loop')
-    ax.set_ylabel('Vout')
-    ax.set_xlabel('Tiempo [s]')
-    ax.grid()
-    ax.plot(t, y)
-    ax.plot(t, vin_setpoint, color='orange')
-
-    plt.tight_layout()
-    plt.show()
-
-
-##################################################################################
-# Convierto Planta por Euler-Forward y zoh a una frecuencia mucho mas alta que la de muestreo #
-# para que no afecte polos o ceros                                               #                         
-##################################################################################
+###############################################################################################
+# Convierto Sensor por Euler-Forward y zoh a una frecuencia mucho mas alta que la de muestreo #
+# para que no afecte polos o ceros                                                            #            
+###############################################################################################
 Fsampling = 24000
 
 sensor_TF = sympy_to_lti(Sensor_out_sim)
@@ -302,7 +141,7 @@ if Bode_Sensor_Digital == True:
     ax1.set_title('Digital Euler-Forward Green, ZOH Yellow')
     ax1.set_ylabel('Amplitude P D2 [dB]', color='g')
     ax1.set_xlabel('Frequency [Hz]')
-    ax1.set_ylim(ymin=-40, ymax=40)
+    # ax1.set_ylim(ymin=-40, ymax=40)
 
     ax2.semilogx(w/(2*np.pi), phase_ef, 'g')
     ax2.semilogx(w/(2*np.pi), phase_zoh, 'y')    
@@ -369,17 +208,6 @@ for i in range(3, len(vin_plant)):
                     - a_sensor[2]*vout_plant[i-2] \
                     - a_sensor[3]*vout_plant[i-3]
 
-# vin_plant = np.ones(t.size)
-# vin_plant[0:3] = 0
-# vout_plant = np.zeros (t.size)
-# for i in range (3, len(vin_plant)):
-#     vout_plant[i] = 0.054 * vin_plant[i-1] \
-#                     + 0.12 * vin_plant[i-2] \
-#                     + 0.052 * vin_plant[i-3] \
-#                     - 0.89 * vout_plant[i-1] \
-#                     + 0.8 * vout_plant[i-2] \
-#                     + 0.91 * vout_plant[i-3]
-    
 if Escalon_Sensor_Digital_Recursivo == True:
     fig, ax = plt.subplots()
     ax.set_title('Step Planta Digital Recursiva ZOH Yellow')
@@ -394,9 +222,6 @@ if Escalon_Sensor_Digital_Recursivo == True:
 # DESDE ACA SIGO CON ZOH QUE DA MEJORES RESULTADOS #
 ####################################################
 
-#############################
-# SISTEMA PRE-DISTORSIONADO #
-#############################
 ###############################
 # Entrada 1: Vinput - Voutput #
 ###############################
@@ -427,18 +252,18 @@ for i in range (np.size(s_sen)):
         s_sen[i] = -s_sen[i]
 
 # vin_setpoint = np.ones(t.size)
-vin_setpoint = s_sen
+vin_setpoint = s_sen * 1023
+# vin_setpoint = s_sen * 512
 
-pre_distorted_duty = vin_setpoint / vin_plant
+print ('Cant de muestras vin_plant: ' + str(vin_plant.size) + ' vin_setpoint: ' + str(vin_setpoint.size))
 
-if Pre_Distorted_PtP_Digital_Signals == True:
+if Vin_Setpoint_PtP_Digital_Signals == True:
     fig, ax = plt.subplots()
-    ax.set_title('Setpoint')
+    ax.set_title('Vin Plant green, Setpoint [i table] yellow')
     ax.set_xlabel('t [s]')
     ax.grid()
     ax.plot(t, vin_plant, 'g')    
     ax.plot(t, vin_setpoint, 'y')
-    ax.plot(t, pre_distorted_duty, 'r')
     plt.tight_layout()
     plt.show()
 
@@ -463,155 +288,116 @@ a_sensor = np.transpose(sensor_dig_zoh_d)
 ########################
 # LOOP DE  ITERACIONES #
 ########################
-loops = 1000
-t_looped = np.linspace(0, tiempo_de_simulacion * loops, num=(tiempo_de_simulacion*Fsampling*loops))
-
-#armo un nuevo input
-vin_plant_looped = np.zeros(t_looped.size)
-vin_setpoint_looped = np.zeros(t_looped.size)
-vout_plant_looped = np.zeros(t_looped.size)
-vin_plant_d_looped = np.zeros(t_looped.size)
-d_looped = np.zeros(t_looped.size)
-error_looped = np.zeros(t_looped.size)
-
 """ 
     Only for PI dig:
-    w0 ~= ki_dig / kp_dig * Fsampling
+    w0 ~= ki_dig / kp_dig * Fsampling or Fundersampling
     plateau gain ~= 20 log kp_dig
 
 """
-ki_dig = 1.0 / 5192
-kp_dig = 0.0    #1.28 / 128
+# LOW GAIN PID
+ki_dig = 3 / 128
+# ki_dig = 0.0
+kp_dig = 10 / 128
+# kp_dig = 0.0
+# kd_dig = 5 / 128
 kd_dig = 0.0
 
-k1 = kp_dig + ki_dig + kd_dig
-k2 = -kp_dig - 2*kd_dig
-k3 = kd_dig
+k1_low = kp_dig + ki_dig + kd_dig
+k2_low = -kp_dig - 2*kd_dig
+k3_low = kd_dig
+
+print (f'ki_low: {ki_dig} kp_low: {kp_dig} kd_low: {kd_dig}')
+
+# HIGH GAIN PID
+ki_dig = 16 / 128
+# ki_dig = 0.0
+kp_dig = 30 / 128
+# kp_dig = 0.0
+# kd_dig = 5 / 128
+kd_dig = 0.0
+
+k1_high = kp_dig + ki_dig + kd_dig
+k2_high = -kp_dig - 2*kd_dig
+k3_high = kd_dig
+
+print (f'ki_high: {ki_dig} kp_high: {kp_dig} kd_high: {kd_dig}')
+
+undersampling = 1
+print (f'undersamplig freq: {Fsampling/(undersampling + 1)}')
+
 
 #este es el pid
-b_pid = [k1, k2, k3]
+b_pid = [k1_low, k2_low, k3_low]
 a_pid = [1, -1]
+pid_tf_float = PID_float(b_pid, a_pid)
+signal_phase = 'RISING'
 
 vout_plant = np.zeros(t.size)
 d = np.zeros(t.size)
 vin_plant[0:3] = 0
-vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
+vin_plant_d = np.zeros(t.size)
 
-d_z1 = np.zeros(t.size)
-error_z1 = np.zeros(t.size)
 error = np.zeros(t.size)
-
-for j in range(loops):
-        
-    for i in range(3, len(vin_plant)):
-        ########################################
-        # aplico la transferencia de la planta #
-        ########################################
-        vin_plant_d[i] = d[i] * vin_plant[i]
-        vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
-                        + b_sensor[1]*vin_plant_d[i-1] \
-                        + b_sensor[2]*vin_plant_d[i-2] \
-                        + b_sensor[3]*vin_plant_d[i-3] \
-                        - a_sensor[1]*vout_plant[i-1] \
-                        - a_sensor[2]*vout_plant[i-2] \
-                        - a_sensor[3]*vout_plant[i-3]
-
-
-    # Veo el error que tuve
-    error = vin_setpoint - vout_plant
-
-    # ###############################
-    # # PID y limite del duty cycle #
-    # ###############################
-    # for i in range(1, t.size):
-    #     d[i] = b_pid[0] * error[i] \
-    #            + b_pid[1] * error_z1[i] \
-    #            + b_pid[2] * error_z2[i] \
-    #            - a_pid[1] * d_z1[i]
-
-    # d_z1 = d
-    # error_z2 = error_z1
-    # error_z1 = error
-
-    d = d + error * 0.0001    #integral del error
-    # d = error * 0.05    #proporcional al error    
-    # d = d + error * 0.0001 + error * 0.01 - error_z1 * 0.01   #PI del error
-    # error_z1 = error
-    
-    # filtro ma2
-    # for k in range(1, d.size):
-    #     d[k] = (d[k] + d[k-1])/2.0
-        
-    # maximos y minimos
-    for k in range(d.size):
-        if d[k] > 1.0:
-            d[k] = 1.0
-
-        if d[k] < 0.0:
-            d[k] = 0.0
-        
-    # guardo valores al vector general
-    for i in range (t.size):
-        vin_plant_looped[i+j*t.size] = vin_plant[i]
-        vin_setpoint_looped[i+j*t.size] = vin_setpoint[i]
-        vout_plant_looped[i+j*t.size] = vout_plant[i]
-        vin_plant_d_looped[i+j*t.size] = vin_plant_d[i]
-        d_looped[i+j*t.size] = d[i]*100
-        error_looped[i+j*t.size] = error[i]
-
-
-if Respuesta_CloseLoop_All_Inputs_Digital == True:     
-    fig, ax = plt.subplots()
-    ax.set_title(f'Resultados en {loops} loops')
-    ax.set_ylabel('Tension en Sensor')
-    ax.set_xlabel('Tiempo en muestras')
-    ax.grid()
-    ax.plot(t_looped, d_looped, 'r', label="d x 100")
-    ax.plot(t_looped, vin_setpoint_looped, 'y', label="sp")
-    # ax.stem(t, vout_plant)
-    ax.plot(t_looped, vout_plant_looped, 'c', label="out")
-    ax.plot(t_looped, vin_plant_d_looped, 'm', label="in")
-    ax.plot(t_looped, error_looped, 'b', label="error")    
-    # ax.plot(t, vin_plant, 'm', label="in")    
-    # ax.stem(t, vin_plant, 'm', label="in")    
-    # ax.set_ylim(ymin=-10, ymax=360)
-    ax.legend(loc='upper left')
-    plt.tight_layout()
-    plt.show()
-
-
-########################################################
-# Guardo una secuencia anterior y pruebo Pre-Distorted #
-########################################################
-# me quedo con una secuencia d para hacer una pre-distorcion
-which_loop = 999
-d_predistorted = d_looped[which_loop*t.size:(which_loop+1)*t.size]
-d_predistorted = d_predistorted / 100    #compenso escala de grafico anterior
-d_predistorted_1000 = d_predistorted * 1000
-print (d_predistorted_1000.astype(int))
-print (d_predistorted_1000.size)
-
-# filtro ma4
-for k in range(3, d.size):
-    d_predistorted_1000[k] = (d_predistorted_1000[k] \
-                              + d_predistorted_1000[k-1] \
-                              + d_predistorted_1000[k-2] \
-                              + d_predistorted_1000[k-3] )/4.0
-
-print (d_predistorted_1000.astype(int))    
-
-vout_plant = np.zeros(t.size)
-d = d_predistorted_1000 / 1000.0
-# d = d_predistorted
-vin_plant[0:3] = 0
-vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
-error = np.zeros(t.size)
+sensor_adc = np.zeros(t.size)
+under = undersampling
 
 for i in range(3, len(vin_plant)):
     ########################################
     # aplico la transferencia de la planta #
     ########################################
-    vin_plant_d[i] = d[i] * vin_plant[i]
+    # muestra en el sensor adc
+    sensor_adc[i] = vout_plant[i-1] / 3.3 * 1023
+    sensor_adc[i] = int(sensor_adc[i])
+    if (sensor_adc[i] < 0):
+        sensor_adc[i] = 0
+
+    if (sensor_adc[i] > 1023):
+        sensor_adc[i] = 1023
+
+    # Veo el error que tengo        
+    error[i] = vin_setpoint[i] - sensor_adc[i]
+
+    # aplico el pid
+    if (under):
+        under -= 1
+        d[i] = d[i-1]
+    else:
+        under = undersampling
+
+        if (signal_phase == 'RISING'):
+            if (i > 48):
+                signal_phase = 'MIDDLE'
+                b_pid = [k1_high, k2_high, k3_high]
+                pid_tf_float.changeParams(b_pid, a_pid)
+
+        if (signal_phase == 'MIDDLE'):
+            if (i > 160):
+                signal_phase = 'FALLING'
+                b_pid = [k1_low, k2_low, k3_low]
+                pid_tf_float.changeParams(b_pid, a_pid)                
+                
+        if (signal_phase == 'FALLING'):
+            if (i > 204):
+                signal_phase = 'REVERT'
+                
+
+        d[i] = pid_tf_float.newOutput(error[i])
+
+    # ajusto input a la planta por el efecto PWM
+    d[i] = int(d[i])
+    if (signal_phase != 'REVERT'):
+        if (d[i] < 0):
+            d[i] = 0
+    else:
+        if (d[i] < -100):
+            d[i] = -100
+
+    if (d[i] > 1000):
+        d[i] = 1000
+
+        
+    vin_plant_d[i] = d[i]/1000 * vin_plant[i]
+
     vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
                     + b_sensor[1]*vin_plant_d[i-1] \
                     + b_sensor[2]*vin_plant_d[i-2] \
@@ -621,13 +407,11 @@ for i in range(3, len(vin_plant)):
                     - a_sensor[3]*vout_plant[i-3]
 
 
-    # Veo el error que tuve
-    error = vin_setpoint - vout_plant
 
-if Respuesta_CloseLoop_All_Inputs_Digital == True:     
+if Respuesta_CloseLoop_All_Inputs_Digital_PID_Float == True:     
     fig, ax = plt.subplots()
-    ax.set_title(f'Resultados en Pre-Distorted')
-    ax.set_ylabel('Tension')
+    ax.set_title(f'Resultados PID Float')
+    ax.set_ylabel('Tension en Sensor')
     ax.set_xlabel('Tiempo en muestras')
     ax.grid()
     ax.plot(t, d, 'r', label="d")
@@ -636,50 +420,100 @@ if Respuesta_CloseLoop_All_Inputs_Digital == True:
     ax.plot(t, vout_plant, 'c', label="out")
     ax.plot(t, vin_plant_d, 'm', label="in")
     ax.plot(t, error, 'b', label="error")    
-    # ax.plot(t, vin_plant, 'm', label="in")    
+    ax.plot(t, sensor_adc, 'g', label="sensor")
     # ax.stem(t, vin_plant, 'm', label="in")    
     # ax.set_ylim(ymin=-10, ymax=360)
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.show()
 
-########################################
-# Aplico un ciclo propio pre-distorted #
-########################################
-d = np.array([ 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
-               3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
-               4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,
-               5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,
-               6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,
-               8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,
-               12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-               14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-               18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
-               21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
-               18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
-               14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-               7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,
-               3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,
-               1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-               0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-               0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-               -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
-               -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,
-               -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,  -2,])
 
-d = d /1000.0
-            
 
-vout_plant = np.zeros(t.size)
-vin_plant[0:3] = 0
-vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
+    
+# LOW GAIN PID INTEGRAL
+ki_dig = 3
+kp_dig = 10
+kd_dig = 0
+
+k1_low_int = kp_dig + ki_dig + kd_dig
+k2_low_int = -kp_dig - 2*kd_dig
+k3_low_int = kd_dig
+print (f'ki_low: {ki_dig} kp_low: {kp_dig} kd_low: {kd_dig}')
+
+# HIGH GAIN PID
+ki_dig = 16
+kp_dig = 30
+kd_dig = 0
+
+k1_high_int = kp_dig + ki_dig + kd_dig
+k2_high_int = -kp_dig - 2*kd_dig
+k3_high_int = kd_dig
+print (f'ki_high: {ki_dig} kp_high: {kp_dig} kd_high: {kd_dig}')
+
+pid_tf_int = PID_int([k1_low_int, k2_low_int, k3_low_int], a_pid, 128)
+signal_phase = 'RISING'
+
 error = np.zeros(t.size)
+sensor_adc = np.zeros(t.size)
+under = undersampling
 
 for i in range(3, len(vin_plant)):
     ########################################
     # aplico la transferencia de la planta #
     ########################################
-    vin_plant_d[i] = d[i] * vin_plant[i]
+    # muestra en el sensor adc
+    sensor_adc[i] = vout_plant[i-1] / 3.3 * 1023
+    sensor_adc[i] = int(sensor_adc[i])
+    if (sensor_adc[i] < 0):
+        sensor_adc[i] = 0
+
+    if (sensor_adc[i] > 1023):
+        sensor_adc[i] = 1023
+
+    # Veo el error que tengo        
+    error[i] = vin_setpoint[i] - sensor_adc[i]
+
+    # aplico el pid
+    if (under):
+        under -= 1
+        d[i] = d[i-1]
+    else:
+        under = undersampling
+
+        if (signal_phase == 'RISING'):
+            if (i > 48):
+                signal_phase = 'MIDDLE'
+                b_pid = [k1_high_int, k2_high_int, k3_high_int]
+                pid_tf_int.changeParams(b_pid, a_pid)
+
+        if (signal_phase == 'MIDDLE'):
+            if (i > 160):
+                signal_phase = 'FALLING'
+                b_pid = [k1_low_int, k2_low_int, k3_low_int]
+                pid_tf_int.changeParams(b_pid, a_pid)                
+                
+        if (signal_phase == 'FALLING'):
+            if (i > 204):
+                signal_phase = 'REVERT'
+                
+
+        d[i] = pid_tf_int.newOutput(error[i])
+
+    # ajusto input a la planta por el efecto PWM
+    d[i] = int(d[i])
+    if (signal_phase != 'REVERT'):
+        if (d[i] < 0):
+            d[i] = 0
+    else:
+        if (d[i] < -100):
+            d[i] = -100
+
+    if (d[i] > 1000):
+        d[i] = 1000
+
+        
+    vin_plant_d[i] = d[i]/1000 * vin_plant[i]
+
     vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
                     + b_sensor[1]*vin_plant_d[i-1] \
                     + b_sensor[2]*vin_plant_d[i-2] \
@@ -689,37 +523,24 @@ for i in range(3, len(vin_plant)):
                     - a_sensor[3]*vout_plant[i-3]
 
 
-    # Veo el error que tuve
-    error = vin_setpoint - vout_plant
 
-if Respuesta_CloseLoop_Predistorted_Input_Digital == True:     
+if Respuesta_CloseLoop_All_Inputs_Digital_PID_Int == True:     
     fig, ax = plt.subplots()
-    ax.set_title(f'My Pre-Distorted')
-    ax.set_ylabel('Tension')
+    ax.set_title(f'Resultados PID Int')
+    ax.set_ylabel('Tension en Sensor')
     ax.set_xlabel('Tiempo en muestras')
     ax.grid()
-    ax.plot(t, d*100, 'r', label="d x 100")
+    ax.plot(t, d, 'r', label="d")
     ax.plot(t, vin_setpoint, 'y', label="sp")
     # ax.stem(t, vout_plant)
     ax.plot(t, vout_plant, 'c', label="out")
     ax.plot(t, vin_plant_d, 'm', label="in")
     ax.plot(t, error, 'b', label="error")    
-    # ax.plot(t, vin_plant, 'm', label="in")    
+    ax.plot(t, sensor_adc, 'g', label="sensor")
     # ax.stem(t, vin_plant, 'm', label="in")    
     # ax.set_ylim(ymin=-10, ymax=360)
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.show()
 
-# piso techo y ma4
-# [ 0  1  2  1  2  2  2  2  2  2  2  2  2  2  2  2  2  2  1  2  2  2  1  2
-#   3  2  2  2  3  2  2  3  3  3  2  3  4  3  3  4  5  3  3  5  5  4  4  5
-#   6  4  4  6  6  4  5  7  6  5  5  7  7  5  6  8  7  6  7  9  8  6  8 10
-#   8  7  9 10  9  8 10 11  9  9 11 12 10 10 12 13 11 11 13 14 12 12 15 14
-#  12 13 16 15 13 15 17 16 14 16 18 17 15 17 19 17 16 18 20 18 17 19 20 18
-#  18 20 20 18 18 21 20 18 19 21 20 18 19 20 19 17 18 20 18 16 17 18 17 15
-#  16 17 15 13 15 15 13 11 13 13 10  9 11 10  8  7  9  8  6  5  7  6  4  4
-#   5  4  3  3  4  2  2  2  3  2  1  1  2  1  1  1  2  1  1  1  1  1  1  1
-#   1  1  0  1  1  0  0  1  1  0  0  1  0  0  0  1  0  0  0  0  0  0  0  0
-#   0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0]
 

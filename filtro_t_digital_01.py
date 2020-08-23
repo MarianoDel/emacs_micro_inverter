@@ -5,6 +5,7 @@ from sympy import *
 import matplotlib.pyplot as plt
 from scipy.signal import lti, bode, lsim, dbode, zpk2tf, tf2zpk, step2, cont2discrete, dstep, freqz, freqs, dlti, TransferFunction
 from tc_udemm import sympy_to_lti, lti_to_sympy, plot_argand
+from pid_tf import PID_float
 
 """
         MicroInversor - Etapa de salida de la parte Inverter
@@ -23,13 +24,14 @@ Bode_Sensor_Digital = False
 Polos_Ceros_Digital = False
 Escalon_Sensor_Digital = False
 Escalon_Sensor_Digital_Recursivo = False
-Bode_Controlador_Digital = True
+Bode_Controlador_Digital = False
 Bode_Sensor_OpenLoop_CloseLoop_Digital = False
 Polos_Ceros_CloseLoop_Digital = False
 Escalon_CloseLoop_Digital = False
 Vinput_PtP_Digital = False
 Setpoint_PtP_Digital = False
-Respuesta_CloseLoop_All_Inputs_Digital = True
+Respuesta_CloseLoop_All_Inputs_Digital_Fixed_PID = True
+Respuesta_CloseLoop_All_Inputs_Digital_Dinamic_PID = True
 
 #TF without constant
 s = Symbol('s')
@@ -37,8 +39,8 @@ s = Symbol('s')
 # desde Vinput (sin Vinput) al sensor de corriente
 Rload = 2.0
 Rsense = 0.33
-L1 = 1e-3
-L2 = 1e-3
+L1 = 1.8e-3
+L2 = 1.8e-3
 C = 0.44e-6
 Amp_gain = 9.2
 Vinput = 350    #promedio un input entre 350 cuando no hay contra fem y 20 con contra fem máxima
@@ -469,6 +471,8 @@ max_d_pwm = 1.0
 vin_plant[0:3] = 0
 vin_plant_d = np.zeros(t.size)
 
+pid_tf_float = PID_float(b_cont, a_cont)
+
 for i in range(3, len(vin_plant)):
     ###################################################
     # primero calculo el error, siempre punto a punto #
@@ -478,7 +482,7 @@ for i in range(3, len(vin_plant)):
     #############################
     # aplico Digital Controller #
     #############################
-    d[i] = b_cont[0] * error[i] + b_cont[1] * error[i-1] + b_cont[2] * error[i-2] - a_cont[1] * d[i - 1]
+    d[i] = pid_tf_float.newOutput(error[i])
 
     if d[i] > max_d_pwm:
         d[i] = max_d_pwm
@@ -502,9 +506,9 @@ for i in range(3, len(vin_plant)):
                     - a_sensor[3]*vout_plant[i-3]
 
                
-if Respuesta_CloseLoop_All_Inputs_Digital == True:     
+if Respuesta_CloseLoop_All_Inputs_Digital_Fixed_PID == True:     
     fig, ax = plt.subplots()
-    ax.set_title('Respuesta Realimentada punto a punto')
+    ax.set_title('Respuesta Realimentada punto a punto PID fijo')
     ax.set_ylabel('Tension en Sensor')
     ax.set_xlabel('Tiempo en muestras')
     ax.grid()
@@ -554,6 +558,9 @@ min_d_pwm = -0.005
 vin_plant[0:3] = 0
 vin_plant_d = np.zeros(t.size)
 
+pid_tf_float.resetFilter()
+signal_state = 'RISING'
+
 for i in range(3, len(vin_plant)):
     ###################################################
     # primero calculo el error, siempre punto a punto #
@@ -563,26 +570,29 @@ for i in range(3, len(vin_plant)):
     #############################################################
     # aplico Digital Controller dinamico en funcion de setpoint #
     #############################################################
-    if i > 210:
-        # puedo aplicar tensiones negativas chicas
-        d[i] = b_cont[0] * error[i] + b_cont[1] * error[i-1] + b_cont[2] * error[i-2] - a_cont[1] * d[i - 1]
-        if d[i] > max_d_pwm:
-            d[i] = max_d_pwm
+    if signal_state == 'RISING':
+        if vin_setpoint[i] >= 0.5:
+            signal_state = 'TOP'
+            pid_tf_float.changeParams(b_cont2, a_cont2)
 
-        if d[i] < 0:
-            if d[i] < min_d_pwm:
-                d[i] = min_d_pwm
-    else:
+    elif signal_state == 'TOP':
         if vin_setpoint[i] < 0.5:
-            d[i] = b_cont[0] * error[i] + b_cont[1] * error[i-1] + b_cont[2] * error[i-2] - a_cont[1] * d[i - 1]
-        else:
-            d[i] = b_cont2[0] * error[i] + b_cont2[1] * error[i-1] + b_cont2[2] * error[i-2] - a_cont2[1] * d[i - 1]
+            signal_state = 'FALLING'
+            pid_tf_float.changeParams(b_cont, a_cont)
 
-        if d[i] > max_d_pwm:
-            d[i] = max_d_pwm
+    elif signal_state == 'FALLING':
+        pass
 
-        if d[i] < 0:
-            d[i] = 0
+    d[i] = pid_tf_float.newOutput(error[i])
+        
+    if d[i] > max_d_pwm:
+        d[i] = max_d_pwm
+
+    if i > 210:
+        pass #permito valores negativos
+    
+    elif d[i] < 0:
+        d[i] = 0
 
     
     ########################################
@@ -598,9 +608,9 @@ for i in range(3, len(vin_plant)):
                     - a_sensor[3]*vout_plant[i-3]
 
                
-if Respuesta_CloseLoop_All_Inputs_Digital == True:     
+if Respuesta_CloseLoop_All_Inputs_Digital_Dinamic_PID == True:     
     fig, ax = plt.subplots()
-    ax.set_title('Respuesta Realimentada punto a punto')
+    ax.set_title('Respuesta Realimentada punto a punto PID dinamico')
     ax.set_ylabel('Tension en Sensor')
     ax.set_xlabel('Tiempo en muestras')
     ax.grid()

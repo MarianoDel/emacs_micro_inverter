@@ -32,7 +32,8 @@
 #define TT_FOR_NO_SYNC    60
 
 #define VLINE_SENSE_MIN_THRESOLD    200
-#define VLINE_SENSE_MAX    520    //supongo 220Vac en 465 +/- 10% 13-04 muevo a 520 por las lamparas en serie
+// #define VLINE_SENSE_MAX    520    //supongo 220Vac en 465 +/- 10% 13-04 muevo a 520 por las lamparas en serie
+#define VLINE_SENSE_MAX    540
 #define VLINE_SENSE_MIN    420
 
 

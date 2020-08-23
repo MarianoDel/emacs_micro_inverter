@@ -1488,17 +1488,23 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
 
 void CurrentLoop_Change_to_HighGain (void)
 {
-    current_pid.kp = 5;
-    current_pid.ki = 320;
-    current_pid.kd = 0;    
+    current_pid.kp = 0;
+    current_pid.ki = 3;
+    current_pid.kd = 0;
+    // current_pid.kp = 5;    
+    // current_pid.ki = 320;    
+    // current_pid.kd = 0;    
 }
 
 
 void CurrentLoop_Change_to_LowGain (void)
 {
-    current_pid.kp = 5;
-    current_pid.ki = 32;
-    current_pid.kd = 16;    
+    current_pid.kp = 0;
+    current_pid.ki = 3;
+    current_pid.kd = 0;    
+    // current_pid.kp = 5;
+    // current_pid.ki = 32;
+    // current_pid.kd = 16;    
 }
 
 

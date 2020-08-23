@@ -52,14 +52,8 @@ DLIBS =
 #
 
 #
-# Define project name and Ram = 0/Flash = 1 mode here
+# Define project name here
 PROJECT        = Template_F030
-
-# List all user C define here, like -D_DEBUG=1
-UDEFS =
-
-# Define ASM defines here
-UADEFS =
 
 # List C source files here
 CORELIBDIR = ./cmsis_core
@@ -95,11 +89,8 @@ ASRC = ./cmsis_boot/startup/startup_stm32f0xx.s
 
 # List User Directories for Libs Headers
 UINCDIR = $(BOOTDIR) \
-          $(CORELIBDIR) \
-          $(STMSPINCDDIR) \
-          $(DISCOVERY)    \
-          ./inc  
-		#../paho.mqtt.embedded-c/MQTTPacket/src
+          $(CORELIBDIR)
+	#../paho.mqtt.embedded-c/MQTTPacket/src
 
 # List the user directory to look for the libraries here
 ULIBDIR =

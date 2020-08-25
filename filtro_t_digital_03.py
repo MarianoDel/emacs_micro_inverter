@@ -5,6 +5,7 @@ from sympy import *
 import matplotlib.pyplot as plt
 from scipy.signal import lti, bode, lsim, dbode, zpk2tf, tf2zpk, step2, cont2discrete, dstep, freqz, freqs, dlti, TransferFunction
 from tc_udemm import sympy_to_lti, lti_to_sympy
+from pid_tf import PID_float
 
 """
         ESTE ARCHIVO USA UN CONTROL PID ENTRE CICLOS DE 100HZ - utiliza undersampling -
@@ -36,8 +37,8 @@ s = Symbol('s')
 # desde Vinput (sin Vinput) al sensor de corriente
 Rload = 2.0
 Rsense = 0.33
-L1 = 3e-3
-L2 = 3e-3
+L1 = 1.8e-3
+L2 = 1.8e-3
 C = 0.44e-6
 Amp_gain = 9.2
 Vinput = 350    #promedio un input entre 350 cuando no hay contra fem y 20 con contra fem máxima
@@ -425,7 +426,8 @@ for i in range (np.size(s_sen)):
         s_sen[i] = -s_sen[i]
 
 # vin_setpoint = np.ones(t.size)
-vin_setpoint = s_sen
+vin_setpoint = s_sen * 1023
+vin_setpoint = vin_setpoint.astype('int16')
 
 pre_distorted_duty = vin_setpoint / vin_plant
 
@@ -461,7 +463,7 @@ a_sensor = np.transpose(sensor_dig_zoh_d)
 ########################
 # LOOP DE  ITERACIONES #
 ########################
-loops = 1000
+loops = 200
 t_looped = np.linspace(0, tiempo_de_simulacion * loops, num=(tiempo_de_simulacion*Fsampling*loops))
 
 #armo un nuevo input
@@ -470,6 +472,8 @@ vin_setpoint_looped = np.zeros(t_looped.size)
 vout_plant_looped = np.zeros(t_looped.size)
 vin_plant_d_looped = np.zeros(t_looped.size)
 d_looped = np.zeros(t_looped.size)
+sensor_looped = np.zeros(t_looped.size)
+error_looped = np.zeros(t_looped.size)
 
 """ 
     Only for PI dig:
@@ -477,8 +481,8 @@ d_looped = np.zeros(t_looped.size)
     plateau gain ~= 20 log kp_dig
 
 """
-ki_dig = 1.0 / 5192
-kp_dig = 0.0    #1.28 / 128
+ki_dig = 1 / 128
+kp_dig = 0 / 128    #1.28 / 128
 kd_dig = 0.0
 
 k1 = kp_dig + ki_dig + kd_dig
@@ -494,47 +498,48 @@ d = np.zeros(t.size)
 vin_plant[0:3] = 0
 vin_plant_d = vin_plant * 1.0    #fuerzo que cree un nuevo vector
 
-d_z1 = np.zeros(t.size)
-error_z1 = np.zeros(t.size)
-error_z2 = np.zeros(t.size)
+sensor_adc = np.zeros(t.size)
+pid_list = []
+undersampling = 23
+under = undersampling
+
+for i in range(t.size):
+    pid_list.append(PID_float(b_pid, a_pid))
 
 for j in range(loops):
+
     # Veo el error que tuve
-    error = vin_setpoint - vout_plant
-    for i in range(t.size):
-        if error[i] > 0:
-            if error[i] < 0.1:
-                error[i] = 0
-        else:
-            if error[i] > -0.1:
-                error[i] = 0
+    if j > 0:
+        for i in range(sensor_adc.size):
+            sensor_adc[i] = sensor_looped[(j-1)*t.size + i]
+    
+    error = vin_setpoint - sensor_adc
 
     ###############################
     # PID y limite del duty cycle #
     ###############################
-    for i in range(1, t.size):
-        d[i] = b_pid[0] * error[i] \
-               + b_pid[1] * error_z1[i] \
-               + b_pid[2] * error_z2[i] \
-               - a_pid[1] * d_z1[i]
+    if j > 0:
+        for i in range(t.size):
+            if under:
+                under -= 1
+                d[i] = d[i-1]
+            else:
+                under = undersampling
 
-    d_z1 = d
-    error_z2 = error_z1
-    error_z1 = error
+                d[i] = pid_list[i].newOutput(error[i])
+                if i < 210:
+                    if d[i] < 0:
+                        d[i] = 0
 
-    d = d + error * 0.001
-    for k in range(d.size):
-        if d[k] < 0:
-            d[k] = 0
+                    if d[i] > 1000:
+                        d[i] = 1000
 
-        if d[k] > 1:
-            d[k] = 0
-
+                
+    ########################################
+    # aplico la transferencia de la planta #
+    ########################################
     for i in range(3, len(vin_plant)):
-        ########################################
-        # aplico la transferencia de la planta #
-        ########################################
-        vin_plant_d[i] = d[i] * vin_plant[i]
+        vin_plant_d[i] = d[i]/1000 * vin_plant[i]
         vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
                         + b_sensor[1]*vin_plant_d[i-1] \
                         + b_sensor[2]*vin_plant_d[i-2] \
@@ -544,13 +549,26 @@ for j in range(loops):
                         - a_sensor[3]*vout_plant[i-3]
 
 
+        sensor_adc = vout_plant / 3.3 * 1023
+        sensor_adc = np.array(sensor_adc, dtype=np.int16)
+        for i in range(sensor_adc.size):
+            if (sensor_adc[i] < 0):
+                sensor_adc[i] = 0
+
+            if (sensor_adc[i] > 1023):
+                sensor_adc[i] = 1023
+
+
+        
     # guardo valores al vector general
     for i in range (t.size):
         vin_plant_looped[i+j*t.size] = vin_plant[i]
         vin_setpoint_looped[i+j*t.size] = vin_setpoint[i]
         vout_plant_looped[i+j*t.size] = vout_plant[i]
+        sensor_looped[i+j*t.size] = sensor_adc[i]        
         vin_plant_d_looped[i+j*t.size] = vin_plant_d[i]
         d_looped[i+j*t.size] = d[i]
+        error_looped[i+j*t.size] = error[i]
 
 
 if Respuesta_CloseLoop_All_Inputs_Digital == True:     
@@ -563,7 +581,9 @@ if Respuesta_CloseLoop_All_Inputs_Digital == True:
     ax.plot(t_looped, vin_setpoint_looped, 'y', label="sp")
     # ax.stem(t, vout_plant)
     ax.plot(t_looped, vout_plant_looped, 'c', label="out")
+    ax.plot(t_looped, sensor_looped, 'g', label="sensor")    
     ax.plot(t_looped, vin_plant_d_looped, 'm', label="in")
+    ax.plot(t_looped, error_looped, 'k', label="error")    
     # ax.plot(t, vin_plant, 'm', label="in")    
     # ax.stem(t, vin_plant, 'm', label="in")    
     # ax.set_ylim(ymin=-10, ymax=360)

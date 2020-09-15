@@ -29,8 +29,7 @@ Bode_Sensor_Digital = False
 Escalon_Sensor_Digital = False
 Escalon_Sensor_Digital_Recursivo = False
 Vin_Setpoint_PtP_Digital_Signals = False
-Respuesta_CloseLoop_All_Inputs_Digital_PID_Float = True
-Respuesta_CloseLoop_All_Inputs_Digital_PID_Int = True
+Respuesta_PreDistorted_All_Inputs_Digital = True
 
 
 #TF without constant
@@ -251,9 +250,11 @@ for i in range (np.size(s_sen)):
     if s_sen[i] < 0:
         s_sen[i] = -s_sen[i]
 
-# vin_setpoint = np.ones(t.size)
-vin_setpoint = s_sen * 1023
-# vin_setpoint = s_sen * 512
+Imax = 127
+# Imax = 255
+# Imax = 511
+# Imax = 1023
+vin_setpoint = s_sen * Imax
 
 print ('Cant de muestras vin_plant: ' + str(vin_plant.size) + ' vin_setpoint: ' + str(vin_setpoint.size))
 
@@ -285,117 +286,43 @@ b_sensor = np.transpose(sensor_dig_zoh_n)
 a_sensor = np.transpose(sensor_dig_zoh_d)
 
 
-########################
-# LOOP DE  ITERACIONES #
-########################
-""" 
-    Only for PI dig:
-    w0 ~= ki_dig / kp_dig * Fsampling or Fundersampling
-    plateau gain ~= 20 log kp_dig
-
-"""
-# LOW GAIN PID
-ki_dig = 3 / 128
-# ki_dig = 0.0
-kp_dig = 10 / 128
-# kp_dig = 0.0
-# kd_dig = 5 / 128
-kd_dig = 0.0
-
-k1_low = kp_dig + ki_dig + kd_dig
-k2_low = -kp_dig - 2*kd_dig
-k3_low = kd_dig
-
-print (f'ki_low: {ki_dig} kp_low: {kp_dig} kd_low: {kd_dig}')
-
-# HIGH GAIN PID
-ki_dig = 16 / 128
-# ki_dig = 0.0
-kp_dig = 30 / 128
-# kp_dig = 0.0
-# kd_dig = 5 / 128
-kd_dig = 0.0
-
-k1_high = kp_dig + ki_dig + kd_dig
-k2_high = -kp_dig - 2*kd_dig
-k3_high = kd_dig
-
-print (f'ki_high: {ki_dig} kp_high: {kp_dig} kd_high: {kd_dig}')
-
-undersampling = 0
-print (f'undersamplig freq: {Fsampling/(undersampling + 1)}')
-
-
-#este es el pid
-b_pid = [k1_low, k2_low, k3_low]
-a_pid = [1, -1]
-pid_tf_float = PID_float(b_pid, a_pid)
-signal_phase = 'RISING'
-
-vout_plant = np.zeros(t.size)
+##############################
+# Pre-Distorted Duty-Cycle d #
+##############################
 d = np.zeros(t.size)
-vin_plant[0:3] = 0
+
+d = [ 5,  5,  5,  5,  5,  5,  8,  8,  7,  7,  5,  5,  6,  6,  7,  7,  5,  5,
+      6,  6,  7,  7,  7,  7,  7,  7,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10,
+      10, 10, 11, 11, 12, 12, 12, 12, 13, 13, 14, 14, 14, 14, 15, 15, 16, 16,
+      16, 16, 16, 16, 16, 16, 24, 24, 25, 25, 25, 25, 25, 26, 26, 27, 27, 27,
+      30, 30, 32, 32, 32, 32, 33, 33, 34, 34, 37, 37, 38, 38, 40, 40, 42, 42,
+      45, 45, 46, 46, 48, 48, 51, 51, 53, 53, 56, 56, 58, 58, 60, 60, 61, 61,
+      63, 63, 65, 65, 66, 66, 67, 67, 67, 67, 68, 68, 68, 68, 68, 68, 60, 60,
+      60, 60, 60, 60, 55, 55, 55, 55, 50, 50, 50, 50, 45, 45, 40, 40, 36, 36,
+      31, 31, 30, 30, 29, 29, 28, 28, 26, 26, 25, 25, 24, 24, 22, 22, 19, 19,
+      19, 19, 18, 18, 18, 18, 14, 14, 12, 12, 10, 10, 10, 10, 8, 8,  8,  8,
+      8,  8,  6,  6,  5,  5,  4,  4,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -2, -2,
+      -2, -2, -2, -2, -2, -2, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3,
+      -3, -3, -3, -3, -4, -4,]
+
 vin_plant_d = np.zeros(t.size)
-
-error = np.zeros(t.size)
+vout_plant = np.zeros(t.size)
 sensor_adc = np.zeros(t.size)
-under = undersampling
+
+#####################################
+# Ajusto d al valor de la corriente #
+#####################################
+d = np.array(d)
+d = d * Imax / 1023
+d = d.astype(dtype=np.int16)
 
 for i in range(3, len(vin_plant)):
-    ########################################
-    # aplico la transferencia de la planta #
-    ########################################
-    # muestra en el sensor adc
-    sensor_adc[i] = vout_plant[i-1] / 3.3 * 1023
-    sensor_adc[i] = int(sensor_adc[i])
-    if (sensor_adc[i] < 0):
-        sensor_adc[i] = 0
+    ######################################
+    # aplico pre-distorted d a la planta #
+    ######################################
 
-    if (sensor_adc[i] > 1023):
-        sensor_adc[i] = 1023
-
-    # Veo el error que tengo        
-    error[i] = vin_setpoint[i] - sensor_adc[i]
-
-    # aplico el pid
-    if (under):
-        under -= 1
-        d[i] = d[i-1]
-    else:
-        under = undersampling
-
-        if (signal_phase == 'RISING'):
-            if (i > 48):
-                signal_phase = 'MIDDLE'
-                b_pid = [k1_high, k2_high, k3_high]
-                pid_tf_float.changeParams(b_pid, a_pid)
-
-        if (signal_phase == 'MIDDLE'):
-            if (i > 160):
-                signal_phase = 'FALLING'
-                b_pid = [k1_low, k2_low, k3_low]
-                pid_tf_float.changeParams(b_pid, a_pid)                
-                
-        if (signal_phase == 'FALLING'):
-            if (i > 204):
-                signal_phase = 'REVERT'
-                
-
-        d[i] = pid_tf_float.newOutput(error[i])
-
-    # ajusto input a la planta por el efecto PWM
-    d[i] = int(d[i])
-    if (signal_phase != 'REVERT'):
-        if (d[i] < 0):
-            d[i] = 0
-    else:
-        if (d[i] < -100):
-            d[i] = -100
-
-    if (d[i] > 1000):
-        d[i] = 1000
-
-        
+    # aplico el pre-distorted d a la planta
     vin_plant_d[i] = d[i]/1000 * vin_plant[i]
 
     vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
@@ -406,141 +333,31 @@ for i in range(3, len(vin_plant)):
                     - a_sensor[2]*vout_plant[i-2] \
                     - a_sensor[3]*vout_plant[i-3]
 
+    # medicion del sensor adc
+    sensor_adc[i] = vout_plant[i] / 3.3 * 1023
+    sensor_adc[i] = int(sensor_adc[i])
+    if (sensor_adc[i] < 0):
+        sensor_adc[i] = 0
+
+    if (sensor_adc[i] > 1023):
+        sensor_adc[i] = 1023
 
 
-if Respuesta_CloseLoop_All_Inputs_Digital_PID_Float == True:     
+if Respuesta_PreDistorted_All_Inputs_Digital == True:     
     fig, ax = plt.subplots()
-    ax.set_title(f'Resultados PID Float')
+    ax.set_title(f'Resultados Pre Distorted')
     ax.set_ylabel('Tension en Sensor')
     ax.set_xlabel('Tiempo en muestras')
     ax.grid()
     ax.plot(t, d, 'r', label="d")
     ax.plot(t, vin_setpoint, 'y', label="sp")
-    # ax.stem(t, vout_plant)
     ax.plot(t, vout_plant, 'c', label="out")
     ax.plot(t, vin_plant_d, 'm', label="in")
-    ax.plot(t, error, 'b', label="error")    
     ax.plot(t, sensor_adc, 'g', label="sensor")
-    # ax.stem(t, vin_plant, 'm', label="in")    
-    # ax.set_ylim(ymin=-10, ymax=360)
     ax.legend(loc='upper left')
     plt.tight_layout()
     plt.show()
 
 
-
+print (d)
     
-# LOW GAIN PID INTEGRAL
-ki_dig = 3
-kp_dig = 10
-kd_dig = 0
-
-k1_low_int = kp_dig + ki_dig + kd_dig
-k2_low_int = -kp_dig - 2*kd_dig
-k3_low_int = kd_dig
-print (f'ki_low: {ki_dig} kp_low: {kp_dig} kd_low: {kd_dig}')
-
-# HIGH GAIN PID
-ki_dig = 16
-kp_dig = 30
-kd_dig = 0
-
-k1_high_int = kp_dig + ki_dig + kd_dig
-k2_high_int = -kp_dig - 2*kd_dig
-k3_high_int = kd_dig
-print (f'ki_high: {ki_dig} kp_high: {kp_dig} kd_high: {kd_dig}')
-
-pid_tf_int = PID_int([k1_low_int, k2_low_int, k3_low_int], a_pid, 128)
-signal_phase = 'RISING'
-
-error = np.zeros(t.size)
-sensor_adc = np.zeros(t.size)
-under = undersampling
-
-for i in range(3, len(vin_plant)):
-    ########################################
-    # aplico la transferencia de la planta #
-    ########################################
-    # muestra en el sensor adc
-    sensor_adc[i] = vout_plant[i-1] / 3.3 * 1023
-    sensor_adc[i] = int(sensor_adc[i])
-    if (sensor_adc[i] < 0):
-        sensor_adc[i] = 0
-
-    if (sensor_adc[i] > 1023):
-        sensor_adc[i] = 1023
-
-    # Veo el error que tengo        
-    error[i] = vin_setpoint[i] - sensor_adc[i]
-
-    # aplico el pid
-    if (under):
-        under -= 1
-        d[i] = d[i-1]
-    else:
-        under = undersampling
-
-        if (signal_phase == 'RISING'):
-            if (i > 48):
-                signal_phase = 'MIDDLE'
-                b_pid = [k1_high_int, k2_high_int, k3_high_int]
-                pid_tf_int.changeParams(b_pid, a_pid)
-
-        if (signal_phase == 'MIDDLE'):
-            if (i > 160):
-                signal_phase = 'FALLING'
-                b_pid = [k1_low_int, k2_low_int, k3_low_int]
-                pid_tf_int.changeParams(b_pid, a_pid)                
-                
-        if (signal_phase == 'FALLING'):
-            if (i > 204):
-                signal_phase = 'REVERT'
-                
-
-        d[i] = pid_tf_int.newOutput(error[i])
-
-    # ajusto input a la planta por el efecto PWM
-    d[i] = int(d[i])
-    if (signal_phase != 'REVERT'):
-        if (d[i] < 0):
-            d[i] = 0
-    else:
-        if (d[i] < -100):
-            d[i] = -100
-
-    if (d[i] > 1000):
-        d[i] = 1000
-
-        
-    vin_plant_d[i] = d[i]/1000 * vin_plant[i]
-
-    vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
-                    + b_sensor[1]*vin_plant_d[i-1] \
-                    + b_sensor[2]*vin_plant_d[i-2] \
-                    + b_sensor[3]*vin_plant_d[i-3] \
-                    - a_sensor[1]*vout_plant[i-1] \
-                    - a_sensor[2]*vout_plant[i-2] \
-                    - a_sensor[3]*vout_plant[i-3]
-
-
-
-if Respuesta_CloseLoop_All_Inputs_Digital_PID_Int == True:     
-    fig, ax = plt.subplots()
-    ax.set_title(f'Resultados PID Int')
-    ax.set_ylabel('Tension en Sensor')
-    ax.set_xlabel('Tiempo en muestras')
-    ax.grid()
-    ax.plot(t, d, 'r', label="d")
-    ax.plot(t, vin_setpoint, 'y', label="sp")
-    # ax.stem(t, vout_plant)
-    ax.plot(t, vout_plant, 'c', label="out")
-    ax.plot(t, vin_plant_d, 'm', label="in")
-    ax.plot(t, error, 'b', label="error")    
-    ax.plot(t, sensor_adc, 'g', label="sensor")
-    # ax.stem(t, vin_plant, 'm', label="in")    
-    # ax.set_ylim(ymin=-10, ymax=360)
-    ax.legend(loc='upper left')
-    plt.tight_layout()
-    plt.show()
-
-# print (d)

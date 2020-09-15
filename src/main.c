@@ -189,11 +189,14 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,13
 #endif
 
 
+#define INDEX_TO_MIDDLE    47
+#define INDEX_TO_FALLING    156
+#define INDEX_TO_REVERT    204
+    
 unsigned short * p_current_ref;
 unsigned short * p_voltage_ref;
 pid_data_obj_t current_pid;
 pid_data_obj_t voltage_pid;
-
 
 // Module Functions ----------------------------------------
 void PWM_Off (void);
@@ -1026,12 +1029,16 @@ int main(void)
     // Initial Setup for PID Controller
     PID_Small_Ki_Flush_Errors(&current_pid);
     CurrentLoop_Change_to_LowGain();
-    typedef enum {
-        PID_LOW_GAIN = 0,
-        PID_HIGH_GAIN
-    } pid_gain_st;
 
-    pid_gain_st pid_gain_state = PID_LOW_GAIN;
+    typedef enum {
+        SIGNAL_RISING = 0,
+        SIGNAL_MIDDLE,
+        SIGNAL_FALLING,
+        SIGNAL_REVERT
+        
+    } signal_state_st;
+
+    signal_state_st signal_state = SIGNAL_RISING;
     unsigned short d = 0;
     unsigned short cycles_before_start = CYCLES_BEFORE_START;
     
@@ -1135,37 +1142,63 @@ int main(void)
                 LED_ON;
 #endif
                 //Adelanto la seniales de corriente,
-                //el d depende de cual deba ajustar
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
+                    unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
+                    
                     //loop de corriente
                     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
 
-                    unsigned int calc_gain = *p_current_ref * KI_SIGNAL_50_PERCENT;
-                    calc_gain = calc_gain >> 10;
-                    
-                    switch (pid_gain_state)
+                    switch (signal_state)
                     {
-                    case PID_LOW_GAIN:
-                        if (*p_current_ref > calc_gain)
+                    case SIGNAL_RISING:
+                        d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+                        HIGH_LEFT(d);
+
+                        if (signal_index > INDEX_TO_MIDDLE)
                         {
-                            pid_gain_state = PID_HIGH_GAIN;
                             CurrentLoop_Change_to_HighGain();
+                            signal_state = SIGNAL_MIDDLE;
                         }
                         break;
 
-                    case PID_HIGH_GAIN:
-                        if (*p_current_ref < calc_gain)
+                    case SIGNAL_MIDDLE:
+                        d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+                        HIGH_LEFT(d);
+
+                        if (signal_index > INDEX_TO_FALLING)
                         {
-                            pid_gain_state = PID_LOW_GAIN;
                             CurrentLoop_Change_to_LowGain();
+                            signal_state = SIGNAL_FALLING;
                         }
                         break;
+
+                    case SIGNAL_FALLING:
+                        d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+                        HIGH_LEFT(d);
+
+                        if (signal_index > INDEX_TO_REVERT)
+                        {
+                            // CurrentLoop_Change_to_LowGain();
+                            signal_state = SIGNAL_REVERT;
+                            HIGH_LEFT(DUTY_NONE);
+                        }
+                        break;
+
+                    case SIGNAL_REVERT:
+                        // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+                        // HIGH_LEFT(d);
+
+                        // if (signal_index > 204)
+                        // {
+                        //     CurrentLoop_Change_to_LowGain();
+                        //     signal_state = SIGNAL_REVERT;
+                        // }
+                        break;
+                        
                     }
                     
-                    d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-                    HIGH_LEFT(d);
                     p_current_ref++;
                 }
                 else
@@ -1185,7 +1218,7 @@ int main(void)
                 HIGH_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_ALWAYS);
-                sequence_ready_reset;                
+                sequence_ready_reset;
             }
             else if (!SYNC_All_Good())
             {
@@ -1226,6 +1259,7 @@ int main(void)
                     PID_Small_Ki_Flush_Errors(&current_pid);
                     p_current_ref = sin_half_cycle;
                     CurrentLoop_Change_to_LowGain();
+                    signal_state = SIGNAL_RISING;
                     ac_sync_state = GEN_NEG;
                     
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -1245,37 +1279,63 @@ int main(void)
                 LED_ON;
 #endif
                 //Adelanto la senial de corriente,
-                //el d depende de cual deba ajustar
                 if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
                 {
+                    unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
+                    
                     //loop de corriente
                     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
                     calc = calc >> 10;
-                    
-                    unsigned int calc_gain = *p_current_ref * KI_SIGNAL_50_PERCENT;
-                    calc_gain = calc_gain >> 10;
-                    
-                    switch (pid_gain_state)
+
+                    switch (signal_state)
                     {
-                    case PID_LOW_GAIN:
-                        if (*p_current_ref > calc_gain)
+                    case SIGNAL_RISING:
+                        d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+                        HIGH_RIGHT(d);
+
+                        if (signal_index > INDEX_TO_MIDDLE)
                         {
-                            pid_gain_state = PID_HIGH_GAIN;
                             CurrentLoop_Change_to_HighGain();
+                            signal_state = SIGNAL_MIDDLE;
                         }
                         break;
 
-                    case PID_HIGH_GAIN:
-                        if (*p_current_ref < calc_gain)
+                    case SIGNAL_MIDDLE:
+                        d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+                        HIGH_RIGHT(d);
+
+                        if (signal_index > INDEX_TO_FALLING)
                         {
-                            pid_gain_state = PID_LOW_GAIN;
                             CurrentLoop_Change_to_LowGain();
+                            signal_state = SIGNAL_FALLING;
                         }
                         break;
+
+                    case SIGNAL_FALLING:
+                        d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+                        HIGH_RIGHT(d);
+
+                        if (signal_index > INDEX_TO_REVERT)
+                        {
+                            // CurrentLoop_Change_to_LowGain();
+                            signal_state = SIGNAL_REVERT;
+                            HIGH_RIGHT(DUTY_NONE);
+                        }
+                        break;
+
+                    case SIGNAL_REVERT:
+                        // d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+                        // HIGH_RIGHT(d);
+
+                        // if (signal_index > 204)
+                        // {
+                        //     CurrentLoop_Change_to_LowGain();
+                        //     signal_state = SIGNAL_REVERT;
+                        // }
+                        break;
+                        
                     }
                     
-                    d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-                    HIGH_RIGHT(d);
                     p_current_ref++;
                 }
                 else
@@ -1338,6 +1398,7 @@ int main(void)
                     PID_Small_Ki_Flush_Errors(&current_pid);
                     p_current_ref = sin_half_cycle;
                     CurrentLoop_Change_to_LowGain();
+                    signal_state = SIGNAL_RISING;
                     ac_sync_state = GEN_POS;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -1488,9 +1549,14 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
 
 void CurrentLoop_Change_to_HighGain (void)
 {
-    current_pid.kp = 0;
+    current_pid.kp = 10;
     current_pid.ki = 3;
     current_pid.kd = 0;
+
+    // current_pid.kp = 30;
+    // current_pid.ki = 16;
+    // current_pid.kd = 0;
+    
     // current_pid.kp = 5;    
     // current_pid.ki = 320;    
     // current_pid.kd = 0;    
@@ -1499,7 +1565,7 @@ void CurrentLoop_Change_to_HighGain (void)
 
 void CurrentLoop_Change_to_LowGain (void)
 {
-    current_pid.kp = 0;
+    current_pid.kp = 10;
     current_pid.ki = 3;
     current_pid.kd = 0;    
     // current_pid.kp = 5;

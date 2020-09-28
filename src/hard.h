@@ -40,10 +40,10 @@
 //-- Types of programs ----------
 // #define HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
 // #define HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
-// #define INVERTER_MODE_VOLTAGE_FDBK
+#define INVERTER_MODE_VOLTAGE_FDBK
 // #define INVERTER_MODE_CURRENT_FDBK
 // #define GRID_TIED_ONLY_SYNC_AND_POLARITY
-#define GRID_TIED_FULL_CONECTED
+// #define GRID_TIED_FULL_CONECTED
 
 
 //-- Types of led indications ----------
@@ -51,10 +51,10 @@
 // #define USE_LED_FOR_SYNC_PULSES
 // #define USE_LED_FOR_ZERO_CROSSING
 // #define USE_LED_FOR_VLINE_MAX
-// #define USE_LED_FOR_MAIN_POLARITY
+#define USE_LED_FOR_MAIN_POLARITY
 // #define USE_LED_FOR_MAIN_POLARITY_BEFORE_GEN    //este y el de arriba los puedo combinar
 // #define USE_LED_FOR_PROTECTIONS
-#define USE_LED_FOR_PID_CALCS
+// #define USE_LED_FOR_PID_CALCS
 // #define USE_LED_FOR_MAIN_STATES
 
 //-- Frequency selection ----------

@@ -28,7 +28,7 @@
 #include "dsp.h"
 #include "it.h"
 #include "sync.h"
-
+#include "test_functions.h"
 
 // Externals -----------------------------------------------
 
@@ -290,63 +290,13 @@ int main(void)
 
     EXTIOn();
 
-#ifdef HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
-    //Respuesta escalon 5ms lado positivo
-    LOW_LEFT(DUTY_NONE);
-    HIGH_RIGHT(DUTY_NONE);
-    LOW_RIGHT(DUTY_ALWAYS);
-    LED_OFF;            
-    RELAY_ON;
-    Wait_ms(100);
-
-    while(1)
-    {
-        if (!STOP_JUMPER)
-        {
-            LED_ON;
-            HIGH_LEFT(DUTY_100_PERCENT);
-            Wait_ms(5);
-            HIGH_LEFT(DUTY_NONE);
-            LED_OFF;
-            //espero que baje la salida al menos al 10%
-            while (V_Sense > 100);
-            Wait_ms(10);
-            
-        }
-        else
-            Wait_ms(500);
-
-    }
-#endif
-
-#ifdef HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
-    //Respuesta escalon 5ms lado negativo
-    LOW_RIGHT(DUTY_NONE);
-    HIGH_LEFT(DUTY_NONE);
-    LOW_LEFT(DUTY_ALWAYS);
-    LED_OFF;            
-    RELAY_ON;
-    Wait_ms(100);
-
-    while(1)
-    {
-        if (!STOP_JUMPER)
-        {
-            LED_ON;
-            HIGH_RIGHT(DUTY_100_PERCENT);
-            Wait_ms(5);
-            HIGH_RIGHT(DUTY_NONE);
-            LED_OFF;
-            //espero que baje la salida al menos al 10%
-            while (V_Sense > 100);
-            Wait_ms(10);
-            
-        }
-        else
-            Wait_ms(500);
-
-    }
-#endif
+    // funciones de test
+    // TF_RelayConnect();
+    // TF_RelayACPOS();
+    // TF_RelayACNEG();
+    // TF_RelayFiftyHz();
+    TF_OnlySyncAndPolarity();
+        
     
 #ifdef INVERTER_MODE_VOLTAGE_FDBK
     // Initial Setup for PID Controller
@@ -374,18 +324,18 @@ int main(void)
             timer_standby = 200;
             EnablePreload_Mosfet_HighLeft;
             EnablePreload_Mosfet_HighRight;
-            ac_sync_state++;
+            ac_sync_state = WAIT_RELAY_TO_ON;
             break;
 
         case WAIT_RELAY_TO_ON:
             if (!timer_standby)
             {
                 p_voltage_ref = sin_half_cycle;
-                ac_sync_state = FIRST_SOFT_START_CYCLE;
                 d = 0;
                 HIGH_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_ALWAYS);
+                ac_sync_state = FIRST_SOFT_START_CYCLE;
             }
             break;
 
@@ -892,135 +842,6 @@ int main(void)
 #endif    // INVERTER_MODE_CURRENT_FDBK
     
     
-#ifdef GRID_TIED_ONLY_SYNC_AND_POLARITY
-
-    while (1)
-    {
-        switch (ac_sync_state)
-        {
-        case START_SYNCING:
-            ac_sync_state++;
-            break;
-
-        case WAIT_RELAY_TO_ON:
-            ac_sync_state = WAIT_FOR_FIRST_SYNC;
-            SYNC_Sync_Now_Reset();            
-            break;
-
-        case WAIT_FOR_FIRST_SYNC:
-            if (SYNC_Sync_Now())
-            {
-                if (SYNC_Last_Polarity_Check() == POLARITY_POS)
-                {
-                    ac_sync_state = GEN_NEG;
-#ifdef USE_LED_FOR_MAIN_POLARITY
-                    LED_OFF;
-#endif
-                }
-                else if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
-                {
-                    ac_sync_state = GEN_POS;
-#ifdef USE_LED_FOR_MAIN_POLARITY                    
-                    LED_ON;
-#endif
-                }
-                else    //debe haber un error en synchro
-                    ac_sync_state = START_SYNCING;
-                
-                SYNC_Sync_Now_Reset();
-            }
-            break;
-        
-        case GEN_POS:
-            if (SYNC_Sync_Now())
-            {
-                ac_sync_state = WAIT_CROSS_POS_TO_NEG;
-                SYNC_Sync_Now_Reset();
-            }
-
-            //TODO: poner timeout para salir aca o revisar POLARITY_UNKNOWN
-            break;
-
-        case WAIT_CROSS_POS_TO_NEG:
-            if (SYNC_Last_Polarity_Check() == POLARITY_POS)
-            {
-                ac_sync_state = GEN_NEG;
-#ifdef USE_LED_FOR_MAIN_POLARITY                
-                LED_OFF;
-#endif                
-            }
-            else    //debe haber un error de synchro
-                ac_sync_state = START_SYNCING;
-
-            break;
-            
-        case GEN_NEG:
-            if (SYNC_Sync_Now())
-            {
-                ac_sync_state = WAIT_CROSS_NEG_TO_POS;
-                SYNC_Sync_Now_Reset();
-            }
-            
-            //TODO: poner timeout para salir aca o revisar POLARITY_UNKNOWN            
-            break;
-
-        case WAIT_CROSS_NEG_TO_POS:
-            if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
-            {
-                ac_sync_state = GEN_POS;
-#ifdef USE_LED_FOR_MAIN_POLARITY                
-                LED_ON;
-#endif
-            }
-            else    //debe haber un error de synchro
-                ac_sync_state = START_SYNCING;
-                    
-            break;
-
-        default:
-            ac_sync_state = START_SYNCING;
-            break;
-            
-        }
-
-        SYNC_Update_Sync();
-        SYNC_Update_Polarity();
-
-        //Cosas que no tienen tanto que ver con las muestras o el estado del programa
-        if (!timer_standby)
-        {
-            if (!STOP_JUMPER)
-            {
-                if (!RELAY)
-                {
-                    RELAY_ON;
-                    timer_standby = 500;
-                }
-            }
-            else
-            {
-                if (RELAY)
-                {
-                    RELAY_OFF;
-                    timer_standby = 500;
-                }
-            }
-        }
-            
-        
-        if (SYNC_Cycles_Cnt() > 100)
-        {
-            SYNC_Cycles_Cnt_Reset();
-            sprintf(s_lcd, "d_t1_bar: %d d_t2: %d pol: %d st: %d vline: %d\n",
-                    delta_t1_bar,
-                    delta_t2,
-                    SYNC_Last_Polarity_Check(),
-                    ac_sync_state,
-                    SYNC_Vline_Max());
-            Usart1Send(s_lcd);            
-        }
-    }
-#endif     // GRID_TIED_ONLY_SYNC_AND_POLARITY
     
     
     //--- Grid Tied Mode ----------

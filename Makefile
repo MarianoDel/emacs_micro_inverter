@@ -195,4 +195,13 @@ clean:
 #   rm $(ASRC:.s=.s.bak)
 	rm -f $(ASRC:.s=.lst)
 
+tests:
+	# primero objetos de los modulos a testear, solo si son tipo HAL sin dependencia del hard
+	gcc -c src/dsp.c -I. $(INCDIR)
+	gcc src/tests.c dsp.o -lm
+	./a.out
+	# sino copiar funcion a testear al main de tests.c
+	# gcc src/tests.c
+	# ./a.out
+
 # *** EOF ***

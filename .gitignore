@@ -4,6 +4,7 @@
 *.elf
 *.map
 *.bin
+*.out
 .tags
 GPATH
 GRTAGS

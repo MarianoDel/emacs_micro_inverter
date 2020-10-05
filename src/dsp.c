@@ -191,14 +191,17 @@ short PID (pid_data_obj_t * p)
     //K1
     acc = k1 * error;
     val_k1 = acc / 128;
+    // val_k1 = acc / 1024;    
 
     //K2
     acc = k2 * p->error_z1;
     val_k2 = acc / 128;
+    // val_k2 = acc / 1024;    
 
     //K3
     acc = k3 * p->error_z2;
     val_k3 = acc / 128;
+    // val_k3 = acc / 1024;    
 
     d = p->last_d + val_k1 - val_k2 + val_k3;
 

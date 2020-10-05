@@ -59,16 +59,36 @@ class PID_int:
 
     def newOutput(self, new_input):
         error = np.int16(new_input)
-        new_output = np.int16(0)
+        new_output = np.int32(0)
         new_output = self.b_pid[0] * error / self.div \
                      + self.b_pid[1] * self.error_z1 / self.div \
                      + self.b_pid[2] * self.error_z2 / self.div \
                      - self.a_pid[1] * self.new_output_z1
 
-        self.new_output_z1 = new_output
+        self.new_output_z1 = np.int16(new_output)
         self.error_z2 = self.error_z1
         self.error_z1 = error
 
-        return new_output
+        return np.int16(new_output)
 
+    
+    def showParamsFromK (self, kp, ki, kd, Fsampling):
+        f0 = ki * Fsampling / (kp * 6.28)
+        if kd != 0:
+            f1 = (kp * 10) / (kd * Fsampling * 6.28)
+        else:
+            f1 = 'none'
 
+        gain = kp / self.div
+        print(f"f0 = {f0} f1 = {f1} plateu gain = {gain}")
+
+        
+    def changeParamsFromK (self, kp, ki, kd):
+        k1 = kp + ki + kd
+        k2 = -kp - 2*kd
+        k3 = kd
+        b_pid_int = [k1, k2, k3]
+        a_pid_int = [1, -1]
+        self.changeParams(b_pid_int, a_pid_int)
+
+        

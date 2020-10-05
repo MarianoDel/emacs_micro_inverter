@@ -18,7 +18,8 @@ typedef enum {
     SIGNAL_RISING = 0,
     SIGNAL_MIDDLE,
     SIGNAL_FALLING,
-    SIGNAL_REVERT
+    SIGNAL_REVERT,
+    SIGNAL_DO_NOTHING    
         
 } signal_state_st;
 
@@ -60,7 +61,9 @@ pid_data_obj_t current_pid;
 unsigned short reference [SIZEOF_SIGNAL] = { 0 };
 unsigned short duty_high_left [SIZEOF_SIGNAL] = { 0 };
 unsigned short vinput[SIZEOF_SIGNAL] = { 0 };
-unsigned short voutput[SIZEOF_SIGNAL] = { 0 };
+float vinput_applied[SIZEOF_SIGNAL] = { 0 };
+float voutput[SIZEOF_SIGNAL] = { 0 };
+unsigned short voutput_adc[SIZEOF_SIGNAL] = { 0 };
 
 // Module Functions to Test ----------------------------------------------------
 unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample);
@@ -69,14 +72,35 @@ void CurrentLoop_Change_to_LowGain (void);
 
 void Test_ACPOS (void);
 
-unsigned short Plant_Out (short duty);
+float Plant_Out (float);
+void Plant_Step_Response (void);
+void Plant_Step_Response_Duty (void);
+
+unsigned short Adc12BitsConvertion (float );
 void HIGH_LEFT (unsigned short duty);
 void LOW_RIGHT (unsigned short duty);
+
+//Auxiliares
+void ShowVectorFloat (char *, float *, unsigned char);
+void ShowVectorUShort (char *, unsigned short *, unsigned char);
+void ShowVectorInt (char *, int *, unsigned char);
 
 // Module Functions ------------------------------------------------------------
 int main (int argc, char *argv[])
 {
-    PID_Small_Ki_Flush_Errors(&current_pid);
+    //pruebo un step de la planta
+    // Plant_Step_Response();
+
+    //pruebo un step de la planta pero con duty y vinput
+    //la tension de entrada es tan alta que incluso con duty_max = 10000
+    //tengo errores del 2%
+    // Plant_Step_Response_Duty();
+    
+    
+
+    //programa loop realimentado
+    // PID_Small_Ki_Flush_Errors(&current_pid);
+    PID_Flush_Errors(&current_pid);    
     CurrentLoop_Change_to_LowGain();
 
     p_current_ref = sin_half_cycle;
@@ -93,72 +117,22 @@ int main (int argc, char *argv[])
     {
         Test_ACPOS();
     }
-    
-    printf("\nVector reference:\n");
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
-        printf("index: %03d d: %d %d %d %d %d %d %d %d\n",
-               i,
-               reference[i+0],
-               reference[i+1],
-               reference[i+2],
-               reference[i+3],
-               reference[i+4],
-               reference[i+5],
-               reference[i+6],
-               reference[i+7]);
 
-    printf("\nVector voltage input:\n");
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
-        printf("index: %03d d: %d %d %d %d %d %d %d %d\n",
-               i,
-               vinput[i+0],
-               vinput[i+1],
-               vinput[i+2],
-               vinput[i+3],
-               vinput[i+4],
-               vinput[i+5],
-               vinput[i+6],
-               vinput[i+7]);
-                              
-    printf("\nVector duty_high_left:\n");
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
-        printf("index: %03d d: %d %d %d %d %d %d %d %d\n",
-               i,
-               duty_high_left[i+0],
-               duty_high_left[i+1],
-               duty_high_left[i+2],
-               duty_high_left[i+3],
-               duty_high_left[i+4],
-               duty_high_left[i+5],
-               duty_high_left[i+6],
-               duty_high_left[i+7]);
+    // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+    // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);    
+    ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
 
-    printf("\nVector plant output:\n");
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
-        printf("index: %03d d: %d %d %d %d %d %d %d %d\n",
-               i,
-               voutput[i+0],
-               voutput[i+1],
-               voutput[i+2],
-               voutput[i+3],
-               voutput[i+4],
-               voutput[i+5],
-               voutput[i+6],
-               voutput[i+7]);
+    ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
+    ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
 
-    printf("\nPlant output error:\n");
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
-        printf("index: %03d d: %d %d %d %d %d %d %d %d\n",
-               i,
-               reference[i+0] - voutput[i+0],
-               reference[i+1] - voutput[i+1],
-               reference[i+2] - voutput[i+2],
-               reference[i+3] - voutput[i+3],
-               reference[i+4] - voutput[i+4],
-               reference[i+5] - voutput[i+5],
-               reference[i+6] - voutput[i+6],
-               reference[i+7] - voutput[i+7]);
-    
+    ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, SIZEOF_SIGNAL);
+
+    int error [SIZEOF_SIGNAL] = { 0 };
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+        error[i] = reference[i] - voutput_adc[i];
+
+    ShowVectorInt("\nPlant output error:\n", error, SIZEOF_SIGNAL);
+    ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
 
     return 0;
 }
@@ -202,7 +176,6 @@ void Test_ACPOS (void)
         reference[signal_index] = (unsigned short) calc;
 
         I_Sense_Pos = last_output;
-        voutput[signal_index] = last_output;
 
         switch (signal_state)
         {
@@ -214,6 +187,7 @@ void Test_ACPOS (void)
             {
                 CurrentLoop_Change_to_HighGain();
                 signal_state = SIGNAL_MIDDLE;
+                // signal_state = SIGNAL_DO_NOTHING;
             }
             break;
 
@@ -234,15 +208,14 @@ void Test_ACPOS (void)
 
             if (signal_index > INDEX_TO_REVERT)
             {
-                // CurrentLoop_Change_to_LowGain();
+                CurrentLoop_Change_to_LowGain();
                 signal_state = SIGNAL_REVERT;
-                HIGH_LEFT(DUTY_NONE);
             }
             break;
 
         case SIGNAL_REVERT:
-            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            // HIGH_LEFT(d);
+            d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+            HIGH_LEFT(d);
 
             // if (signal_index > 204)
             // {
@@ -250,7 +223,11 @@ void Test_ACPOS (void)
             //     signal_state = SIGNAL_REVERT;
             // }
             break;
-                        
+
+        case SIGNAL_DO_NOTHING:
+            HIGH_LEFT(0);
+            break;
+            
         }
                     
         p_current_ref++;
@@ -268,7 +245,8 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
     
     current_pid.setpoint = setpoint;
     current_pid.sample = new_sample;
-    d = PID_Small_Ki(&current_pid);
+    // d = PID_Small_Ki(&current_pid);
+    d = PID(&current_pid);
                     
     if (d > 0)
     {
@@ -306,8 +284,8 @@ void CurrentLoop_Change_to_HighGain (void)
 
 void CurrentLoop_Change_to_LowGain (void)
 {
-    current_pid.kp = 100;
-    current_pid.ki = 320;
+    current_pid.kp = 10;
+    current_pid.ki = 3;
     current_pid.kd = 0;    
     // current_pid.kp = 5;
     // current_pid.ki = 32;
@@ -318,10 +296,20 @@ void CurrentLoop_Change_to_LowGain (void)
 unsigned char cntr_high_left = 0;
 void HIGH_LEFT (unsigned short duty)
 {
+    float out = 0.0;
+    float input = 0.0;
+    
     duty_high_left[cntr_high_left] = duty;
 
     //aplico el nuevo duty a la planta
-    last_output = Plant_Out(duty);
+    input = vinput[cntr_high_left] * duty;
+    input = input / DUTY_100_PERCENT;
+    vinput_applied[cntr_high_left] = input;
+
+    voutput[cntr_high_left] = Plant_Out(input);
+    voutput_adc[cntr_high_left] = Adc12BitsConvertion(voutput[cntr_high_left]);
+    last_output = voutput_adc[cntr_high_left];
+    
     cntr_high_left++;
 }
 
@@ -338,17 +326,16 @@ void LOW_RIGHT (unsigned short duty)
 
 //b[3]: [0.] b[2]: [0.02032562] b[1]: [0.0624813] b[0]: [0.01978482]
 //a[3]: 1.0 a[2]: 0.011881459485754697 a[1]: 0.014346828516393684 a[0]: -0.9474935161284341
-float output = 0;
-float output_z1 = 0;
-float output_z2 = 0;
-float output_z3 = 0;
-float input = 0;
-float input_z1 = 0;
-float input_z2 = 0;
-float input_z3 = 0;
+float output = 0.0;
+float output_z1 = 0.0;
+float output_z2 = 0.0;
+float output_z3 = 0.0;
+float input_z1 = 0.0;
+float input_z2 = 0.0;
+float input_z3 = 0.0;
 
 unsigned char cntr_plant = 0;
-unsigned short Plant_Out (short duty)
+float Plant_Out (float in)
 {
     float output_b = 0.0;
     float output_a = 0.0;
@@ -356,17 +343,16 @@ unsigned short Plant_Out (short duty)
     // output = 0. * input + 0.02032 * input_z1 + 0.06248 * input_z2 + 0.01978 * input_z3
     //     - 0.01188 * output_z1 - 0.01434 * output_z2 + 0.94749 * output_z3;
 
-    input = vinput[cntr_plant] * duty / 1000;
     if (cntr_plant > 2)
     {
-        output_b = 0. * input + 0.02032 * input_z1 + 0.06248 * input_z2 + 0.01978 * input_z3;
+        output_b = 0. * in + 0.02032 * input_z1 + 0.06248 * input_z2 + 0.01978 * input_z3;
         output_a = 0.01188 * output_z1 + 0.01434 * output_z2 - 0.94749 * output_z3;
 
         output = output_b - output_a;
 
         input_z3 = input_z2;
         input_z2 = input_z1;        
-        input_z1 = input;
+        input_z1 = in;
 
         output_z3 = output_z2;
         output_z2 = output_z1;        
@@ -375,42 +361,164 @@ unsigned short Plant_Out (short duty)
     }
     else if (cntr_plant > 1)
     {
-        output_b = 0. * input + 0.02032 * input_z1 + 0.06248 * input_z2;
+        output_b = 0. * in + 0.02032 * input_z1 + 0.06248 * input_z2;
         output_a = 0.01188 * output_z1 + 0.01434 * output_z2;
         output = output_b - output_a;
 
         input_z2 = input_z1;
-        input_z1 = input;
+        input_z1 = in;
 
         output_z2 = output_z1;
         output_z1 = output;
     }
     else if (cntr_plant > 0)
     {
-        output_b = 0. * input + 0.02032 * input_z1;
+        output_b = 0. * in + 0.02032 * input_z1;
         output_a = 0.01188 * output_z1;
         output = output_b - output_a;
 
         input_z2 = input_z1;
-        input_z1 = input;
+        input_z1 = in;
 
         output_z2 = output_z1;
         output_z1 = output;
     }
     else
     {
-        output = 0. * input;
+        output = 0. * in;
         
-        input_z1 = input;
+        input_z1 = in;
 
         output_z1 = output;
     }
 
     cntr_plant++;
 
-    return (unsigned short) output;
+    return output;
 }
 
+
+void Plant_Step_Response (void)
+{
+    printf("\nPlant Step Response\n");
+    
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        vinput[i] = 1;
+    }
+
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        voutput[i] = Plant_Out(vinput[i]);
+    }
+    
+
+    ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
+    ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
+
+}
+
+
+void Plant_Step_Response_Duty (void)
+{
+    printf("\nPlant Step Response with duty and vinput\n");
+
+    unsigned short d = 28;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        vinput[i] = 350;
+    }
+
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        vinput_applied[i] = vinput[i] * d;
+        vinput_applied[i] = vinput_applied[i] / DUTY_100_PERCENT;
+        voutput[i] = Plant_Out(vinput_applied[i]);
+    }
+    
+
+    ShowVectorFloat("\nVector voltage input applied:\n", vinput_applied, SIZEOF_SIGNAL);
+    ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
+    
+    unsigned short adc_out [SIZEOF_SIGNAL] = { 0 };
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+        adc_out[i] = Adc12BitsConvertion(voutput[i]);
+
+    ShowVectorUShort("\nVector plant output ADC:\n", adc_out, SIZEOF_SIGNAL);
+    
+}
+
+
+unsigned short Adc12BitsConvertion (float sample)
+{
+    if (sample > 0.0001)
+    {
+        sample = sample / 3.3;
+        sample = sample * 4095;
+        
+        if (sample > 4095)
+            sample = 4095;
+    }
+    else
+        sample = 0.0;
+
+    return (unsigned short) sample;
+    
+}
+
+
+void ShowVectorFloat (char * s_comment, float * f_vect, unsigned char size)
+{
+    printf(s_comment);
+    for (unsigned char i = 0; i < size; i+=8)
+        printf("index: %03d - %f %f %f %f %f %f %f %f\n",
+               i,
+               *(f_vect+i+0),
+               *(f_vect+i+1),
+               *(f_vect+i+2),
+               *(f_vect+i+3),
+               *(f_vect+i+4),
+               *(f_vect+i+5),
+               *(f_vect+i+6),
+               *(f_vect+i+7));
+    
+}
+
+
+void ShowVectorUShort (char * s_comment, unsigned short * int_vect, unsigned char size)
+{
+    printf(s_comment);
+    for (unsigned char i = 0; i < size; i+=8)
+        printf("index: %03d - %d %d %d %d %d %d %d %d\n",
+               i,
+               *(int_vect+i+0),
+               *(int_vect+i+1),
+               *(int_vect+i+2),
+               *(int_vect+i+3),
+               *(int_vect+i+4),
+               *(int_vect+i+5),
+               *(int_vect+i+6),
+               *(int_vect+i+7));
+    
+}
+
+
+void ShowVectorInt (char * s_comment, int * int_vect, unsigned char size)
+{
+    printf(s_comment);
+    for (unsigned char i = 0; i < size; i+=8)
+        printf("index: %03d - %d %d %d %d %d %d %d %d\n",
+               i,
+               *(int_vect+i+0),
+               *(int_vect+i+1),
+               *(int_vect+i+2),
+               *(int_vect+i+3),
+               *(int_vect+i+4),
+               *(int_vect+i+5),
+               *(int_vect+i+6),
+               *(int_vect+i+7));
+    
+}
 
 //--- end of file ---//
 

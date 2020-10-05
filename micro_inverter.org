@@ -191,3 +191,9 @@
    - puse el Cboost en 10uf entonces no logra generar el primer pulso de senoidal, ver de bajar
 
 
+
+* Simulaciones
+** doy mas pwm
+** para analizar
+   me gustaria comparar el resultado achicando el pwm y compensando la ganancia
+   o al reves

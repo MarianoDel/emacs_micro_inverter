@@ -16,7 +16,7 @@
 #include "sync.h"
 #include "uart.h"
 // #include "adc.h"
-// #include "dma.h"
+#include "dma.h"
 // #include "tim.h"
 // #include "flash_program.h"
 
@@ -42,11 +42,12 @@ extern volatile unsigned short timer_led;
 // entre AC_POS - AC_NEG y la salida de 220Vac
 void TF_RelayConnect (void)
 {
+    Usart1Send("\nTF Switch Relay to on or off with Jumper\n");
+    
     HIGH_LEFT(DUTY_NONE);
     HIGH_RIGHT(DUTY_NONE);
     LOW_LEFT(DUTY_NONE);
     LOW_RIGHT(DUTY_NONE);
-
     Wait_ms(10);
 
     unsigned char stopped = 0;
@@ -79,6 +80,8 @@ void TF_RelayConnect (void)
 //activo lado ACPOS 50% con el jumper, el relay va siempre conectado
 void TF_RelayACPOS (void)
 {
+    Usart1Send("\nTF Switch Relay to on and generates 50% duty in ACPOS with Jumper\n");
+
     HIGH_LEFT(DUTY_NONE);
     HIGH_RIGHT(DUTY_NONE);
     LOW_LEFT(DUTY_NONE);
@@ -86,7 +89,6 @@ void TF_RelayACPOS (void)
     LED_OFF;
     
     Wait_ms(10);
-
     RELAY_ON;
     LOW_RIGHT(DUTY_ALWAYS);
     Wait_ms(100);
@@ -120,6 +122,8 @@ void TF_RelayACPOS (void)
 
 void TF_RelayACNEG (void)
 {
+    Usart1Send("\nTF Switch Relay to on and generates 50% duty in ACNEG with Jumper\n");
+
     HIGH_LEFT(DUTY_NONE);
     HIGH_RIGHT(DUTY_NONE);
     LOW_LEFT(DUTY_NONE);
@@ -162,6 +166,7 @@ void TF_RelayACNEG (void)
 // genero 50Hz con 50% de duty a cada lado
 void TF_RelayFiftyHz (void)
 {
+    Usart1Send("\nTF Switch Relay to on and generates square alternative form 50% duty with Jumper\n");
     HIGH_LEFT(DUTY_NONE);
     HIGH_RIGHT(DUTY_NONE);
     LOW_LEFT(DUTY_NONE);
@@ -256,6 +261,7 @@ void TF_RelayFiftyHz (void)
 #define timer_standby    timer_led
 void TF_OnlySyncAndPolarity (void)
 {
+    Usart1Send("\nTF Synchro state without the Relay\n");
     char s_send [120] = { 0 };
     
     HIGH_LEFT(DUTY_NONE);
@@ -417,6 +423,22 @@ void TF_OnlySyncAndPolarity (void)
 #ifdef TF_LED_FOR_DEBUG_UPDATE
             LED_OFF;
 #endif
+        }
+    }
+}
+
+
+void TF_Check_Sequence_Ready (void)
+{
+    Usart1Send("\nTF Shows sequence_ready with the LED toggle\n");
+    Wait_ms(30);
+    Usart1Send("Frequency is the double of the LED meas\n");    
+    while (1)
+    {
+        if (sequence_ready)
+        {
+            sequence_ready_reset;
+            LED_TOGGLE;
         }
     }
 }

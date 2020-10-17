@@ -174,7 +174,6 @@ void Test_ACPOS (void)
 
         //TODO: modif
         reference[signal_index] = (unsigned short) calc;
-
         I_Sense_Pos = last_output;
 
         switch (signal_state)

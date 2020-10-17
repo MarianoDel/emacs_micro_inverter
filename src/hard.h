@@ -28,7 +28,7 @@
 
 
 //---- Features Configuration ----------------
-//features are activeted here and annouced in hard.c
+//features are activated here and annouced in hard.c
 #define FEATURES
 
 //-- Types of Voltage Sense ----------
@@ -36,15 +36,10 @@
 // #define ONLY_ONE_KB814
 // #define TWO_KB817
 
-// SOFTWARE Features -------------------------
 //-- Types of programs ----------
-// #define HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
-// #define HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
-#define INVERTER_MODE_VOLTAGE_FDBK
+// #define INVERTER_MODE_VOLTAGE_FDBK
 // #define INVERTER_MODE_CURRENT_FDBK
-// #define GRID_TIED_ONLY_SYNC_AND_POLARITY
-// #define GRID_TIED_FULL_CONECTED
-
+#define GRID_TIED_FULL_CONECTED
 
 //-- Types of led indications ----------
 // #define USE_LED_FOR_AC_PULSES

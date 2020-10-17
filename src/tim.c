@@ -8,13 +8,13 @@
 // #### TIM.C ################################
 //---------------------------------------------
 
-/* Includes ------------------------------------------------------------------*/
+// Includes --------------------------------------------------------------------
 #include "tim.h"
 #include "stm32f0xx.h"
 #include "hard.h"
 #include "sync.h"
 
-//--- VARIABLES EXTERNAS ---//
+// Externals -------------------------------------------------------------------
 extern volatile unsigned char timer_1seg;
 extern volatile unsigned short timer_led_comm;
 extern volatile unsigned short wait_ms_var;
@@ -24,53 +24,14 @@ extern volatile unsigned short delta_t2;
 extern volatile unsigned char ac_sync_int_flag;
 #endif
 
-//--- VARIABLES GLOBALES ---//
 
+// Globals ---------------------------------------------------------------------
 volatile unsigned short timer_1000 = 0;
 
 
+// Module Private Functions ----------------------------------------------------
 
-//--- FUNCIONES DEL MODULO ---//
-// inline void UpdateTIMSync (unsigned short a)
-// {
-//     //primero cargo TIM1
-//     TIM1->CCR1 = a;
-//     TIM3->ARR = DUTY_50_PERCENT + a;    //TIM3->CCR1 es el delay entre timers
-//                                         //lo cargo en el timer init
-// }
-
-// inline void UpdateTIM_MosfetA (unsigned short a)
-// {
-//     TIM3->ARR = DUTY_50_PERCENT + a;    
-// }
-
-// inline void UpdateTIM_MosfetB (unsigned short a)
-// {
-//     TIM1->CCR1 = a;
-// }
-
-// inline void EnablePreload_MosfetA (void)
-// {
-//     // TIM3->CCMR1 |= TIM_CCMR1_OC1PE;
-//     TIM3->CR1 |= TIM_CR1_ARPE;
-// }
-
-// inline void DisablePreload_MosfetA (void)
-// {
-//     // TIM3->CCMR1 &= ~TIM_CCMR1_OC1PE;
-//     TIM3->CR1 &= ~TIM_CR1_ARPE;    
-// }
-
-// inline void EnablePreload_MosfetB (void)
-// {
-//     TIM1->CCMR1 |= TIM_CCMR1_OC1PE;
-// }
-
-// inline void DisablePreload_MosfetB (void)
-// {
-//     TIM1->CCMR1 &= ~TIM_CCMR1_OC1PE;
-// }
-
+// Module Functions ------------------------------------------------------------
 void Update_TIM1_CH3 (unsigned short a)
 {
     TIM1->CCR3 = a;
@@ -126,18 +87,9 @@ void TIM_1_Init (void)
     //TIM1->SMCR |= TIM_SMCR_MSM | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 | TIM_SMCR_TS_1;    //link timer3
     TIM1->SMCR = 0x0000;
 
-#if (defined VER_2_0)
-#ifdef WITH_TIM1_FB
-    TIM1->CCMR1 = 0x0060;            //CH1 output PWM mode 1 (channel active TIM1->CNT < TIM1->CCR1)
-    TIM1->CCMR2 = 0x0060;            //CH3 output PWM mode 1
-    TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC3NE;    //el pin es TIM1_CH3N
-    // TIM1->CCER |= TIM_CCER_CC1E | TIM_CCER_CC3NE | TIM_CCER_CC3NP;    //el pin es TIM1_CH3N    
-#else    
     TIM1->CCMR1 = 0x0060;            //CH1 output PWM mode 1 (channel active TIM1->CNT < TIM1->CCR1)    
     TIM1->CCMR2 = 0x0000;            //
     TIM1->CCER |= TIM_CCER_CC1E;
-#endif
-#endif
     
     TIM1->BDTR |= TIM_BDTR_MOE;
     // TIM1->ARR = 1023;                //cada tick 20.83ns
@@ -146,20 +98,11 @@ void TIM_1_Init (void)
     TIM1->CNT = 0;
     TIM1->PSC = 0;
 
-#if (defined VER_2_0)
-#ifdef WITH_TIM1_FB
-    unsigned int temp = 0;
-    temp = GPIOB->AFR[0];
-    temp &= 0xFFFFFF0F;
-    temp |= 0x00000020;    //PB1 -> AF2
-    GPIOB->AFR[0] = temp;
-#endif
-    unsigned int temp = 0;    
-    temp = GPIOA->AFR[1];
-    temp &= 0xFFFFFFF0;
-    temp |= 0x00000002;    //PA8 -> AF2
-    GPIOA->AFR[1] = temp;
-#endif
+    // unsigned int temp = 0;    
+    // temp = GPIOA->AFR[1];
+    // temp &= 0xFFFFFFF0;
+    // temp |= 0x00000002;    //PA8 -> AF2
+    // GPIOA->AFR[1] = temp;
     
     // Enable timer ver UDIS
     //TIM1->DIER |= TIM_DIER_UIE;
@@ -188,29 +131,14 @@ void TIM_3_Init (void)
     TIM3->CCMR1 = 0x6060;            //CH1 CH2 output PWM mode 1 (channel active TIM3->CNT < TIM3->CCR1)
     TIM3->CCMR2 = 0x6060;            //CH3 CH4
     //  TIM3->CCER |= TIM_CCER_CC1E | TIM_CCER_CC1P;    //CH1 enable on pin active low
-    TIM3->CCER |= TIM_CCER_CC4E |
+    TIM3->CCER |=
+        TIM_CCER_CC4E |
         TIM_CCER_CC3E |
         TIM_CCER_CC2E |
         TIM_CCER_CC1E;    //CH1 CH2 CH3 CH4 enable on pin active high
 
     TIM3->ARR = DUTY_100_PERCENT;
     TIM3->CNT = 0;
-
-#if defined USE_FREQ_48KHZ
-    TIM3->PSC = 0;
-#elif defined USE_FREQ_24KHZ
-    TIM3->PSC = 1;
-#elif defined USE_FREQ_16KHZ
-    TIM3->PSC = 2;
-#elif defined USE_FREQ_12KHZ
-    TIM3->PSC = 3;
-#elif defined USE_FREQ_9_6KHZ
-    TIM3->PSC = 4;
-#else
-#error "No FREQ selected for TIM3 on hard.h"
-#endif
-    
-    //TIM3->EGR = TIM_EGR_UG;    //generate event
 
     //Alternative Function Pins
     temp = GPIOA->AFR[0];

@@ -31,8 +31,8 @@ Vinput_PtP_Digital = False
 Setpoint_PtP_Digital = False
 PID_Multiple_Stages = False
 PID_Multiple_Stages_Underdampling = False
-PID_Single_Stage = False
-PID_Single_Stage_Udersamplig = True
+PID_Single_Stage = True
+PID_Single_Stage_Udersamplig = False
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
 def Adc12Bits (sample):
@@ -684,8 +684,9 @@ if PID_Single_Stage == True:
     kp_dig = 10
     ki_dig = 3
     kd_dig = 0
-    max_pwm_pts = 1000
+    max_pwm_pts = 4000
     print('Stage 0')
+    print(f'pwm points: {max_pwm_pts}')
     pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
     pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
     
@@ -723,8 +724,10 @@ if PID_Single_Stage_Udersamplig == True:
     undersampling_reload = 4
     undersampling = 0
     max_pwm_pts = 8000
-    kp_dig = 24
-    ki_dig = 5
+    kp_dig = 48
+    ki_dig = 10
+    # kp_dig = 24
+    # ki_dig = 5
     kd_dig = 0
     print('Stage 0')
     pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)

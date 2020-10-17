@@ -12,11 +12,7 @@
 #define __SYNC_H_
 
 
-//--- Defines for configuration -----------------
-
-
-
-//--- Exported constants ------------------------
+// Exported Types Constants and Macros -----------------------------------------
 #define DELTA_T2_FOR_49HZ    10204
 #define DELTA_T2_FOR_51HZ     9804
 
@@ -31,13 +27,18 @@
 
 #define TT_FOR_NO_SYNC    60
 
-#define VLINE_SENSE_MIN_THRESOLD    200
-// #define VLINE_SENSE_MAX    520    //supongo 220Vac en 465 +/- 10% 13-04 muevo a 520 por las lamparas en serie
-#define VLINE_SENSE_MAX    540
-#define VLINE_SENSE_MIN    420
+// Para ADC en 12bits
+#define VLINE_SENSE_MIN_THRESOLD    (200 * 4)
+#define VLINE_SENSE_MAX    (540 * 4)
+#define VLINE_SENSE_MIN    (420 * 4)
+
+// Para ADC en 10bits
+// #define VLINE_SENSE_MIN_THRESOLD    200
+// // #define VLINE_SENSE_MAX    520    //supongo 220Vac en 465 +/- 10% 13-04 muevo a 520 por las lamparas en serie
+// #define VLINE_SENSE_MAX    540
+// #define VLINE_SENSE_MIN    420
 
 
-//--- Exported types ----------------------------
 typedef enum {
     POLARITY_UNKNOWN = 0,
     POLARITY_POS,
@@ -55,7 +56,7 @@ typedef enum {
 } sync_pulse_t;
 
 
-//--- Module Functions --------------------------
+// Module Exported Functions ---------------------------------------------------
 void SYNC_InitSetup (void);
 void SYNC_Update_Sync (void);
 void SYNC_Update_Polarity (void);

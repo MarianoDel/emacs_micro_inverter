@@ -33,6 +33,7 @@
 #define ADC_CHANNEL_QUANTITY         3
 #define ADC_LAST_CHANNEL_QUANTITY    (ADC_CHANNEL_QUANTITY - 1)
 
+#define ADC_All_Orer_Channels    (ADC_Channel_0 | ADC_Channel_1 | ADC_Channel_2)
 
 
 

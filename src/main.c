@@ -290,12 +290,13 @@ int main(void)
 
     EXTIOn();
 
-    // funciones de test
+    // Test Functions
     // TF_RelayConnect();
     // TF_RelayACPOS();
     // TF_RelayACNEG();
     // TF_RelayFiftyHz();
     TF_OnlySyncAndPolarity();
+    // TF_Check_Sequence_Ready();
         
     
 #ifdef INVERTER_MODE_VOLTAGE_FDBK
@@ -848,7 +849,7 @@ int main(void)
 #ifdef GRID_TIED_FULL_CONECTED
 
     // Initial Setup for PID Controller
-    PID_Small_Ki_Flush_Errors(&current_pid);
+    PID_Flush_Errors(&current_pid);
     CurrentLoop_Change_to_LowGain();
 
     typedef enum {
@@ -857,9 +858,9 @@ int main(void)
         SIGNAL_FALLING,
         SIGNAL_REVERT
         
-    } signal_state_st;
+    } signal_state_e;
 
-    signal_state_st signal_state = SIGNAL_RISING;
+    signal_state_e signal_state = SIGNAL_RISING;
     unsigned short d = 0;
     unsigned short cycles_before_start = CYCLES_BEFORE_START;
     
@@ -873,7 +874,7 @@ int main(void)
 
             EnablePreload_Mosfet_HighLeft;
             EnablePreload_Mosfet_HighRight;
-            PID_Small_Ki_Flush_Errors(&current_pid);
+            PID_Flush_Errors(&current_pid);
 
             SYNC_Restart();
             cycles_before_start = CYCLES_BEFORE_START;
@@ -1077,7 +1078,7 @@ int main(void)
                 sequence_ready_reset;
                 if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
-                    PID_Small_Ki_Flush_Errors(&current_pid);
+                    PID_Flush_Errors(&current_pid);
                     p_current_ref = sin_half_cycle;
                     CurrentLoop_Change_to_LowGain();
                     signal_state = SIGNAL_RISING;
@@ -1216,7 +1217,7 @@ int main(void)
                 sequence_ready_reset;
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
-                    PID_Small_Ki_Flush_Errors(&current_pid);
+                    PID_Flush_Errors(&current_pid);
                     p_current_ref = sin_half_cycle;
                     CurrentLoop_Change_to_LowGain();
                     signal_state = SIGNAL_RISING;
@@ -1348,7 +1349,7 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
     
     current_pid.setpoint = setpoint;
     current_pid.sample = new_sample;
-    d = PID_Small_Ki(&current_pid);
+    d = PID(&current_pid);
                     
     if (d > 0)
     {
@@ -1373,14 +1374,6 @@ void CurrentLoop_Change_to_HighGain (void)
     current_pid.kp = 10;
     current_pid.ki = 3;
     current_pid.kd = 0;
-
-    // current_pid.kp = 30;
-    // current_pid.ki = 16;
-    // current_pid.kd = 0;
-    
-    // current_pid.kp = 5;    
-    // current_pid.ki = 320;    
-    // current_pid.kd = 0;    
 }
 
 
@@ -1389,9 +1382,6 @@ void CurrentLoop_Change_to_LowGain (void)
     current_pid.kp = 10;
     current_pid.ki = 3;
     current_pid.kd = 0;    
-    // current_pid.kp = 5;
-    // current_pid.ki = 32;
-    // current_pid.kd = 16;    
 }
 
 
@@ -1445,24 +1435,8 @@ void TimingDelay_Decrement(void)
     if (timer_no_sync)
         timer_no_sync--;
 #endif
-    
-    // //cuenta de a 1 minuto
-    // if (secs > 59999)	//pasaron 1 min
-    // {
-    // 	minutes++;
-    // 	secs = 0;
-    // }
-    // else
-    // 	secs++;
-    //
-    // if (minutes > 60)
-    // {
-    // 	hours++;
-    // 	minutes = 0;
-    // }
-
-
 }
+
 
 #define AC_SYNC_Int        (EXTI->PR & 0x00000100)
 #define AC_SYNC_Set        (EXTI->IMR |= 0x00000100)
@@ -1533,4 +1507,4 @@ void EXTI4_15_IRQHandler(void)
 #endif
 }
 
-//------ EOF -------//
+//--- end of file ---//

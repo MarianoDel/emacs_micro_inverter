@@ -197,3 +197,40 @@
 ** para analizar
    me gustaria comparar el resultado achicando el pwm y compensando la ganancia
    o al reves
+
+*** con undersampling = 4; freq = 24k; freq_pid = 6k; plant: 240pts @ 10ms pid: 60pts @ 10ms
+f0 = 796.1783439490446 f1 = none plateu gain = 0.1875
+params to b_pid: [ 29 -24   0] dtype: int16
+params to a_pid: [ 1 -1] dtype: int16
+[ 0  0  0  5  5  5  5  7  7  7  7  7  7  7  7  5  5  5  5  7  7  7  7 10
+ 10 10 10 10 10 10 10 10 10 10 10 12 12 12 12 14 14 14 14 15 15 15 15 16
+ 16 16 16 18 18 18 18 20 20 20 20 22 22 22 22 24 24 24 24 27 27 27 27 29
+ 29 29 29 32 32 32 32 35 35 35 35 39 39 39 39 42 42 42 42 46 46 46 46 50
+ 50 50 50 54 54 54 54 58 58 58 58 62 62 62 62 66 66 66 66 70 70 70 70 73
+ 73 73 73 75 75 75 75 76 76 76 76 76 76 76 76 74 74 74 74 71 71 71 71 67
+ 67 67 67 61 61 61 61 54 54 54 54 46 46 46 46 38 38 38 38 30 30 30 30 23
+ 23 23 23 17 17 17 17 12 12 12 12  8  8  8  8  5  5  5  5  3  3  3  3  2
+  2  2  2  1  1  1  1  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0
+  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0]
+
+* De las simulaciones
+** Parece que necesito mayor cantidad de puntos de pwm
+*** Uso TIM3 con freq 24KHz poniendo ARR en 2000
+
+*** DONE Debo armar un prog de test para ver cuando termina el ADC + DMA
+    CLOSED: [2020-10-16 Fri 16:40]
+    - me tengo que asegurar los 24KHz del TIM3
+
+*** ADC + DMA + TIM
+**** Tiempo teorico de conversion ADC con DMA
+    - tiempo de conversion por canal 12bits (sample_time + 12.5) * tick
+
+      | Resolution | Sample Time[samples] | Channels | Clk Freq [MHz] | Time to end [us] |
+      |------------+----------------------+----------+----------------+------------------|
+      |         12 |                 71.5 |        3 |             12 |              21. |
+      |            |                      |          |                |                  |
+      #+TBLFM: @2$5=((@2$1+0.5+@2$2)*@2$3/@2$4)
+
+** Despues veo si ademas de los 2000 hago un dither x4 (2 bits)
+
+

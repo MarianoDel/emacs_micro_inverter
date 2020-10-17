@@ -26,6 +26,7 @@ void TF_RelayACPOS (void);
 void TF_RelayACNEG (void);
 void TF_RelayFiftyHz (void);
 void TF_OnlySyncAndPolarity (void);
+void TF_Check_Sequence_Ready (void);
 
 #endif    /* _TEST_FUNTIONS_H_ */
 

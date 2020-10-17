@@ -72,13 +72,12 @@ void AdcConfig (void)
     ADC1->CFGR2 = ADC_ClockMode_SynClkDiv4;
 
     //set resolution, trigger & Continuos or Discontinuous
-    ADC1->CFGR1 |= ADC_Resolution_10b | ADC_ExternalTrigConvEdge_Rising | ADC_ExternalTrigConv_T3_TRGO;	//recordar ADC1->CR |= ADC_CR_ADSTART
+    // ADC1->CFGR1 |= ADC_Resolution_10b | ADC_ExternalTrigConvEdge_Rising | ADC_ExternalTrigConv_T3_TRGO;
+    ADC1->CFGR1 |= ADC_Resolution_12b | ADC_ExternalTrigConvEdge_Rising | ADC_ExternalTrigConv_T3_TRGO;
     // ADC1->CFGR1 |= ADC_Resolution_10b | ADC_ExternalTrigConvEdge_Rising | ADC_ExternalTrigConv_T1_TRGO;
     //ADC1->CFGR1 |= ADC_Resolution_12b | ADC_CFGR1_DISCEN;
     // ADC1->CFGR1 |= ADC_Resolution_12b;
-
-    //DMA Config
-    //ADC1->CFGR1 |= ADC_CFGR1_DMAEN | ADC_CFGR1_DMACFG;
+    //recordar ADC1->CR |= ADC_CR_ADSTART para activar conversiones continuas
 
     //set sampling time
     ADC1->SMPR |= ADC_SampleTime_71_5Cycles;
@@ -89,7 +88,7 @@ void AdcConfig (void)
     //ADC1->SMPR |= ADC_SampleTime_1_5Cycles;			//20.7 de salida son SP 420 (regula mal)
 
     //set channel selection
-    ADC1->CHSELR |= ADC_Channel_0 | ADC_Channel_1 | ADC_Channel_2;
+    ADC1->CHSELR |= ADC_All_Orer_Channels;
     
 #ifdef ADC_WITH_INT        
     //set interrupts
@@ -115,6 +114,7 @@ void AdcConfig (void)
     
     // Enable ADC1
     ADC1->CR |= ADC_CR_ADEN;
+
 }
 
 #ifdef ADC_WITH_INT

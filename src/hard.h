@@ -64,10 +64,19 @@
 //-- Types of Interrupts ----------
 #define WITH_AC_SYNC_INT
 #define WITH_OVERCURRENT_SHUTDOWN
+#define WITH_SOFT_OVERCURRENT_SHUTDOWN
+
+//-- Some timeouts ----------
+#define TT_FOR_CURRENT_ERROR    10000
+#define TT_FOR_JUMPER_PROT    1000
 
 //---- End of Features Configuration ----------
 
 //---- Some Checks for avoid Configuration Errors ----------
+#ifdef WITH_SOFT_OVERCURRENT_SHUTDOWN
+#define SOFT_OVERCURRENT_THRESHOLD    3500
+#endif
+
 #ifdef HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
 #ifndef ONLY_ONE_KB814
 #error "This soft needs a KB814 on board for Voltage Sense"

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 muestras = 120
-Vmax = 1023
+Vmax = 4095
 
 s_sen = np.zeros(muestras)
 

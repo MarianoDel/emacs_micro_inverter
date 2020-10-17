@@ -210,6 +210,12 @@ void WelcomeCodeFeatures (char * str)
     Usart1Send(str);
     Wait_ms(30);    
 #endif
+
+#ifdef WITH_SOFT_OVERCURRENT_SHUTDOWN
+    sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_SOFT_OVERCURRENT_SHUTDOWN));
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
     
 }
 

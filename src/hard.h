@@ -37,7 +37,6 @@
 // #define TWO_KB817
 
 //-- Types of programs ----------
-// #define INVERTER_MODE_VOLTAGE_FDBK
 // #define INVERTER_MODE_CURRENT_FDBK
 #define GRID_TIED_FULL_CONECTED
 

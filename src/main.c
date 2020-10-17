@@ -30,7 +30,7 @@
 #include "sync.h"
 #include "test_functions.h"
 
-// Externals -----------------------------------------------
+// Externals -------------------------------------------------------------------
 
 // -- Externals from or for Serial Port --------------------
 volatile unsigned char tx1buff [SIZEOF_DATA];
@@ -42,32 +42,14 @@ volatile unsigned short adc_ch [ADC_CHANNEL_QUANTITY];
 volatile unsigned char seq_ready = 0;
 
 // -- Externals for the timers -----------------------------
+volatile unsigned short wait_ms_var = 0;
 volatile unsigned short timer_led = 0;
 
-// -- Externals used for analog or digital filters ---------
-volatile unsigned short take_temp_sample = 0;
 
-
-// ------- Definiciones para los filtros -------
-#ifdef USE_FREQ_75KHZ
-#define UNDERSAMPLING_TICKS    45
-#define UNDERSAMPLING_TICKS_SOFT_START    90
-#endif
-#ifdef USE_FREQ_48KHZ
-#define UNDERSAMPLING_TICKS    10
-#define UNDERSAMPLING_TICKS_SOFT_START    20
-#endif
-
-
-// Globals -------------------------------------------------
+// Globals ---------------------------------------------------------------------
 volatile unsigned char overcurrent_shutdown = 0;
-
-
-// ------- de los timers -------
-volatile unsigned short wait_ms_var = 0;
 volatile unsigned short timer_standby;
-volatile unsigned short timer_meas;
-volatile unsigned char timer_filters = 0;
+
 
 
 #ifdef USE_FREQ_12KHZ
@@ -157,11 +139,9 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,
 #define INDEX_TO_REVERT    204
     
 unsigned short * p_current_ref;
-unsigned short * p_voltage_ref;
 pid_data_obj_t current_pid;
-pid_data_obj_t voltage_pid;
 
-// Module Functions ----------------------------------------
+// Module Private Functions ----------------------------------------------------
 void SysTickError (void);
 void SoftOverCurrentShutdown (unsigned char, unsigned short);
 void PWM_Off (void);
@@ -824,22 +804,9 @@ void TimingDelay_Decrement(void)
     if (timer_standby)
         timer_standby--;
 
-    if (take_temp_sample)
-        take_temp_sample--;
-
-    if (timer_meas)
-        timer_meas--;
-
     if (timer_led)
         timer_led--;
 
-    if (timer_filters)
-        timer_filters--;
-
-#ifdef INVERTER_ONLY_SYNC_AND_POLARITY
-    if (timer_no_sync)
-        timer_no_sync--;
-#endif
 }
 
 

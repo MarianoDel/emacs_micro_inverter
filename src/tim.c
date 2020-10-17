@@ -15,18 +15,10 @@
 #include "sync.h"
 
 // Externals -------------------------------------------------------------------
-extern volatile unsigned char timer_1seg;
-extern volatile unsigned short timer_led_comm;
 extern volatile unsigned short wait_ms_var;
-extern volatile unsigned short delta_t2;
-
-#ifdef INVERTER_MODE
-extern volatile unsigned char ac_sync_int_flag;
-#endif
 
 
 // Globals ---------------------------------------------------------------------
-volatile unsigned short timer_1000 = 0;
 
 
 // Module Private Functions ----------------------------------------------------

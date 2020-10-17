@@ -166,36 +166,6 @@ unsigned short VinTicksToVoltage (unsigned short sample_adc)
 void WelcomeCodeFeatures (char * str)
 {
     // Main Program Type
-#ifdef HARD_TEST_MODE_STEP_RESPONSE_POSITIVE
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(HARD_TEST_MODE_STEP_RESPONSE_POSITIVE));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
-#ifdef HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-    
-#ifdef INVERTER_MODE_VOLTAGE_FDBK
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_MODE_VOLTAGE_FDBK));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
-#ifdef INVERTER_MODE_CURRENT_FDBK
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(INVERTER_MODE_CURRENT_FDBK));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
-#ifdef GRID_TIED_ONLY_SYNC_AND_POLARITY
-    sprintf(str,"[%s] %s\n", __FILE__, str_macro(GRID_TIED_ONLY_SYNC_AND_POLARITY));
-    Usart1Send(str);
-    Wait_ms(30);    
-#endif
-
 #ifdef GRID_TIED_FULL_CONECTED
     sprintf(str,"[%s] %s\n", __FILE__, str_macro(GRID_TIED_FULL_CONECTED));
     Usart1Send(str);
@@ -234,6 +204,7 @@ void WelcomeCodeFeatures (char * str)
     Usart1Send(str);
     Wait_ms(30);    
 #endif
+    
 #ifdef WITH_OVERCURRENT_SHUTDOWN
     sprintf(str,"[%s] %s\n", __FILE__, str_macro(WITH_OVERCURRENT_SHUTDOWN));
     Usart1Send(str);

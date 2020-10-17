@@ -199,6 +199,7 @@ pid_data_obj_t current_pid;
 pid_data_obj_t voltage_pid;
 
 // Module Functions ----------------------------------------
+void SysTickError (void);
 void PWM_Off (void);
 unsigned short CurrentLoop (unsigned short, unsigned short);
 void CurrentLoop_Change_to_LowGain (void);
@@ -217,38 +218,20 @@ extern void EXTI4_15_IRQHandler(void);
 int main(void)
 {
     char s_lcd [120];
-
     ac_sync_state_t ac_sync_state = START_SYNCING;
 
-
-    //GPIO Configuration.
+    // Gpio Configuration.
     GPIO_Config();
 
-    //ACTIVAR SYSTICK TIMER
+    // Systick Timer Activation
     if (SysTick_Config(48000))
-    {
-        while (1)	/* Capture error */
-        {
-            if (LED)
-                LED_OFF;
-            else
-                LED_ON;
+        SysTickError();
 
-            for (unsigned char i = 0; i < 255; i++)
-            {
-                asm (	"nop \n\t"
-                        "nop \n\t"
-                        "nop \n\t" );
-            }
-        }
-    }
-
-//---------- Pruebas de Hardware --------//
+    // Peripherals Activation
     EXTIOff ();
     USART1Config();
     
-    //---- Welcome Code ------------//
-    //---- Defines from hard.h -----//
+    // Welcome Code and Features
 #ifdef HARD
     Usart1Send((char *) HARD);
     Wait_ms(100);
@@ -278,10 +261,8 @@ int main(void)
     SYNC_InitSetup();
     
     PWM_Off();
-    EnablePreload_Mosfet_HighLeft;
-    EnablePreload_Mosfet_HighRight;
 
-    //ADC and DMA configuration
+    // ADC and DMA configuration
     AdcConfig();
     DMAConfig();
     DMA1_Channel1->CCR |= DMA_CCR_EN;
@@ -297,9 +278,8 @@ int main(void)
     // TF_RelayFiftyHz();
     TF_OnlySyncAndPolarity();
     // TF_Check_Sequence_Ready();
-        
-    
-    //--- Grid Tied Mode ----------
+            
+    // Main Program - Grid Tied Mode -
 #ifdef GRID_TIED_FULL_CONECTED
 
     // Initial Setup for PID Controller
@@ -959,6 +939,26 @@ void EXTI4_15_IRQHandler(void)
         OVERCURRENT_NEG_Ack;
     }
 #endif
+}
+
+
+void SysTickError (void)
+{
+    //Capture systick error...
+    while (1)
+    {
+        if (LED)
+            LED_OFF;
+        else
+            LED_ON;
+
+        for (unsigned char i = 0; i < 255; i++)
+        {
+            asm ("nop \n\t"
+                 "nop \n\t"
+                 "nop \n\t" );
+        }
+    }
 }
 
 //--- end of file ---//

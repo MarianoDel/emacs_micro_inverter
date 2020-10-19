@@ -140,6 +140,9 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,
     
 unsigned short * p_current_ref;
 pid_data_obj_t current_pid;
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+unsigned short d_dump [SIZEOF_SIGNAL] = { 0 };
+#endif
 
 // Module Private Functions ----------------------------------------------------
 void SysTickError (void);
@@ -149,7 +152,7 @@ unsigned short CurrentLoop (unsigned short, unsigned short);
 void CurrentLoop_Change_to_LowGain (void);
 void CurrentLoop_Change_to_HighGain (void);
 void TimingDelay_Decrement (void);
-extern void EXTI4_15_IRQHandler(void);
+void EXTI4_15_IRQHandler(void);
 
 
 
@@ -219,7 +222,7 @@ int main(void)
     // TF_RelayACPOS();
     // TF_RelayACNEG();
     // TF_RelayFiftyHz();
-    TF_OnlySyncAndPolarity();
+    // TF_OnlySyncAndPolarity();
     // TF_Check_Sequence_Ready();
             
     // Main Program - Grid Tied Mode -
@@ -240,6 +243,10 @@ int main(void)
     signal_state_e signal_state = SIGNAL_RISING;
     unsigned short d = 0;
     unsigned short cycles_before_start = CYCLES_BEFORE_START;
+
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+    unsigned char cycles_50hz = CYCLES_OF_50HZ;
+#endif
     
     while (1)
     {
@@ -256,6 +263,11 @@ int main(void)
             SYNC_Restart();
             cycles_before_start = CYCLES_BEFORE_START;
             ac_sync_state = SWITCH_RELAY_TO_ON;
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+            cycles_50hz = CYCLES_OF_50HZ;
+            for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+                d_dump[i] = 0;
+#endif            
             break;
 
         case SWITCH_RELAY_TO_ON:
@@ -358,7 +370,7 @@ int main(void)
                     
                     //loop de corriente
                     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-                    calc = calc >> 10;
+                    calc = calc >> 12;
 
                     switch (signal_state)
                     {
@@ -393,6 +405,7 @@ int main(void)
                             // CurrentLoop_Change_to_LowGain();
                             signal_state = SIGNAL_REVERT;
                             HIGH_LEFT(DUTY_NONE);
+                            d = 0;
                         }
                         break;
 
@@ -407,9 +420,11 @@ int main(void)
                         // }
                         break;
                         
-                    }
-                    
+                    }                    
                     p_current_ref++;
+#ifdef WITH_FEW_CYCLES_OF_50HZ_POS
+                    d_dump[signal_index] = d;
+#endif
                 }
                 else
                     //termino de generar la senoidal, corto el mosfet
@@ -428,7 +443,7 @@ int main(void)
                 HIGH_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_ALWAYS);
-                sequence_ready_reset;
+                sequence_ready_reset;    
             }
             else if (!SYNC_All_Good())
             {
@@ -506,7 +521,7 @@ int main(void)
                     
                     //loop de corriente
                     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-                    calc = calc >> 10;
+                    calc = calc >> 12;
 
                     switch (signal_state)
                     {
@@ -541,6 +556,7 @@ int main(void)
                             // CurrentLoop_Change_to_LowGain();
                             signal_state = SIGNAL_REVERT;
                             HIGH_RIGHT(DUTY_NONE);
+                            d = 0;
                         }
                         break;
 
@@ -556,8 +572,10 @@ int main(void)
                         break;
                         
                     }
-                    
                     p_current_ref++;
+#ifdef WITH_FEW_CYCLES_OF_50HZ_NEG
+                    d_dump[signal_index] = d;
+#endif
                 }
                 else
                     //termino de generar la senoidal, corto el mosfet
@@ -614,6 +632,16 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+                if (cycles_50hz)
+                    cycles_50hz--;
+                else
+                {
+                    LOW_LEFT(DUTY_NONE);
+                    ac_sync_state = FEW_CYCLES_DUMP_DATA;
+                    break;
+                }
+#endif
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
                     PID_Flush_Errors(&current_pid);
@@ -659,6 +687,48 @@ int main(void)
             }
             break;
 
+        case FEW_CYCLES_DUMP_DATA:
+            RELAY_OFF;
+            PWM_Off();
+            ac_sync_state = FEW_CYCLES_DUMP_DATA_1;
+            break;
+
+        case FEW_CYCLES_DUMP_DATA_1:
+#ifdef WITH_FEW_CYCLES_OF_50HZ_POS
+            Usart1Send("d_dump data positive:\n");
+#endif
+#ifdef WITH_FEW_CYCLES_OF_50HZ_NEG
+            Usart1Send("d_dump data negative:\n");
+#endif
+            for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
+            {
+                sprintf(s_lcd, "%d -> %d %d %d %d %d %d %d %d\n",
+                        i,
+                        *(d_dump + i + 0),
+                        *(d_dump + i + 1),
+                        *(d_dump + i + 2),
+                        *(d_dump + i + 3),
+                        *(d_dump + i + 4),
+                        *(d_dump + i + 5),
+                        *(d_dump + i + 6),
+                        *(d_dump + i + 7));
+
+                Usart1Send(s_lcd);
+                Wait_ms(40);
+                        
+            }
+            timer_standby = TT_FEW_CYCLES_DUMP;
+            ac_sync_state = FEW_CYCLES_DUMP_DATA_2;            
+            break;
+
+        case FEW_CYCLES_DUMP_DATA_2:
+            if (!timer_standby)
+            {
+                ChangeLed(LED_STANDBY);
+                ac_sync_state = START_SYNCING;
+            }
+            break;
+            
         }
 
         SYNC_Update_Sync();
@@ -728,7 +798,7 @@ void SoftOverCurrentShutdown (unsigned char side, unsigned short current)
     PWM_Off();
     RELAY_OFF;
 
-    char s_send [100];
+    char s_send [50];
 
     sprintf(s_send, "Soft overcurrent: %d", current);
     Usart1Send(s_send);

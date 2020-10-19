@@ -216,6 +216,12 @@ void WelcomeCodeFeatures (char * str)
     Usart1Send(str);
     Wait_ms(30);    
 #endif
+
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+    sprintf(str,"[%s] %s cycles: %d\n", __FILE__, str_macro(WITH_FEW_CYCLES_OF_50HZ), CYCLES_OF_50HZ);
+    Usart1Send(str);
+    Wait_ms(30);    
+#endif
     
 }
 

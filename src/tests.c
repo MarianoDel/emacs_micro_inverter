@@ -25,30 +25,32 @@ typedef enum {
 
 #define SIZEOF_SIGNAL    240
 
-unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {13,26,40,53,66,80,93,106,120,133,
-                                                 146,160,173,186,199,212,225,238,251,264,
-                                                 277,290,303,316,328,341,354,366,379,391,
-                                                 403,416,428,440,452,464,476,488,499,511,
-                                                 523,534,545,557,568,579,590,601,612,622,
-                                                 633,643,654,664,674,684,694,704,713,723,
-                                                 732,742,751,760,769,777,786,795,803,811,
-                                                 819,827,835,843,850,857,865,872,879,885,
-                                                 892,899,905,911,917,923,929,934,939,945,
-                                                 950,955,959,964,968,972,976,980,984,988,
-                                                 991,994,997,1000,1003,1005,1008,1010,1012,1014,
-                                                 1015,1017,1018,1019,1020,1021,1022,1022,1022,1023,
-                                                 1022,1022,1022,1021,1020,1019,1018,1017,1015,1014,
-                                                 1012,1010,1008,1005,1003,1000,997,994,991,988,
-                                                 984,980,976,972,968,964,959,955,950,945,
-                                                 939,934,929,923,917,911,905,899,892,885,
-                                                 879,872,865,857,850,843,835,827,819,811,
-                                                 803,795,786,777,769,760,751,742,732,723,
-                                                 713,704,694,684,674,664,654,643,633,622,
-                                                 612,601,590,579,568,557,545,534,523,511,
-                                                 499,488,476,464,452,440,428,416,403,391,
-                                                 379,366,354,341,328,316,303,290,277,264,
-                                                 251,238,225,212,199,186,173,160,146,133,
-                                                 120,106,93,80,66,53,40,26,13,0};
+unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,481,534,
+                                                 587,640,693,746,798,851,903,955,1007,1059,
+                                                 1111,1163,1214,1265,1316,1366,1417,1467,1517,1567,
+                                                 1616,1665,1714,1762,1811,1859,1906,1953,2000,2047,
+                                                 2093,2139,2185,2230,2275,2319,2363,2406,2450,2492,
+                                                 2535,2577,2618,2659,2700,2740,2779,2818,2857,2895,
+                                                 2933,2970,3007,3043,3078,3113,3148,3182,3215,3248,
+                                                 3281,3312,3344,3374,3404,3434,3463,3491,3519,3546,
+                                                 3572,3598,3624,3648,3672,3696,3718,3740,3762,3783,
+                                                 3803,3823,3841,3860,3877,3894,3910,3926,3941,3955,
+                                                 3969,3981,3994,4005,4016,4026,4035,4044,4052,4059,
+                                                 4066,4072,4077,4082,4086,4089,4091,4093,4094,4095,
+                                                 4094,4093,4091,4089,4086,4082,4077,4072,4066,4059,
+                                                 4052,4044,4035,4026,4016,4005,3994,3981,3969,3955,
+                                                 3941,3926,3910,3894,3877,3860,3841,3823,3803,3783,
+                                                 3762,3740,3718,3696,3672,3648,3624,3598,3572,3546,
+                                                 3519,3491,3463,3434,3404,3374,3344,3312,3281,3248,
+                                                 3215,3182,3148,3113,3078,3043,3007,2970,2933,2895,
+                                                 2857,2818,2779,2740,2700,2659,2618,2577,2535,2492,
+                                                 2450,2406,2363,2319,2275,2230,2185,2139,2093,2047,
+                                                 2000,1953,1906,1859,1811,1762,1714,1665,1616,1567,
+                                                 1517,1467,1417,1366,1316,1265,1214,1163,1111,1059,
+                                                 1007,955,903,851,798,746,693,640,587,534,
+                                                 481,428,374,321,267,214,160,107,53,0};
+
+#define KI_SIGNAL_PEAK_MULTIPLIER    2792
 
 // Externals -------------------------------------------------------------------
 
@@ -60,6 +62,7 @@ pid_data_obj_t current_pid;
 
 unsigned short reference [SIZEOF_SIGNAL] = { 0 };
 unsigned short duty_high_left [SIZEOF_SIGNAL] = { 0 };
+unsigned short duty_high_right [SIZEOF_SIGNAL] = { 0 };
 unsigned short vinput[SIZEOF_SIGNAL] = { 0 };
 float vinput_applied[SIZEOF_SIGNAL] = { 0 };
 float voutput[SIZEOF_SIGNAL] = { 0 };
@@ -71,6 +74,7 @@ void CurrentLoop_Change_to_HighGain (void);
 void CurrentLoop_Change_to_LowGain (void);
 
 void Test_ACPOS (void);
+void Test_ACNEG (void);
 
 float Plant_Out (float);
 void Plant_Step_Response (void);
@@ -80,12 +84,17 @@ unsigned short Adc12BitsConvertion (float );
 void HIGH_LEFT (unsigned short duty);
 void LOW_RIGHT (unsigned short duty);
 
+void HIGH_RIGHT (unsigned short duty);
+void LOW_LEFT (unsigned short duty);
+
 //Auxiliares
 void ShowVectorFloat (char *, float *, unsigned char);
 void ShowVectorUShort (char *, unsigned short *, unsigned char);
 void ShowVectorInt (char *, int *, unsigned char);
 
 // Module Functions ------------------------------------------------------------
+#define TEST_ON_ACPOS
+// #define TEST_ON_ACNEG
 int main (int argc, char *argv[])
 {
     //pruebo un step de la planta
@@ -115,12 +124,22 @@ int main (int argc, char *argv[])
 
     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
     {
+#ifdef TEST_ON_ACPOS
         Test_ACPOS();
+#endif
+#ifdef TEST_ON_ACNEG
+        Test_ACNEG();
+#endif
     }
 
     // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
-    // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);    
+    // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
+#ifdef TEST_ON_ACPOS    
     ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
+#endif
+#ifdef TEST_ON_ACNEG
+    ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, SIZEOF_SIGNAL);
+#endif
 
     ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
     ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
@@ -141,12 +160,8 @@ int main (int argc, char *argv[])
 ///////////////////////////////////////////////
 // Cosas que tienen que ver con las seniales //
 ///////////////////////////////////////////////
-#define KI_SIGNAL_PEAK_MULTIPLIER    465   // depende de cual es la medicion del opamp de corriente
-#define KI_SIGNAL_50_PERCENT         232   // 0.25 Apk
-
-
 #define DUTY_NONE    0
-#define DUTY_100_PERCENT    1000
+#define DUTY_100_PERCENT    2000
 #define DUTY_ALWAYS    (DUTY_100_PERCENT + 1)
 /////////////////////////////////////////////
 // Cosas que tienen que ver con mediciones //
@@ -155,27 +170,98 @@ int main (int argc, char *argv[])
 #define INDEX_TO_FALLING    156
 #define INDEX_TO_REVERT    204
     
-#define I_Sense_Neg    10
 
 unsigned short I_Sense_Pos = 0;
+unsigned short I_Sense_Neg = 0;
 unsigned short last_output = 0;
 
 unsigned short d = 0;
 void Test_ACPOS (void)
 {
     //Adelanto la seniales de corriente,
+    // if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
+    // {
+    //     unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
+                    
+    //     //loop de corriente
+    //     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
+    //     calc = calc >> 10;
+
+    //     //TODO: modif
+    //     reference[signal_index] = (unsigned short) calc;
+    //     I_Sense_Pos = last_output;
+
+    //     switch (signal_state)
+    //     {
+    //     case SIGNAL_RISING:
+    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+    //         HIGH_LEFT(d);
+
+    //         if (signal_index > INDEX_TO_MIDDLE)
+    //         {
+    //             CurrentLoop_Change_to_HighGain();
+    //             signal_state = SIGNAL_MIDDLE;
+    //             // signal_state = SIGNAL_DO_NOTHING;
+    //         }
+    //         break;
+
+    //     case SIGNAL_MIDDLE:
+    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+    //         HIGH_LEFT(d);
+
+    //         if (signal_index > INDEX_TO_FALLING)
+    //         {
+    //             CurrentLoop_Change_to_LowGain();
+    //             signal_state = SIGNAL_FALLING;
+    //         }
+    //         break;
+
+    //     case SIGNAL_FALLING:
+    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+    //         HIGH_LEFT(d);
+
+    //         if (signal_index > INDEX_TO_REVERT)
+    //         {
+    //             CurrentLoop_Change_to_LowGain();
+    //             signal_state = SIGNAL_REVERT;
+    //         }
+    //         break;
+
+    //     case SIGNAL_REVERT:
+    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+    //         HIGH_LEFT(d);
+
+    //         // if (signal_index > 204)
+    //         // {
+    //         //     CurrentLoop_Change_to_LowGain();
+    //         //     signal_state = SIGNAL_REVERT;
+    //         // }
+    //         break;
+
+    //     case SIGNAL_DO_NOTHING:
+    //         HIGH_LEFT(0);
+    //         break;
+            
+    //     }
+                    
+    //     p_current_ref++;
+    // }
+    // else
+    //     //termino de generar la senoidal, corto el mosfet
+    //     LOW_RIGHT(DUTY_NONE);
+
     if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
     {
         unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
                     
         //loop de corriente
         unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-        calc = calc >> 10;
+        calc = calc >> 12;
 
         //TODO: modif
         reference[signal_index] = (unsigned short) calc;
         I_Sense_Pos = last_output;
-
+        
         switch (signal_state)
         {
         case SIGNAL_RISING:
@@ -186,13 +272,92 @@ void Test_ACPOS (void)
             {
                 CurrentLoop_Change_to_HighGain();
                 signal_state = SIGNAL_MIDDLE;
-                // signal_state = SIGNAL_DO_NOTHING;
             }
             break;
 
         case SIGNAL_MIDDLE:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            HIGH_LEFT(d);
+            //TODO: modif
+            HIGH_LEFT(DUTY_NONE);
+
+            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+            // HIGH_LEFT(d);
+
+            // if (signal_index > INDEX_TO_FALLING)
+            // {
+            //     CurrentLoop_Change_to_LowGain();
+            //     signal_state = SIGNAL_FALLING;
+            // }
+            break;
+
+        case SIGNAL_FALLING:
+            //TODO: modif
+            HIGH_LEFT(DUTY_NONE);
+
+            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+            // HIGH_LEFT(d);
+
+            // if (signal_index > INDEX_TO_REVERT)
+            // {
+            //     // CurrentLoop_Change_to_LowGain();
+            //     signal_state = SIGNAL_REVERT;
+            //     HIGH_LEFT(DUTY_NONE);
+            // }
+            break;
+
+        case SIGNAL_REVERT:
+            //TODO: modif
+            HIGH_LEFT(DUTY_NONE);
+            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
+            // HIGH_LEFT(d);
+
+            // if (signal_index > 204)
+            // {
+            //     CurrentLoop_Change_to_LowGain();
+            //     signal_state = SIGNAL_REVERT;
+            // }
+            break;
+                        
+        }
+                    
+        p_current_ref++;
+    }
+    else
+        //termino de generar la senoidal, corto el mosfet
+        LOW_RIGHT(DUTY_NONE);
+    
+}
+
+
+void Test_ACNEG (void)
+{
+    //Adelanto la senial de corriente,
+    if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
+    {
+        unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
+                    
+        //loop de corriente
+        unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
+        calc = calc >> 12;
+
+        reference[signal_index] = (unsigned short) calc;
+        I_Sense_Neg = last_output;
+        
+        switch (signal_state)
+        {
+        case SIGNAL_RISING:
+            d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+            HIGH_RIGHT(d);
+
+            if (signal_index > INDEX_TO_MIDDLE)
+            {
+                CurrentLoop_Change_to_HighGain();
+                signal_state = SIGNAL_MIDDLE;
+            }
+            break;
+
+        case SIGNAL_MIDDLE:
+            d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+            HIGH_RIGHT(d);
 
             if (signal_index > INDEX_TO_FALLING)
             {
@@ -202,19 +367,20 @@ void Test_ACPOS (void)
             break;
 
         case SIGNAL_FALLING:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            HIGH_LEFT(d);
+            d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+            HIGH_RIGHT(d);
 
             if (signal_index > INDEX_TO_REVERT)
             {
-                CurrentLoop_Change_to_LowGain();
+                // CurrentLoop_Change_to_LowGain();
                 signal_state = SIGNAL_REVERT;
+                HIGH_RIGHT(DUTY_NONE);
             }
             break;
 
         case SIGNAL_REVERT:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            HIGH_LEFT(d);
+            // d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
+            // HIGH_RIGHT(d);
 
             // if (signal_index > 204)
             // {
@@ -222,18 +388,14 @@ void Test_ACPOS (void)
             //     signal_state = SIGNAL_REVERT;
             // }
             break;
-
-        case SIGNAL_DO_NOTHING:
-            HIGH_LEFT(0);
-            break;
-            
+                        
         }
                     
         p_current_ref++;
     }
     else
         //termino de generar la senoidal, corto el mosfet
-        LOW_RIGHT(DUTY_NONE);
+        LOW_LEFT(DUTY_NONE);
     
 }
 
@@ -312,6 +474,26 @@ void HIGH_LEFT (unsigned short duty)
     cntr_high_left++;
 }
 
+unsigned char cntr_high_right = 0;
+void HIGH_RIGHT (unsigned short duty)
+{
+    float out = 0.0;
+    float input = 0.0;
+    
+    duty_high_right[cntr_high_right] = duty;
+
+    //aplico el nuevo duty a la planta
+    input = vinput[cntr_high_right] * duty;
+    input = input / DUTY_100_PERCENT;
+    vinput_applied[cntr_high_right] = input;
+
+    voutput[cntr_high_right] = Plant_Out(input);
+    voutput_adc[cntr_high_right] = Adc12BitsConvertion(voutput[cntr_high_right]);
+    last_output = voutput_adc[cntr_high_right];
+    
+    cntr_high_right++;
+}
+
 
 unsigned short duty_low_right [SIZEOF_SIGNAL] = { 0 };
 unsigned char cntr_low_right = 0;
@@ -319,6 +501,15 @@ void LOW_RIGHT (unsigned short duty)
 {
     duty_low_right[cntr_low_right] = duty;
     cntr_low_right++;
+}
+
+
+unsigned short duty_low_left [SIZEOF_SIGNAL] = { 0 };
+unsigned char cntr_low_left = 0;
+void LOW_LEFT (unsigned short duty)
+{
+    duty_low_left[cntr_low_left] = duty;
+    cntr_low_left++;
 }
 
 

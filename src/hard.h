@@ -65,6 +65,7 @@
 #define WITH_AC_SYNC_INT
 #define WITH_OVERCURRENT_SHUTDOWN
 #define WITH_SOFT_OVERCURRENT_SHUTDOWN
+#define WITH_FEW_CYCLES_OF_50HZ
 
 //-- Some timeouts ----------
 #define TT_FOR_CURRENT_ERROR    10000
@@ -73,6 +74,12 @@
 //---- End of Features Configuration ----------
 
 //---- Some Checks for avoid Configuration Errors ----------
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+#define WITH_FEW_CYCLES_OF_50HZ_POS
+// #define WITH_FEW_CYCLES_OF_50HZ_NEG
+#define TT_FEW_CYCLES_DUMP    10000
+#define CYCLES_OF_50HZ    1
+#endif
 #ifdef WITH_SOFT_OVERCURRENT_SHUTDOWN
 #define SOFT_OVERCURRENT_THRESHOLD    3500
 #endif
@@ -210,8 +217,6 @@ typedef enum
     SWITCH_RELAY_TO_ON,
     WAIT_RELAY_TO_ON,
     WAIT_SYNC_FEW_CYCLES_BEFORE_START,
-    FIRST_SOFT_START_CYCLE,
-    SECOND_SOFT_START_CYCLE,
     WAIT_FOR_FIRST_SYNC,
     GEN_POS,
     WAIT_CROSS_POS_TO_NEG,
@@ -219,7 +224,10 @@ typedef enum
     WAIT_CROSS_NEG_TO_POS,
     JUMPER_PROTECTED,
     JUMPER_PROTECT_OFF,
-    OVERCURRENT_ERROR
+    OVERCURRENT_ERROR,
+    FEW_CYCLES_DUMP_DATA,
+    FEW_CYCLES_DUMP_DATA_1,
+    FEW_CYCLES_DUMP_DATA_2
     
 } ac_sync_state_t;
 

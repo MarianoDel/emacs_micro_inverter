@@ -688,12 +688,15 @@ int main(void)
             break;
 
         case FEW_CYCLES_DUMP_DATA:
+#ifdef WITH_FEW_CYCLES_OF_50HZ
             RELAY_OFF;
             PWM_Off();
             ac_sync_state = FEW_CYCLES_DUMP_DATA_1;
+#endif
             break;
 
         case FEW_CYCLES_DUMP_DATA_1:
+#ifdef WITH_FEW_CYCLES_OF_50HZ
 #ifdef WITH_FEW_CYCLES_OF_50HZ_POS
             Usart1Send("d_dump data positive:\n");
 #endif
@@ -718,15 +721,18 @@ int main(void)
                         
             }
             timer_standby = TT_FEW_CYCLES_DUMP;
-            ac_sync_state = FEW_CYCLES_DUMP_DATA_2;            
+            ac_sync_state = FEW_CYCLES_DUMP_DATA_2;
+#endif
             break;
 
         case FEW_CYCLES_DUMP_DATA_2:
+#ifdef WITH_FEW_CYCLES_OF_50HZ
             if (!timer_standby)
             {
                 ChangeLed(LED_STANDBY);
                 ac_sync_state = START_SYNCING;
             }
+#endif
             break;
             
         }

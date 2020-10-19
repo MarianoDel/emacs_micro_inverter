@@ -1,16 +1,16 @@
 //------------------------------------------------
-// ## Internal Test Functions Module
+// ## Signal Generation Module
 // ##
 // ## @Author: Med
 // ## @Editor: Emacs - ggtags
 // ## @TAGS:   Global
 // ##
-// #### TEST_FUNCTIONS.H #########################
+// #### GEN_SIGNAL.H #############################
 //------------------------------------------------
 
 // Prevent recursive inclusion -------------------------------------------------
-#ifndef _TEST_FUNTIONS_H_
-#define _TEST_FUNTIONS_H_
+#ifndef _GEN_SIGNAL_H_
+#define _GEN_SIGNAL_H_
 
 
 
@@ -21,14 +21,10 @@
 
 
 // Exported Functions ----------------------------------------------------------
-void TF_RelayConnect (void);
-void TF_RelayACPOS (void);
-void TF_RelayACNEG (void);
-void TF_RelayFiftyHz (void);
-void TF_OnlySyncAndPolarity (void);
-void TF_Check_Sequence_Ready (void);
 
-#endif    /* _TEST_FUNTIONS_H_ */
+
+
+#endif    /* _GEN_SIGNAL_H_ */
 
 //--- end of file ---//
 

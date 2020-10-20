@@ -10,6 +10,7 @@
 
 // Includes --------------------------------------------------------------------
 #include "tim.h"
+#include "pwm_defs.h"
 #include "stm32f0xx.h"
 #include "hard.h"
 #include "sync.h"

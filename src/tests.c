@@ -8,58 +8,18 @@
 //---------------------------------------------
 
 // Includes Modules for tests --------------------------------------------------
-#include "dsp.h"
+#include "gen_signal.h"
 
 #include <stdio.h>
 #include <math.h>
 
 // Types Constants and Macros --------------------------------------------------
-typedef enum {
-    SIGNAL_RISING = 0,
-    SIGNAL_MIDDLE,
-    SIGNAL_FALLING,
-    SIGNAL_REVERT,
-    SIGNAL_DO_NOTHING    
-        
-} signal_state_st;
-
-#define SIZEOF_SIGNAL    240
-
-unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,481,534,
-                                                 587,640,693,746,798,851,903,955,1007,1059,
-                                                 1111,1163,1214,1265,1316,1366,1417,1467,1517,1567,
-                                                 1616,1665,1714,1762,1811,1859,1906,1953,2000,2047,
-                                                 2093,2139,2185,2230,2275,2319,2363,2406,2450,2492,
-                                                 2535,2577,2618,2659,2700,2740,2779,2818,2857,2895,
-                                                 2933,2970,3007,3043,3078,3113,3148,3182,3215,3248,
-                                                 3281,3312,3344,3374,3404,3434,3463,3491,3519,3546,
-                                                 3572,3598,3624,3648,3672,3696,3718,3740,3762,3783,
-                                                 3803,3823,3841,3860,3877,3894,3910,3926,3941,3955,
-                                                 3969,3981,3994,4005,4016,4026,4035,4044,4052,4059,
-                                                 4066,4072,4077,4082,4086,4089,4091,4093,4094,4095,
-                                                 4094,4093,4091,4089,4086,4082,4077,4072,4066,4059,
-                                                 4052,4044,4035,4026,4016,4005,3994,3981,3969,3955,
-                                                 3941,3926,3910,3894,3877,3860,3841,3823,3803,3783,
-                                                 3762,3740,3718,3696,3672,3648,3624,3598,3572,3546,
-                                                 3519,3491,3463,3434,3404,3374,3344,3312,3281,3248,
-                                                 3215,3182,3148,3113,3078,3043,3007,2970,2933,2895,
-                                                 2857,2818,2779,2740,2700,2659,2618,2577,2535,2492,
-                                                 2450,2406,2363,2319,2275,2230,2185,2139,2093,2047,
-                                                 2000,1953,1906,1859,1811,1762,1714,1665,1616,1567,
-                                                 1517,1467,1417,1366,1316,1265,1214,1163,1111,1059,
-                                                 1007,955,903,851,798,746,693,640,587,534,
-                                                 481,428,374,321,267,214,160,107,53,0};
-
 #define KI_SIGNAL_PEAK_MULTIPLIER    2792
 
 // Externals -------------------------------------------------------------------
 
 
 // Globals ---------------------------------------------------------------------
-unsigned short * p_current_ref;
-signal_state_st signal_state = SIGNAL_RISING;
-pid_data_obj_t current_pid;
-
 unsigned short reference [SIZEOF_SIGNAL] = { 0 };
 unsigned short duty_high_left [SIZEOF_SIGNAL] = { 0 };
 unsigned short duty_high_right [SIZEOF_SIGNAL] = { 0 };
@@ -69,13 +29,6 @@ float voutput[SIZEOF_SIGNAL] = { 0 };
 unsigned short voutput_adc[SIZEOF_SIGNAL] = { 0 };
 
 // Module Functions to Test ----------------------------------------------------
-unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample);
-void CurrentLoop_Change_to_HighGain (void);
-void CurrentLoop_Change_to_LowGain (void);
-
-void Test_ACPOS (void);
-void Test_ACNEG (void);
-
 float Plant_Out (float);
 void Plant_Step_Response (void);
 void Plant_Step_Response_Duty (void);
@@ -93,8 +46,6 @@ void ShowVectorUShort (char *, unsigned short *, unsigned char);
 void ShowVectorInt (char *, int *, unsigned char);
 
 // Module Functions ------------------------------------------------------------
-#define TEST_ON_ACPOS
-// #define TEST_ON_ACNEG
 int main (int argc, char *argv[])
 {
     //pruebo un step de la planta
@@ -107,12 +58,6 @@ int main (int argc, char *argv[])
     
     
 
-    //programa loop realimentado
-    // PID_Small_Ki_Flush_Errors(&current_pid);
-    PID_Flush_Errors(&current_pid);    
-    CurrentLoop_Change_to_LowGain();
-
-    p_current_ref = sin_half_cycle;
 
     float calc = 0.0;
     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
@@ -124,12 +69,6 @@ int main (int argc, char *argv[])
 
     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
     {
-#ifdef TEST_ON_ACPOS
-        Test_ACPOS();
-#endif
-#ifdef TEST_ON_ACNEG
-        Test_ACNEG();
-#endif
     }
 
     // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
@@ -176,282 +115,6 @@ unsigned short I_Sense_Neg = 0;
 unsigned short last_output = 0;
 
 unsigned short d = 0;
-void Test_ACPOS (void)
-{
-    //Adelanto la seniales de corriente,
-    // if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
-    // {
-    //     unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
-                    
-    //     //loop de corriente
-    //     unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-    //     calc = calc >> 10;
-
-    //     //TODO: modif
-    //     reference[signal_index] = (unsigned short) calc;
-    //     I_Sense_Pos = last_output;
-
-    //     switch (signal_state)
-    //     {
-    //     case SIGNAL_RISING:
-    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-    //         HIGH_LEFT(d);
-
-    //         if (signal_index > INDEX_TO_MIDDLE)
-    //         {
-    //             CurrentLoop_Change_to_HighGain();
-    //             signal_state = SIGNAL_MIDDLE;
-    //             // signal_state = SIGNAL_DO_NOTHING;
-    //         }
-    //         break;
-
-    //     case SIGNAL_MIDDLE:
-    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-    //         HIGH_LEFT(d);
-
-    //         if (signal_index > INDEX_TO_FALLING)
-    //         {
-    //             CurrentLoop_Change_to_LowGain();
-    //             signal_state = SIGNAL_FALLING;
-    //         }
-    //         break;
-
-    //     case SIGNAL_FALLING:
-    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-    //         HIGH_LEFT(d);
-
-    //         if (signal_index > INDEX_TO_REVERT)
-    //         {
-    //             CurrentLoop_Change_to_LowGain();
-    //             signal_state = SIGNAL_REVERT;
-    //         }
-    //         break;
-
-    //     case SIGNAL_REVERT:
-    //         d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-    //         HIGH_LEFT(d);
-
-    //         // if (signal_index > 204)
-    //         // {
-    //         //     CurrentLoop_Change_to_LowGain();
-    //         //     signal_state = SIGNAL_REVERT;
-    //         // }
-    //         break;
-
-    //     case SIGNAL_DO_NOTHING:
-    //         HIGH_LEFT(0);
-    //         break;
-            
-    //     }
-                    
-    //     p_current_ref++;
-    // }
-    // else
-    //     //termino de generar la senoidal, corto el mosfet
-    //     LOW_RIGHT(DUTY_NONE);
-
-    if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
-    {
-        unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
-                    
-        //loop de corriente
-        unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-        calc = calc >> 12;
-
-        //TODO: modif
-        reference[signal_index] = (unsigned short) calc;
-        I_Sense_Pos = last_output;
-        
-        switch (signal_state)
-        {
-        case SIGNAL_RISING:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            HIGH_LEFT(d);
-
-            if (signal_index > INDEX_TO_MIDDLE)
-            {
-                CurrentLoop_Change_to_HighGain();
-                signal_state = SIGNAL_MIDDLE;
-            }
-            break;
-
-        case SIGNAL_MIDDLE:
-            //TODO: modif
-            HIGH_LEFT(DUTY_NONE);
-
-            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            // HIGH_LEFT(d);
-
-            // if (signal_index > INDEX_TO_FALLING)
-            // {
-            //     CurrentLoop_Change_to_LowGain();
-            //     signal_state = SIGNAL_FALLING;
-            // }
-            break;
-
-        case SIGNAL_FALLING:
-            //TODO: modif
-            HIGH_LEFT(DUTY_NONE);
-
-            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            // HIGH_LEFT(d);
-
-            // if (signal_index > INDEX_TO_REVERT)
-            // {
-            //     // CurrentLoop_Change_to_LowGain();
-            //     signal_state = SIGNAL_REVERT;
-            //     HIGH_LEFT(DUTY_NONE);
-            // }
-            break;
-
-        case SIGNAL_REVERT:
-            //TODO: modif
-            HIGH_LEFT(DUTY_NONE);
-            // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-            // HIGH_LEFT(d);
-
-            // if (signal_index > 204)
-            // {
-            //     CurrentLoop_Change_to_LowGain();
-            //     signal_state = SIGNAL_REVERT;
-            // }
-            break;
-                        
-        }
-                    
-        p_current_ref++;
-    }
-    else
-        //termino de generar la senoidal, corto el mosfet
-        LOW_RIGHT(DUTY_NONE);
-    
-}
-
-
-void Test_ACNEG (void)
-{
-    //Adelanto la senial de corriente,
-    if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
-    {
-        unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
-                    
-        //loop de corriente
-        unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-        calc = calc >> 12;
-
-        reference[signal_index] = (unsigned short) calc;
-        I_Sense_Neg = last_output;
-        
-        switch (signal_state)
-        {
-        case SIGNAL_RISING:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-            HIGH_RIGHT(d);
-
-            if (signal_index > INDEX_TO_MIDDLE)
-            {
-                CurrentLoop_Change_to_HighGain();
-                signal_state = SIGNAL_MIDDLE;
-            }
-            break;
-
-        case SIGNAL_MIDDLE:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-            HIGH_RIGHT(d);
-
-            if (signal_index > INDEX_TO_FALLING)
-            {
-                CurrentLoop_Change_to_LowGain();
-                signal_state = SIGNAL_FALLING;
-            }
-            break;
-
-        case SIGNAL_FALLING:
-            d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-            HIGH_RIGHT(d);
-
-            if (signal_index > INDEX_TO_REVERT)
-            {
-                // CurrentLoop_Change_to_LowGain();
-                signal_state = SIGNAL_REVERT;
-                HIGH_RIGHT(DUTY_NONE);
-            }
-            break;
-
-        case SIGNAL_REVERT:
-            // d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-            // HIGH_RIGHT(d);
-
-            // if (signal_index > 204)
-            // {
-            //     CurrentLoop_Change_to_LowGain();
-            //     signal_state = SIGNAL_REVERT;
-            // }
-            break;
-                        
-        }
-                    
-        p_current_ref++;
-    }
-    else
-        //termino de generar la senoidal, corto el mosfet
-        LOW_LEFT(DUTY_NONE);
-    
-}
-
-
-unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
-{
-    short d = 0;
-    
-    current_pid.setpoint = setpoint;
-    current_pid.sample = new_sample;
-    // d = PID_Small_Ki(&current_pid);
-    d = PID(&current_pid);
-                    
-    if (d > 0)
-    {
-        if (d > DUTY_100_PERCENT)
-        {
-            d = DUTY_100_PERCENT;
-            current_pid.last_d = DUTY_100_PERCENT;
-        }
-    }
-    else
-    {
-        d = DUTY_NONE;
-        current_pid.last_d = DUTY_NONE;
-    }
-
-    return (unsigned short) d;
-}
-
-
-void CurrentLoop_Change_to_HighGain (void)
-{
-    current_pid.kp = 10;
-    current_pid.ki = 3;
-    current_pid.kd = 0;
-
-    // current_pid.kp = 30;
-    // current_pid.ki = 16;
-    // current_pid.kd = 0;
-    
-    // current_pid.kp = 5;    
-    // current_pid.ki = 320;    
-    // current_pid.kd = 0;    
-}
-
-
-void CurrentLoop_Change_to_LowGain (void)
-{
-    current_pid.kp = 10;
-    current_pid.ki = 3;
-    current_pid.kd = 0;    
-    // current_pid.kp = 5;
-    // current_pid.ki = 32;
-    // current_pid.kd = 16;    
-}
 
 
 unsigned char cntr_high_left = 0;

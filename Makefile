@@ -77,6 +77,7 @@ SRC += ./src/uart.c
 SRC += ./src/dma.c
 SRC += ./src/sync.c
 SRC += ./src/test_functions.c
+SRC += ./src/gen_signal.c
 
 
 ## Core Support
@@ -198,7 +199,8 @@ clean:
 tests:
 	# primero objetos de los modulos a testear, solo si son tipo HAL sin dependencia del hard
 	gcc -c src/dsp.c -I. $(INCDIR)
-	gcc src/tests.c dsp.o -lm
+	gcc -c src/gen_signal.c -I. $(INCDIR)
+	gcc src/tests.c dsp.o gen_signal.o -lm
 	./a.out
 	# sino copiar funcion a testear al main de tests.c
 	# gcc src/tests.c

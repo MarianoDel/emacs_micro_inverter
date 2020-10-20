@@ -29,6 +29,7 @@
 #include "it.h"
 #include "sync.h"
 #include "test_functions.h"
+#include "gen_signal.h"
 
 // Externals -------------------------------------------------------------------
 
@@ -51,67 +52,11 @@ volatile unsigned char overcurrent_shutdown = 0;
 volatile unsigned short timer_standby;
 
 
-
-#ifdef USE_FREQ_12KHZ
-// Select Current Signal
-#define USE_SIGNAL_CURRENT_1A
-#define SIZEOF_SIGNAL    120
-#endif
-
-#ifdef  USE_FREQ_24KHZ
 // Select Current Signal
 // #define USE_SIGNAL_CURRENT_01_A
 #define USE_SIGNAL_CURRENT_05_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
-#define SIZEOF_SIGNAL    240
-#endif
-
-#if (SIZEOF_SIGNAL == 120)
-unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {107,214,321,428,534,640,746,851,955,1059,
-                                                 1163,1265,1366,1467,1567,1665,1762,1859,1953,2047,
-                                                 2139,2230,2319,2406,2492,2577,2659,2740,2818,2895,
-                                                 2970,3043,3113,3182,3248,3312,3374,3434,3491,3546,
-                                                 3598,3648,3696,3740,3783,3823,3860,3894,3926,3955,
-                                                 3981,4005,4026,4044,4059,4072,4082,4089,4093,4095,
-                                                 4093,4089,4082,4072,4059,4044,4026,4005,3981,3955,
-                                                 3926,3894,3860,3823,3783,3740,3696,3648,3598,3546,
-                                                 3491,3434,3374,3312,3248,3182,3113,3043,2970,2895,
-                                                 2818,2740,2659,2577,2492,2406,2319,2230,2139,2047,
-                                                 1953,1859,1762,1665,1567,1467,1366,1265,1163,1059,
-                                                 955,851,746,640,534,428,321,214,107,0};
-
-
-#elif (SIZEOF_SIGNAL == 240)
-unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,481,534,
-                                                 587,640,693,746,798,851,903,955,1007,1059,
-                                                 1111,1163,1214,1265,1316,1366,1417,1467,1517,1567,
-                                                 1616,1665,1714,1762,1811,1859,1906,1953,2000,2047,
-                                                 2093,2139,2185,2230,2275,2319,2363,2406,2450,2492,
-                                                 2535,2577,2618,2659,2700,2740,2779,2818,2857,2895,
-                                                 2933,2970,3007,3043,3078,3113,3148,3182,3215,3248,
-                                                 3281,3312,3344,3374,3404,3434,3463,3491,3519,3546,
-                                                 3572,3598,3624,3648,3672,3696,3718,3740,3762,3783,
-                                                 3803,3823,3841,3860,3877,3894,3910,3926,3941,3955,
-                                                 3969,3981,3994,4005,4016,4026,4035,4044,4052,4059,
-                                                 4066,4072,4077,4082,4086,4089,4091,4093,4094,4095,
-                                                 4094,4093,4091,4089,4086,4082,4077,4072,4066,4059,
-                                                 4052,4044,4035,4026,4016,4005,3994,3981,3969,3955,
-                                                 3941,3926,3910,3894,3877,3860,3841,3823,3803,3783,
-                                                 3762,3740,3718,3696,3672,3648,3624,3598,3572,3546,
-                                                 3519,3491,3463,3434,3404,3374,3344,3312,3281,3248,
-                                                 3215,3182,3148,3113,3078,3043,3007,2970,2933,2895,
-                                                 2857,2818,2779,2740,2700,2659,2618,2577,2535,2492,
-                                                 2450,2406,2363,2319,2275,2230,2185,2139,2093,2047,
-                                                 2000,1953,1906,1859,1811,1762,1714,1665,1616,1567,
-                                                 1517,1467,1417,1366,1316,1265,1214,1163,1111,1059,
-                                                 1007,955,903,851,798,746,693,640,587,534,
-                                                 481,428,374,321,267,214,160,107,53,0};
-
-
-#else
-#error "Select SIZEOF_SIGNAL in main.c"
-#endif
 
 // Set of Peak Current in ADC points, 12bits
 // Voltage in I_Sense is 3 . Ipeak
@@ -134,12 +79,6 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,
 
 
 
-#define INDEX_TO_MIDDLE    47
-#define INDEX_TO_FALLING    156
-#define INDEX_TO_REVERT    204
-    
-unsigned short * p_current_ref;
-pid_data_obj_t current_pid;
 #ifdef WITH_FEW_CYCLES_OF_50HZ
 unsigned short d_dump [SIZEOF_SIGNAL] = { 0 };
 #endif
@@ -148,9 +87,6 @@ unsigned short d_dump [SIZEOF_SIGNAL] = { 0 };
 void SysTickError (void);
 void SoftOverCurrentShutdown (unsigned char, unsigned short);
 void PWM_Off (void);
-unsigned short CurrentLoop (unsigned short, unsigned short);
-void CurrentLoop_Change_to_LowGain (void);
-void CurrentLoop_Change_to_HighGain (void);
 void TimingDelay_Decrement (void);
 void EXTI4_15_IRQHandler(void);
 
@@ -228,21 +164,9 @@ int main(void)
     // Main Program - Grid Tied Mode -
 #ifdef GRID_TIED_FULL_CONECTED
 
-    // Initial Setup for PID Controller
-    PID_Flush_Errors(&current_pid);
-    CurrentLoop_Change_to_LowGain();
-
-    typedef enum {
-        SIGNAL_RISING = 0,
-        SIGNAL_MIDDLE,
-        SIGNAL_FALLING,
-        SIGNAL_REVERT
-        
-    } signal_state_e;
-
-    signal_state_e signal_state = SIGNAL_RISING;
-    unsigned short d = 0;
     unsigned short cycles_before_start = CYCLES_BEFORE_START;
+    short d = 0;
+
 
 #ifdef WITH_FEW_CYCLES_OF_50HZ
     unsigned char cycles_50hz = CYCLES_OF_50HZ;
@@ -258,7 +182,6 @@ int main(void)
 
             EnablePreload_Mosfet_HighLeft;
             EnablePreload_Mosfet_HighRight;
-            PID_Flush_Errors(&current_pid);
 
             SYNC_Restart();
             cycles_before_start = CYCLES_BEFORE_START;
@@ -350,6 +273,10 @@ int main(void)
             {
                 sequence_ready_reset;
 
+#ifdef USE_LED_FOR_PID_CALCS
+                LED_ON;
+#endif
+                
 #ifdef WITH_SOFT_OVERCURRENT_SHUTDOWN
                 if (I_Sense_Pos > SOFT_OVERCURRENT_THRESHOLD)
                 {
@@ -359,76 +286,22 @@ int main(void)
                     break;
                 }
 #endif
-                
-#ifdef USE_LED_FOR_PID_CALCS
-                LED_ON;
-#endif
-                //Adelanto la seniales de corriente,
-                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
+                gen_signal_e resp = SIGNAL_RUNNING;
+                resp = GenSignal(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+
+                if (resp == SIGNAL_FINISH)
                 {
-                    unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
-                    
-                    //loop de corriente
-                    unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-                    calc = calc >> 12;
-
-                    switch (signal_state)
-                    {
-                    case SIGNAL_RISING:
-                        d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-                        HIGH_LEFT(d);
-
-                        if (signal_index > INDEX_TO_MIDDLE)
-                        {
-                            CurrentLoop_Change_to_HighGain();
-                            signal_state = SIGNAL_MIDDLE;
-                        }
-                        break;
-
-                    case SIGNAL_MIDDLE:
-                        d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-                        HIGH_LEFT(d);
-
-                        if (signal_index > INDEX_TO_FALLING)
-                        {
-                            CurrentLoop_Change_to_LowGain();
-                            signal_state = SIGNAL_FALLING;
-                        }
-                        break;
-
-                    case SIGNAL_FALLING:
-                        d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-                        HIGH_LEFT(d);
-
-                        if (signal_index > INDEX_TO_REVERT)
-                        {
-                            // CurrentLoop_Change_to_LowGain();
-                            signal_state = SIGNAL_REVERT;
-                            HIGH_LEFT(DUTY_NONE);
-                            d = 0;
-                        }
-                        break;
-
-                    case SIGNAL_REVERT:
-                        // d = CurrentLoop ((unsigned short) calc, I_Sense_Pos);
-                        // HIGH_LEFT(d);
-
-                        // if (signal_index > 204)
-                        // {
-                        //     CurrentLoop_Change_to_LowGain();
-                        //     signal_state = SIGNAL_REVERT;
-                        // }
-                        break;
-                        
-                    }                    
-                    p_current_ref++;
-#ifdef WITH_FEW_CYCLES_OF_50HZ_POS
-                    d_dump[signal_index] = d;
-#endif
+                    //end of generation, wait for a sync pulse
+                    HIGH_LEFT(DUTY_NONE);
+                }
+                else if (resp == SIGNAL_RUNNING)
+                {
+                    HIGH_LEFT(d);
                 }
                 else
-                    //termino de generar la senoidal, corto el mosfet
-                    LOW_RIGHT(DUTY_NONE);
+                {
+                }
+                    
                 
 #ifdef USE_LED_FOR_PID_CALCS
                 LED_OFF;
@@ -481,10 +354,7 @@ int main(void)
                 sequence_ready_reset;
                 if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
-                    PID_Flush_Errors(&current_pid);
-                    p_current_ref = sin_half_cycle;
-                    CurrentLoop_Change_to_LowGain();
-                    signal_state = SIGNAL_RISING;
+                    GenSignalReset();
                     ac_sync_state = GEN_NEG;
                     
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -501,6 +371,10 @@ int main(void)
             {
                 sequence_ready_reset;
 
+#ifdef USE_LED_FOR_PID_CALCS
+                LED_ON;
+#endif
+
 #ifdef WITH_SOFT_OVERCURRENT_SHUTDOWN
                 if (I_Sense_Neg > SOFT_OVERCURRENT_THRESHOLD)
                 {
@@ -511,75 +385,21 @@ int main(void)
                 }
 #endif
                 
-#ifdef USE_LED_FOR_PID_CALCS
-                LED_ON;
-#endif
-                //Adelanto la senial de corriente,
-                if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
+                gen_signal_e resp = SIGNAL_RUNNING;
+                resp = GenSignal(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+
+                if (resp == SIGNAL_FINISH)
                 {
-                    unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
-                    
-                    //loop de corriente
-                    unsigned int calc = *p_current_ref * KI_SIGNAL_PEAK_MULTIPLIER;
-                    calc = calc >> 12;
-
-                    switch (signal_state)
-                    {
-                    case SIGNAL_RISING:
-                        d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-                        HIGH_RIGHT(d);
-
-                        if (signal_index > INDEX_TO_MIDDLE)
-                        {
-                            CurrentLoop_Change_to_HighGain();
-                            signal_state = SIGNAL_MIDDLE;
-                        }
-                        break;
-
-                    case SIGNAL_MIDDLE:
-                        d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-                        HIGH_RIGHT(d);
-
-                        if (signal_index > INDEX_TO_FALLING)
-                        {
-                            CurrentLoop_Change_to_LowGain();
-                            signal_state = SIGNAL_FALLING;
-                        }
-                        break;
-
-                    case SIGNAL_FALLING:
-                        d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-                        HIGH_RIGHT(d);
-
-                        if (signal_index > INDEX_TO_REVERT)
-                        {
-                            // CurrentLoop_Change_to_LowGain();
-                            signal_state = SIGNAL_REVERT;
-                            HIGH_RIGHT(DUTY_NONE);
-                            d = 0;
-                        }
-                        break;
-
-                    case SIGNAL_REVERT:
-                        // d = CurrentLoop ((unsigned short) calc, I_Sense_Neg);
-                        // HIGH_RIGHT(d);
-
-                        // if (signal_index > 204)
-                        // {
-                        //     CurrentLoop_Change_to_LowGain();
-                        //     signal_state = SIGNAL_REVERT;
-                        // }
-                        break;
-                        
-                    }
-                    p_current_ref++;
-#ifdef WITH_FEW_CYCLES_OF_50HZ_NEG
-                    d_dump[signal_index] = d;
-#endif
+                    //end of generation, wait for a sync pulse
+                    HIGH_RIGHT(DUTY_NONE);
+                }
+                else if (resp == SIGNAL_RUNNING)
+                {
+                    HIGH_RIGHT(d);
                 }
                 else
-                    //termino de generar la senoidal, corto el mosfet
-                    LOW_LEFT(DUTY_NONE);
+                {
+                }
                 
 #ifdef USE_LED_FOR_PID_CALCS
                 LED_OFF;
@@ -644,10 +464,7 @@ int main(void)
 #endif
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
-                    PID_Flush_Errors(&current_pid);
-                    p_current_ref = sin_half_cycle;
-                    CurrentLoop_Change_to_LowGain();
-                    signal_state = SIGNAL_RISING;
+                    GenSignalReset();
                     ac_sync_state = GEN_POS;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -830,46 +647,6 @@ void PWM_Off (void)
 }
 
 
-unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
-{
-    short d = 0;
-    
-    current_pid.setpoint = setpoint;
-    current_pid.sample = new_sample;
-    d = PID(&current_pid);
-                    
-    if (d > 0)
-    {
-        if (d > DUTY_100_PERCENT)
-        {
-            d = DUTY_100_PERCENT;
-            current_pid.last_d = DUTY_100_PERCENT;
-        }
-    }
-    else
-    {
-        d = DUTY_NONE;
-        current_pid.last_d = DUTY_NONE;
-    }
-
-    return (unsigned short) d;
-}
-
-
-void CurrentLoop_Change_to_HighGain (void)
-{
-    current_pid.kp = 10;
-    current_pid.ki = 3;
-    current_pid.kd = 0;
-}
-
-
-void CurrentLoop_Change_to_LowGain (void)
-{
-    current_pid.kp = 10;
-    current_pid.ki = 3;
-    current_pid.kd = 0;    
-}
 
 
 void TimingDelay_Decrement(void)

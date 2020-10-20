@@ -9,6 +9,8 @@
 
 // Includes Modules for tests --------------------------------------------------
 #include "gen_signal.h"
+#include "pwm_defs.h"
+#include "dsp.h"
 
 #include <stdio.h>
 #include <math.h>
@@ -29,6 +31,8 @@ float voutput[SIZEOF_SIGNAL] = { 0 };
 unsigned short voutput_adc[SIZEOF_SIGNAL] = { 0 };
 
 // Module Functions to Test ----------------------------------------------------
+void TEST_DspModule (void);
+
 float Plant_Out (float);
 void Plant_Step_Response (void);
 void Plant_Step_Response_Duty (void);
@@ -45,9 +49,17 @@ void ShowVectorFloat (char *, float *, unsigned char);
 void ShowVectorUShort (char *, unsigned short *, unsigned char);
 void ShowVectorInt (char *, int *, unsigned char);
 
+void PrintOK (void);
+void PrintERR (void);
+
+
 // Module Functions ------------------------------------------------------------
 int main (int argc, char *argv[])
 {
+    printf("Simple module tests\n");
+    TEST_DspModule ();
+    
+
     //pruebo un step de la planta
     // Plant_Step_Response();
 
@@ -59,40 +71,103 @@ int main (int argc, char *argv[])
     
 
 
-    float calc = 0.0;
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
-    {
-        calc = sin (3.1415 * i / SIZEOF_SIGNAL);
-        calc = 350 - calc * 311;
-        vinput[i] = (unsigned short) calc;
-    }
+//     float calc = 0.0;
+//     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+//     {
+//         calc = sin (3.1415 * i / SIZEOF_SIGNAL);
+//         calc = 350 - calc * 311;
+//         vinput[i] = (unsigned short) calc;
+//     }
 
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
-    {
-    }
+//     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+//     {
+//     }
 
-    // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
-    // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
-#ifdef TEST_ON_ACPOS    
-    ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
-#endif
-#ifdef TEST_ON_ACNEG
-    ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, SIZEOF_SIGNAL);
-#endif
+//     // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+//     // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
+// #ifdef TEST_ON_ACPOS    
+//     ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
+// #endif
+// #ifdef TEST_ON_ACNEG
+//     ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, SIZEOF_SIGNAL);
+// #endif
 
-    ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
-    ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
+//     ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
+//     ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
 
-    ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, SIZEOF_SIGNAL);
+//     ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, SIZEOF_SIGNAL);
 
-    int error [SIZEOF_SIGNAL] = { 0 };
-    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
-        error[i] = reference[i] - voutput_adc[i];
+//     int error [SIZEOF_SIGNAL] = { 0 };
+//     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+//         error[i] = reference[i] - voutput_adc[i];
 
-    ShowVectorInt("\nPlant output error:\n", error, SIZEOF_SIGNAL);
-    ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+//     ShowVectorInt("\nPlant output error:\n", error, SIZEOF_SIGNAL);
+//     ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
 
     return 0;
+}
+
+
+void TEST_DspModule (void)
+{
+    printf("Testing dsp module: ");
+    
+    pid_data_obj_t pid1;
+
+    pid1.kp = 128;
+    pid1.ki = 0;
+    pid1.kd = 0;
+    PID_Flush_Errors(&pid1);
+
+    pid1.setpoint = 100;
+    pid1.sample = 100;
+    short d = 0;
+    
+    d = PID(&pid1);
+    if (d != 0)
+    {
+        PrintERR();
+        printf("expected 0, d was: %d\n", d);
+    }
+
+    pid1.sample = 99;
+    d = PID(&pid1);
+    if (d != 1)
+    {
+        PrintERR();
+        printf("expected 1, d was: %d\n", d);
+    }
+
+    pid1.sample = 0;
+    d = PID(&pid1);
+    if (d != 100)
+    {
+        PrintERR();
+        printf("expected 100, d was: %d\n", d);
+    }
+
+    pid1.kp = 0;
+    pid1.ki = 64;
+    PID_Flush_Errors(&pid1);
+
+    pid1.setpoint = 100;
+    pid1.sample = 0;
+
+    d = PID(&pid1);
+    if (d != 50)
+    {
+        PrintERR();
+        printf("expected 50, d was: %d\n", d);
+    }
+
+    d = PID(&pid1);
+    if (d != 100)
+    {
+        PrintERR();
+        printf("expected 100, d was: %d\n", d);
+    }
+
+    PrintOK();
 }
 
 
@@ -373,6 +448,21 @@ void ShowVectorInt (char * s_comment, int * int_vect, unsigned char size)
     
 }
 
+
+void PrintOK (void)
+{
+    printf("\033[0;32m");    //green
+    printf("OK\n");
+    printf("\033[0m");    //reset
+}
+
+
+void PrintERR (void)
+{
+    printf("\033[0;31m");    //red
+    printf("ERR\n");
+    printf("\033[0m");    //reset
+}
 //--- end of file ---//
 
 

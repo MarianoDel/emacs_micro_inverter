@@ -15,6 +15,13 @@
 #define _PWM_DEFS_H_
 
 
+// Frequency selection configuration
+// #define USE_FREQ_48KHZ
+#define USE_FREQ_24KHZ
+// #define USE_FREQ_16KHZ
+// #define USE_FREQ_12KHZ
+// #define USE_FREQ_9_6KHZ
+
 // Exported Types Constants and Macros -----------------------------------------
 
 
@@ -47,6 +54,16 @@
 #define DUTY_75_PERCENT		3000
 #define DUTY_100_PERCENT        4000
 #endif
+
+#ifdef USE_FREQ_12KHZ
+#define SIZEOF_SIGNAL    120
+#endif
+
+#ifdef  USE_FREQ_24KHZ
+#define SIZEOF_SIGNAL    240
+#endif
+
+
 
 
 

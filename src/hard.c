@@ -12,11 +12,11 @@
 #include "hard.h"
 #include "tim.h"
 #include "stm32f0xx.h"
-#include "adc.h"
-#include "dsp.h"
+#include "pwm_defs.h"
+#include "uart.h"
 
 #include <stdio.h>
-#include "uart.h"
+
 
 /* Externals variables ---------------------------------------------------------*/
 extern volatile unsigned short timer_led;

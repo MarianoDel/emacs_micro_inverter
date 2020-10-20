@@ -13,6 +13,7 @@
 #include "stm32f0xx.h"
 #include "hard.h"
 #include "tim.h"
+#include "pwm_defs.h"
 #include "sync.h"
 #include "uart.h"
 // #include "adc.h"

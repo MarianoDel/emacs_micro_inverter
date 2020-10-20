@@ -51,11 +51,7 @@
 // #define USE_LED_FOR_MAIN_STATES
 
 //-- Frequency selection ----------
-// #define USE_FREQ_48KHZ
-#define USE_FREQ_24KHZ
-// #define USE_FREQ_16KHZ
-// #define USE_FREQ_12KHZ
-// #define USE_FREQ_9_6KHZ
+// frequency selection on pwm_defs.h
 
 //-- How many cycles between the relay conection and the generation phase
 //even number for a complete mains cycle

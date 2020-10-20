@@ -20,6 +20,7 @@
 #include "tim.h"
 #include "uart.h"
 #include "hard.h"
+#include "pwm_defs.h"
 
 #include "core_cm0.h"
 #include "adc.h"

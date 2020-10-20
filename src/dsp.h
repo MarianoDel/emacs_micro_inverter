@@ -9,16 +9,14 @@
 #ifndef _DSP_H_
 #define _DSP_H_
 
-//--- Defines for configuration -----------------
+// Defines for Module Configuration --------------------------------------------
 #define USE_PID_CONTROLLERS
 // #define USE_MA32_U8_CIRCULAR
 #define USE_MA16_U16_CIRCULAR
 #define USE_MA32_U16_CIRCULAR
 
 
-//--- Exported constants ------------------------
-
-//--- Exported types ----------------------------
+// Exported Types Constants and Macros -----------------------------------------
 typedef struct {
     unsigned short v_ma[16];
     unsigned short * p_ma;
@@ -49,7 +47,8 @@ typedef struct {
     unsigned short kd;
 } pid_data_obj_t;
 
-//--- Module Functions --------------------------
+
+// Module Exported Functions ---------------------------------------------------
 unsigned short RandomGen (unsigned int);
 
 #ifdef USE_PID_CONTROLLERS
@@ -78,3 +77,6 @@ unsigned short MA32_U16Circular_Only_Calc (ma32_u16_data_obj_t *);
 #endif
 
 #endif /* _DSP_H_ */
+
+//--- end of file ---//
+

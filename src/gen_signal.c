@@ -10,33 +10,16 @@
 
 // Includes --------------------------------------------------------------------
 #include "gen_signal.h"
-// #include "stm32f0xx.h"
+#include "pwm_defs.h"
 #include "hard.h"
 #include "dsp.h"
-// #include "tim.h"
-// #include "sync.h"
-// #include "uart.h"
-// // #include "adc.h"
-// #include "dma.h"
-// // #include "tim.h"
-// // #include "flash_program.h"
 
-// #include <stdio.h>
-// #include <string.h>
 
 // Module Private Types Constants and Macros -----------------------------------
 #define INDEX_TO_MIDDLE    47
 #define INDEX_TO_FALLING    156
 #define INDEX_TO_REVERT    204
     
-
-#ifdef USE_FREQ_12KHZ
-#define SIZEOF_SIGNAL    120
-#endif
-
-#ifdef  USE_FREQ_24KHZ
-#define SIZEOF_SIGNAL    240
-#endif
 
 #if (SIZEOF_SIGNAL == 120)
 unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {107,214,321,428,534,640,746,851,955,1059,

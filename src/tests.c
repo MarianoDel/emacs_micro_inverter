@@ -19,19 +19,20 @@
 #define KI_SIGNAL_PEAK_MULTIPLIER    2792
 
 // Externals -------------------------------------------------------------------
-
+extern unsigned short sin_half_cycle [];
 
 // Globals ---------------------------------------------------------------------
-unsigned short reference [SIZEOF_SIGNAL] = { 0 };
 unsigned short duty_high_left [SIZEOF_SIGNAL] = { 0 };
 unsigned short duty_high_right [SIZEOF_SIGNAL] = { 0 };
 unsigned short vinput[SIZEOF_SIGNAL] = { 0 };
 float vinput_applied[SIZEOF_SIGNAL] = { 0 };
 float voutput[SIZEOF_SIGNAL] = { 0 };
 unsigned short voutput_adc[SIZEOF_SIGNAL] = { 0 };
+unsigned short last_output = 0;
 
 // Module Functions to Test ----------------------------------------------------
-void TEST_DspModule (void);
+void TEST_Dsp_Module (void);
+void TEST_Gen_Signal_Module (void);
 
 float Plant_Out (float);
 void Plant_Step_Response (void);
@@ -57,9 +58,11 @@ void PrintERR (void);
 int main (int argc, char *argv[])
 {
     printf("Simple module tests\n");
-    TEST_DspModule ();
+    TEST_Dsp_Module();
     
+    TEST_Gen_Signal_Module();
 
+    printf("Start of Analog simulations...\n");
     //pruebo un step de la planta
     // Plant_Step_Response();
 
@@ -67,50 +70,63 @@ int main (int argc, char *argv[])
     //la tension de entrada es tan alta que incluso con duty_max = 10000
     //tengo errores del 2%
     // Plant_Step_Response_Duty();
+
     
-    
+    float calc = 0.0;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        calc = sin (3.1415 * i / SIZEOF_SIGNAL);
+        calc = 350 - calc * 311;
+        vinput[i] = (unsigned short) calc;
+    }
 
+    GenSignalReset();
+    gen_signal_e sig_state = SIGNAL_RUNNING;
+    unsigned short duty = 0;
+    unsigned short isense = 0;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        isense = last_output;
+        sig_state = GenSignal(isense, KI_SIGNAL_PEAK_MULTIPLIER, &duty);
+        if (sig_state == SIGNAL_RUNNING)
+            HIGH_LEFT(duty);
+        
+    }
 
-//     float calc = 0.0;
-//     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
-//     {
-//         calc = sin (3.1415 * i / SIZEOF_SIGNAL);
-//         calc = 350 - calc * 311;
-//         vinput[i] = (unsigned short) calc;
-//     }
+    unsigned short reference [SIZEOF_SIGNAL] = { 0 };
+    unsigned int ref_calc = 0;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        ref_calc = sin_half_cycle[i] * KI_SIGNAL_PEAK_MULTIPLIER;
+        ref_calc = ref_calc >> 12;
+        reference[i] = (unsigned short) ref_calc;
+    }
 
-//     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
-//     {
-//     }
-
-//     // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
-//     // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
-// #ifdef TEST_ON_ACPOS    
-//     ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
-// #endif
-// #ifdef TEST_ON_ACNEG
+    ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+    // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
+    ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
 //     ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, SIZEOF_SIGNAL);
-// #endif
 
-//     ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
-//     ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
+    ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
+    ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
 
-//     ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, SIZEOF_SIGNAL);
+    ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, SIZEOF_SIGNAL);
 
-//     int error [SIZEOF_SIGNAL] = { 0 };
-//     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
-//         error[i] = reference[i] - voutput_adc[i];
+    int error [SIZEOF_SIGNAL] = { 0 };
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+        error[i] = reference[i] - voutput_adc[i];
 
-//     ShowVectorInt("\nPlant output error:\n", error, SIZEOF_SIGNAL);
+    ShowVectorInt("\nPlant output error:\n", error, SIZEOF_SIGNAL);
 //     ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
 
     return 0;
 }
 
 
-void TEST_DspModule (void)
+void TEST_Dsp_Module (void)
 {
     printf("Testing dsp module: ");
+    unsigned char errors = 0;
     
     pid_data_obj_t pid1;
 
@@ -126,6 +142,7 @@ void TEST_DspModule (void)
     d = PID(&pid1);
     if (d != 0)
     {
+        errors = 1;
         PrintERR();
         printf("expected 0, d was: %d\n", d);
     }
@@ -134,6 +151,7 @@ void TEST_DspModule (void)
     d = PID(&pid1);
     if (d != 1)
     {
+        errors = 1;        
         PrintERR();
         printf("expected 1, d was: %d\n", d);
     }
@@ -142,6 +160,7 @@ void TEST_DspModule (void)
     d = PID(&pid1);
     if (d != 100)
     {
+        errors = 1;        
         PrintERR();
         printf("expected 100, d was: %d\n", d);
     }
@@ -156,6 +175,7 @@ void TEST_DspModule (void)
     d = PID(&pid1);
     if (d != 50)
     {
+        errors = 1;        
         PrintERR();
         printf("expected 50, d was: %d\n", d);
     }
@@ -163,11 +183,118 @@ void TEST_DspModule (void)
     d = PID(&pid1);
     if (d != 100)
     {
+        errors = 1;        
         PrintERR();
         printf("expected 100, d was: %d\n", d);
     }
 
-    PrintOK();
+    if (!errors)
+        PrintOK();
+}
+
+
+void TEST_Gen_Signal_Module (void)
+{
+    printf("Testing gen_signal module: ");
+    unsigned char errors = 0;
+    
+    GenSignalReset();
+
+    gen_signal_e state = SIGNAL_RUNNING;
+    short duty = 0;
+    unsigned char ended = 0;
+    for (unsigned char i = 0; i < 250; i++)
+    {
+        state = GenSignal(1000, 1000, &duty);
+        if (state != SIGNAL_RUNNING)
+        {
+            ended = i;
+            break;
+        }
+    }
+    if (ended != 239)
+    {
+        errors = 1;        
+        PrintERR();
+        printf("expected 239, d was: %d\n", ended);        
+    }
+
+    if (GenSignal(1000, 1000, &duty) != SIGNAL_FINISH)
+    {
+        errors = 1;        
+        PrintERR();
+        printf("expected SIGNAL_FINISH\n");
+    }
+
+    GenSignalReset();
+    if (GenSignal(1000, 1000, &duty) != SIGNAL_RUNNING)
+    {
+        errors = 1;        
+        PrintERR();
+        printf("expected SIGNAL_RUNNING\n");
+    }
+
+    GenSignalReset();
+    for (unsigned char i = 0; i < 250; i++)
+    {
+        state = GenSignal(1000, 0, &duty);        
+        if (state != SIGNAL_RUNNING)
+            break;
+
+        if (duty != 0)
+        {
+            errors = 1;            
+            PrintERR();
+            printf("expected duty = 0, getted = %d\n", duty);
+            break;
+        }
+    }
+
+    unsigned short duty_vect[240] = { 0 };
+    GenSignalReset();
+    for (unsigned char i = 0; i < 250; i++)
+    {
+        state = GenSignal(4095, 4095, &duty);
+        if (state != SIGNAL_RUNNING)
+        {
+            ended = i;
+            break;
+        }
+
+        if (duty != 0)
+        {
+            errors = 1;            
+            PrintERR();
+            printf("expected duty = 0, getted = %d\n", duty);
+            break;
+        }
+    }
+
+    GenSignalReset();
+    for (unsigned char i = 0; i < 200; i++)
+    {
+        state = GenSignal(0, 4095, &duty);
+        if (state != SIGNAL_RUNNING)
+        {
+            ended = i;
+            break;
+        }
+
+        if ((i >= 56) && (duty < 2000))
+        {
+            errors = 1;            
+            PrintERR();
+            printf("in index %d expected duty = 2000, getted = %d\n", i, duty);
+            break;
+        }
+
+        // duty_vect[i] = duty;
+    }
+    // ShowVectorUShort ("fixed duty 2048\n", duty_vect, 240);
+    
+
+    if (!errors)
+        PrintOK();
 }
 
 
@@ -185,13 +312,8 @@ void TEST_DspModule (void)
 #define INDEX_TO_REVERT    204
     
 
-unsigned short I_Sense_Pos = 0;
-unsigned short I_Sense_Neg = 0;
-unsigned short last_output = 0;
 
 unsigned short d = 0;
-
-
 unsigned char cntr_high_left = 0;
 void HIGH_LEFT (unsigned short duty)
 {

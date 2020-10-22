@@ -12,7 +12,7 @@
 
 //----------- Defines For Configuration -------------
 //----------- Hardware Board Version -------------
-#define VER_1_0    //version original
+#define VER_1_0    //original board version
 
 
 //---- Configuration for Hardware Versions -------
@@ -80,30 +80,11 @@
 #define SOFT_OVERCURRENT_THRESHOLD    3500
 #endif
 
-#ifdef HARD_TEST_MODE_STEP_RESPONSE_NEGATIVE
-#ifndef ONLY_ONE_KB814
-#error "This soft needs a KB814 on board for Voltage Sense"
-#endif
-#endif
 
-#ifdef INVERTER_MODE_VOLTAGE_FDBK
-#if !defined ONLY_ONE_KB814 && \
-    !defined ONLY_ONE_KB817
-#error "This soft needs an opto to check the Voltage Sense"
-#endif
-#endif
-
-
-#if (defined INVERTER_MODE_CURRENT_FDBK) || \
-    (defined GRID_TIED_ONLY_SYNC_AND_POLARITY) || \
-    (defined GRID_TIED_FULL_CONECTED)
+#ifdef GRID_TIED_FULL_CONECTED
 #ifndef ONLY_ONE_KB817
 #error "This soft needs only one KB817 on board for Voltage Sense"
 #endif
-#endif
-
-#if (defined GRID_TIED_ONLY_SYNC_AND_POLARITY) || \
-    (defined GRID_TIED_FULL_CONECTED)
 #ifndef WITH_AC_SYNC_INT
 #error "This soft needs AC_SYNC_INT active to get grid sync"
 #endif
@@ -133,26 +114,8 @@
 
 //-------- End Of Defines For Configuration ------
 
-#define VIN_35V    986
-#define VIN_30V    845
-#define VIN_25V    704
-#define VIN_20V    561    //1.81V
-#define VIN_17V    477
-#define VIN_15V    423
-#define VIN_12V    338
-#define VIN_10V    282
 
-
-// #define VOUT_200V    415
-#define VOUT_110V    151    //ajustado 05-08-18
-#define VOUT_200V    386    //ajustado 24-07-18
-#define VOUT_205V    399    
-#define VOUT_195V    373
-#define VOUT_300V    660    //ajustado 24-07-18
-#define VOUT_350V    802    //ajustado 24-07-18
-#define VOUT_400V    917    //
-
-//------- PIN CONFIG ----------------------
+// Gpios Config --------------------------------------------
 #ifdef VER_1_0
 //GPIOA pin0	V_Sense / Vline_Sense
 //GPIOA pin1	I_Sense_Pos
@@ -181,17 +144,17 @@
 //GPIOA pin11	NC
 
 //GPIOA pin12	
-#define LED ((GPIOA->ODR & 0x1000) != 0)
-#define LED_ON	GPIOA->BSRR = 0x00001000
-#define LED_OFF GPIOA->BSRR = 0x10000000
+#define LED    ((GPIOA->ODR & 0x1000) != 0)
+#define LED_ON    (GPIOA->BSRR = 0x00001000)
+#define LED_OFF    (GPIOA->BSRR = 0x10000000)
 
 //GPIOA pin13	NC
 //GPIOA pin14	NC
 
 //GPIOA pin15
-#define RELAY ((GPIOA->ODR & 0x8000) != 0)
-#define RELAY_ON  GPIOA->BSRR = 0x00008000
-#define RELAY_OFF GPIOA->BSRR = 0x80000000
+#define RELAY    ((GPIOA->ODR & 0x8000) != 0)
+#define RELAY_ON    (GPIOA->BSRR = 0x00008000)
+#define RELAY_OFF    (GPIOA->BSRR = 0x80000000)
 
 //GPIOB pin3	NC
 //GPIOB pin4	NC
@@ -203,7 +166,7 @@
 //GPIOB pin7	NC
 #endif
 
-//------- END OF PIN CONFIG -------------------
+// End of Gpios Config -------------------------------------
 
 
 //AC_SYNC States
@@ -265,11 +228,7 @@ typedef enum
 #define LED_OVERCURRENT_NEG           7
 
 
-#define SIZEOF_DATA1	512
 #define SIZEOF_DATA		256
-#define SIZEOF_DATA512	SIZEOF_DATA1
-#define SIZEOF_DATA256	SIZEOF_DATA
-#define SIZEOF_BUFFTCP	SIZEOF_DATA
 
 
 #define LED_TOGGLE do { if (LED) \
@@ -278,20 +237,10 @@ typedef enum
                             LED_ON;  \
                       } while (0)
 
-/* Module Functions ------------------------------------------------------------*/
-unsigned short GetHysteresis (unsigned char);
-unsigned char GetNew1to10 (unsigned short);
-void UpdateVGrid (void);
-void UpdateIGrid (void);
-unsigned short GetVGrid (void);
-unsigned short GetIGrid (void);
-unsigned short PowerCalc (unsigned short, unsigned short);
-unsigned short PowerCalcMean8 (unsigned short * p);
-void ShowPower (char *, unsigned short, unsigned int, unsigned int);
+// Module Exported Functions ---------------------------------------------------
 void ChangeLed (unsigned char);
 void UpdateLed (void);
-unsigned short VoutTicksToVoltage (unsigned short);
-unsigned short VinTicksToVoltage (unsigned short);
 void WelcomeCodeFeatures (char *);
+
     
 #endif /* _HARD_H_ */

@@ -78,6 +78,7 @@ int main (int argc, char *argv[])
         calc = sin (3.1415 * i / SIZEOF_SIGNAL);
         calc = 350 - calc * 311;
         vinput[i] = (unsigned short) calc;
+        // vinput[i] = 350;
     }
 
     GenSignalReset();
@@ -298,22 +299,6 @@ void TEST_Gen_Signal_Module (void)
 }
 
 
-///////////////////////////////////////////////
-// Cosas que tienen que ver con las seniales //
-///////////////////////////////////////////////
-#define DUTY_NONE    0
-#define DUTY_100_PERCENT    2000
-#define DUTY_ALWAYS    (DUTY_100_PERCENT + 1)
-/////////////////////////////////////////////
-// Cosas que tienen que ver con mediciones //
-/////////////////////////////////////////////
-#define INDEX_TO_MIDDLE    47
-#define INDEX_TO_FALLING    156
-#define INDEX_TO_REVERT    204
-    
-
-
-unsigned short d = 0;
 unsigned char cntr_high_left = 0;
 void HIGH_LEFT (unsigned short duty)
 {

@@ -8,7 +8,7 @@
 // #### HARD.C ################################
 //---------------------------------------------
 
-/* Includes ------------------------------------------------------------------*/
+// Includes --------------------------------------------------------------------
 #include "hard.h"
 #include "tim.h"
 #include "stm32f0xx.h"
@@ -18,27 +18,21 @@
 #include <stdio.h>
 
 
-/* Externals variables ---------------------------------------------------------*/
+// Externals variables ---------------------------------------------------------
 extern volatile unsigned short timer_led;
-extern volatile unsigned short adc_ch[];
+// extern volatile unsigned short adc_ch[];
 
 
 
 
-/* Global variables ------------------------------------------------------------*/
+// Globals ---------------------------------------------------------------------
 // para el led
 led_state_t led_state = START_BLINKING;
 unsigned char blink = 0;
 unsigned char how_many_blinks = 0;
 
 
-#define STRING2(x) #x
-#define STRING(x) STRING2(x)
-// #define STRING_CONCAT(str1,str2) #str1 " " #str2
-
-/* Module Functions ------------------------------------------------------------*/
-
-
+// Module Functions ------------------------------------------------------------
 //cambia configuracion de bips del LED
 void ChangeLed (unsigned char how_many)
 {
@@ -101,66 +95,6 @@ void UpdateLed (void)
             break;
     }
 }
-
-
-//Convierte el valor de ticks ADC Vout a tension
-unsigned short VoutTicksToVoltage (unsigned short sample_adc)
-{
-    unsigned int num;
-
-    if (sample_adc > VOUT_300V)
-    {
-        num = sample_adc * 350;
-        num = num / VOUT_350V;
-    }
-    else if (sample_adc > VOUT_200V)
-    {
-        num = sample_adc * 300;
-        num = num / VOUT_300V;
-    }
-    else if (sample_adc > VOUT_110V)
-    {
-        num = sample_adc * 200;
-        num = num / VOUT_200V;
-    }
-    else
-    {
-        num = sample_adc * 110;
-        num = num / VOUT_110V;
-    }
-    
-    return (unsigned short) num;
-}
-
-//Convierte el valor de ticks ADC Vin a tension
-unsigned short VinTicksToVoltage (unsigned short sample_adc)
-{
-    unsigned int num;
-
-    if (sample_adc > VIN_30V)
-    {
-        num = sample_adc * 35;
-        num = num / VIN_35V;
-    }
-    else if (sample_adc > VIN_25V)
-    {
-        num = sample_adc * 30;
-        num = num / VIN_30V;
-    }
-    else if (sample_adc > VIN_20V)
-    {
-        num = sample_adc * 25;
-        num = num / VIN_25V;
-    }    
-    else
-    {
-        num = sample_adc * 20;
-        num = num / VIN_20V;
-    }
-    
-    return (unsigned short) num;
-}
-
 
 
 void WelcomeCodeFeatures (char * str)

@@ -218,25 +218,25 @@ int main(void)
             {
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
-                    //ahora es positiva la polaridad, prendo el led
 #ifdef USE_LED_FOR_MAIN_POLARITY_BEFORE_GEN
+                    //polarity is positive now light the LED
                     LED_ON;
 #endif
                 }
                 else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
-                    //ahora es negativa la polaridad, apago el led
 #ifdef USE_LED_FOR_MAIN_POLARITY_BEFORE_GEN
+                    //polarity is negative now light off the LED
                     LED_OFF;
 #endif
 
-                    //reviso si debo empezar a generar
+                    //check if we are ready to start
                     if (cycles_before_start)
                         cycles_before_start--;
                     else
                         ac_sync_state = WAIT_FOR_FIRST_SYNC;
                 }
-                else    //debe haber un error en synchro
+                else    //it must be an error in synchro
                     ac_sync_state = START_SYNCING;
                 
                 SYNC_Sync_Now_Reset();
@@ -244,7 +244,7 @@ int main(void)
             break;
             
         case WAIT_FOR_FIRST_SYNC:
-            //por cuestiones de seguridad empiezo siempre por positivo
+            //for security reasons always start with positive
             if (SYNC_Sync_Now())
             {
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
@@ -259,10 +259,10 @@ int main(void)
                 }
                 else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
-                    //no hago nada
-                    //quiero empezar siempre por positivo
+                    //do nothing
+                    //start by positive
                 }
-                else    //debe haber un error en synchro
+                else    //it must be an error in synchro
                     ac_sync_state = START_SYNCING;
                 
                 SYNC_Sync_Now_Reset();
@@ -308,7 +308,8 @@ int main(void)
                 LED_OFF;
 #endif
             }    //end of sequence_ready
-            
+
+            //check all the time for a new sync pulse
             if (SYNC_Sync_Now())
             {
                 ac_sync_state = WAIT_CROSS_POS_TO_NEG;
@@ -362,7 +363,7 @@ int main(void)
                     LED_OFF;
 #endif                
                 }
-                else    //debe haber un error de synchro
+                else    //it must be an error in synchro
                     ac_sync_state = START_SYNCING;
             }
             break;
@@ -407,7 +408,7 @@ int main(void)
 #endif                
             }    //end of sequence_ready
 
-            //reviso todo el tiempo si debo cambiar de ciclo o si todo sigue bien
+            //check all the time for a new sync pulse
             if (SYNC_Sync_Now())
             {
                 ac_sync_state = WAIT_CROSS_NEG_TO_POS;
@@ -449,7 +450,7 @@ int main(void)
             break;
 
         case WAIT_CROSS_NEG_TO_POS:
-            //espero un sequence_ready para asegurar valores conocidos en el pwm
+            //wait for sequence_ready to get proper values in the pwm
             if (sequence_ready)
             {
                 sequence_ready_reset;
@@ -458,7 +459,7 @@ int main(void)
                     cycles_50hz--;
                 else
                 {
-                    LOW_LEFT(DUTY_NONE);
+                    LOW_RIGHT(DUTY_NONE);
                     ac_sync_state = FEW_CYCLES_DUMP_DATA;
                     break;
                 }
@@ -472,7 +473,7 @@ int main(void)
                     LED_ON;
 #endif
                 }
-                else    //debe haber un error de synchro
+                else    //it must be an error in synchro
                     ac_sync_state = START_SYNCING;
             }
             break;

@@ -181,8 +181,8 @@ int main(void)
             PWM_Off();
             LED_OFF;
 
-            EnablePreload_Mosfet_HighLeft;
-            EnablePreload_Mosfet_HighRight;
+            // EnablePreload_Mosfet_HighLeft;
+            // EnablePreload_Mosfet_HighRight;
 
             SYNC_Restart();
             cycles_before_start = CYCLES_BEFORE_START;
@@ -252,9 +252,11 @@ int main(void)
                     ChangeLed(LED_GENERATING);
                     ac_sync_state = WAIT_CROSS_NEG_TO_POS;
 
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                     HIGH_RIGHT(DUTY_NONE);
                     LOW_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_ALWAYS);
+#endif
                     sequence_ready_reset;
                 }
                 else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
@@ -293,11 +295,15 @@ int main(void)
                 if (resp == SIGNAL_FINISH)
                 {
                     //end of generation, wait for a sync pulse
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                     HIGH_LEFT(DUTY_NONE);
+#endif
                 }
                 else if (resp == SIGNAL_RUNNING)
                 {
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                     HIGH_LEFT(d);
+#endif
                 }
                 else
                 {
@@ -314,10 +320,11 @@ int main(void)
             {
                 ac_sync_state = WAIT_CROSS_POS_TO_NEG;
                 SYNC_Sync_Now_Reset();
-
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                 HIGH_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_ALWAYS);
+#endif
                 sequence_ready_reset;    
             }
             else if (!SYNC_All_Good())
@@ -393,11 +400,15 @@ int main(void)
                 if (resp == SIGNAL_FINISH)
                 {
                     //end of generation, wait for a sync pulse
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                     HIGH_RIGHT(DUTY_NONE);
+#endif
                 }
                 else if (resp == SIGNAL_RUNNING)
                 {
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                     HIGH_RIGHT(d);
+#endif
                 }
                 else
                 {
@@ -413,10 +424,11 @@ int main(void)
             {
                 ac_sync_state = WAIT_CROSS_NEG_TO_POS;
                 SYNC_Sync_Now_Reset();
-
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                 HIGH_RIGHT(DUTY_NONE);
                 LOW_LEFT(DUTY_NONE);
                 LOW_RIGHT(DUTY_ALWAYS);
+#endif
                 sequence_ready_reset;
             }
             else if (!SYNC_All_Good())
@@ -459,7 +471,9 @@ int main(void)
                     cycles_50hz--;
                 else
                 {
+#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
                     LOW_RIGHT(DUTY_NONE);
+#endif
                     ac_sync_state = FEW_CYCLES_DUMP_DATA;
                     break;
                 }
@@ -636,16 +650,16 @@ void SoftOverCurrentShutdown (unsigned char side, unsigned short current)
 
 void PWM_Off (void)
 {
-    DisablePreload_Mosfet_HighLeft;
-    DisablePreload_Mosfet_HighRight;
+    // DisablePreload_Mosfet_HighLeft;
+    // DisablePreload_Mosfet_HighRight;
 
-    LOW_LEFT(DUTY_NONE);
+    HIGH_RIGHT(DUTY_NONE);
     HIGH_LEFT(DUTY_NONE);
     LOW_RIGHT(DUTY_NONE);
-    HIGH_RIGHT(DUTY_NONE);
+    LOW_LEFT(DUTY_NONE);
 
-    EnablePreload_Mosfet_HighLeft;
-    EnablePreload_Mosfet_HighRight;
+    // EnablePreload_Mosfet_HighLeft;
+    // EnablePreload_Mosfet_HighRight;
 }
 
 
@@ -716,7 +730,7 @@ void EXTI4_15_IRQHandler(void)
 #ifdef WITH_OVERCURRENT_SHUTDOWN
     if (OVERCURRENT_POS_Int)
     {
-        DisablePreload_Mosfet_HighLeft;
+        // DisablePreload_Mosfet_HighLeft;
         HIGH_LEFT(DUTY_NONE);
         //TODO: trabar el TIM3 aca!!!
         overcurrent_shutdown = 1;
@@ -725,7 +739,7 @@ void EXTI4_15_IRQHandler(void)
 
     if (OVERCURRENT_NEG_Int)
     {
-        DisablePreload_Mosfet_HighRight;
+        // DisablePreload_Mosfet_HighRight;
         HIGH_RIGHT(DUTY_NONE);
         //TODO: trabar el TIM3 aca!!!
         overcurrent_shutdown = 2;

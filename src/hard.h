@@ -80,6 +80,10 @@
 #define SOFT_OVERCURRENT_THRESHOLD    3500
 #endif
 
+#ifdef GRID_TIED_FULL_CONECTED
+// #define GRID_TIED_ONLY_SYNC_AND_POLARITY
+#endif
+
 
 #ifdef GRID_TIED_FULL_CONECTED
 #ifndef ONLY_ONE_KB817
@@ -206,15 +210,6 @@ typedef enum
     MAINS_FAILURE
 
 } main_state_t;
-
-//ESTADOS DEL LED
-typedef enum
-{    
-    START_BLINKING = 0,
-    WAIT_TO_OFF,
-    WAIT_TO_ON,
-    WAIT_NEW_CYCLE
-} led_state_t;
 
 
 //Estados Externos de LED BLINKING

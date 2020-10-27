@@ -30,6 +30,7 @@ Escalon_CloseLoop_Digital = False
 Vinput_PtP_Digital = False
 Setpoint_PtP_Digital = False
 PID_Multiple_Stages = False
+PID_Multiple_Stages_5 = False
 PID_Multiple_Stages_Underdampling = False
 PID_Single_Stage = True
 PID_Single_Stage_Udersamplig = False
@@ -415,6 +416,8 @@ for i in range (np.size(s_sen)):
 # peak_220 = 285
 peak_220 = 311
 vin_plant = 350 - s_sen * peak_220    #si la transferencia no tiene 350V de Vinput
+# vin_plant = 331 - s_sen * peak_220    #si se cae la tension de entrada
+# vin_plant = 315 - s_sen * peak_220    #si se cae la tension de entrada
 # vin_plant = np.ones(t.size) * 350    #solo la entrada de dc
 # vin_plant = np.ones(t.size)
 
@@ -440,13 +443,12 @@ for i in range (np.size(s_sen)):
     if s_sen[i] < 0:
         s_sen[i] = -s_sen[i]
 
-# vin_setpoint = np.ones(t.size)
-# ref_mult = 1.0
-# ref_mult = 0.75
-ref_mult = 0.5
-# ref_mult = 0.25
-vin_setpoint = s_sen * ref_mult
-vin_setpoint = vin_setpoint / 3.3 * 4095
+adc_ref_top = 1871
+## 1Apk * 0.33 * 9.2 = 3Vpk
+peak_isense = adc_ref_top / 4095 * 3.3
+peak_current = peak_isense / 3
+print (f"peak current: {peak_current:.2f}A peak voltage on Rsense: {peak_isense:.2f}V") 
+vin_setpoint = s_sen * adc_ref_top
 vin_setpoint = vin_setpoint.astype('int16')
 print (vin_setpoint)
 
@@ -485,7 +487,7 @@ pid_tf_int = PID_int(b_pid_int, a_pid_int, 128)
 
 
 if PID_Multiple_Stages == True:
-    max_pwm_pts = 1000
+    max_pwm_pts = 2000
     done = 0
     for i in range(3, len(vin_plant)):
         ###################################################
@@ -497,8 +499,8 @@ if PID_Multiple_Stages == True:
         # aplico Digital Controller #
         #############################
         if i >= 0 and done == 0:
-            kp_dig = 24
-            ki_dig = 5
+            kp_dig = 10
+            ki_dig = 3
             kd_dig = 0
             print('Stage 0')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -506,8 +508,8 @@ if PID_Multiple_Stages == True:
             done = 1
 
         elif i >= 48 and done == 1:
-            kp_dig = 12
-            ki_dig = 12
+            kp_dig = 10
+            ki_dig = 3
             kd_dig = 0
             print('Stage 1')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -515,9 +517,8 @@ if PID_Multiple_Stages == True:
             done = 2
             
         elif i >= 96 and done == 2:
-            #cambio parametros pid
             kp_dig = 128
-            ki_dig = 12
+            ki_dig = 1
             kd_dig = 0
             print('Stage 2')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -525,9 +526,8 @@ if PID_Multiple_Stages == True:
             done = 3
 
         elif i >= 120 and done == 3:
-            #cambio parametros pid
-            kp_dig = 128
-            ki_dig = 24
+            kp_dig = 64
+            ki_dig = 1
             kd_dig = 0
             print('Stage 3')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -536,8 +536,8 @@ if PID_Multiple_Stages == True:
 
         elif i >= 144 and done == 4:
             #cambio parametros pid
-            kp_dig = 32
-            ki_dig = 24
+            kp_dig = 10
+            ki_dig = 3
             kd_dig = 0
             print('Stage 4')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -546,8 +546,8 @@ if PID_Multiple_Stages == True:
         
         elif i >= 192 and done == 5:
             #cambio parametros pid
-            kp_dig = 16
-            ki_dig = 5
+            kp_dig = 10
+            ki_dig = 3
             kd_dig = 0
             print('Stage 5')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -556,6 +556,12 @@ if PID_Multiple_Stages == True:
 
         
         d[i] = pid_tf_int.newOutput(error[i])
+
+        if d[i] < 0:
+            d[i] = 0
+
+        if d[i] > max_pwm_pts:
+            d[i] = max_pwm_pts
 
         # si no estoy en la etapa 6 no permito descargas aceleradas
         if done != 6:
@@ -576,6 +582,90 @@ if PID_Multiple_Stages == True:
 
         vout_plant_adc[i] = Adc12Bits (vout_plant[i])
 
+
+if PID_Multiple_Stages_5 == True:
+    max_pwm_pts = 2000
+    done = 0
+    for i in range(3, len(vin_plant)):
+        ###################################################
+        # primero calculo el error, siempre punto a punto #
+        ###################################################
+        error[i] = vin_setpoint[i] - vout_plant_adc[i-1]
+
+        #############################
+        # aplico Digital Controller #
+        #############################
+        if i >= 0 and done == 0:
+            kp_dig = 10
+            ki_dig = 3
+            kd_dig = 0
+            print('Stage 0')
+            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
+            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
+            done = 1
+
+        elif i >= 48 and done == 1:
+            kp_dig = 10
+            ki_dig = 3
+            kd_dig = 0
+            print('Stage 1')
+            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
+            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
+            done = 2
+            
+        elif i >= 96 and done == 2:
+            kp_dig = 64
+            ki_dig = 2
+            kd_dig = 0
+            print('Stage 2')
+            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
+            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
+            done = 3
+
+        elif i >= 144 and done == 3:
+            kp_dig = 32
+            ki_dig = 3
+            kd_dig = 0
+            print('Stage 3')
+            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
+            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
+            done = 4
+
+        elif i >= 192 and done == 4:
+            #cambio parametros pid
+            kp_dig = 10
+            ki_dig = 3
+            kd_dig = 0
+            print('Stage 4')
+            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
+            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
+            done = 5
+        
+        
+        d[i] = pid_tf_int.newOutput(error[i])
+
+        if d[i] > max_pwm_pts:
+            d[i] = max_pwm_pts
+
+        if done != 5:
+            if d[i] < 0:
+                d[i] = 0
+
+
+        ########################################
+        # aplico la transferencia de la planta #
+        ########################################
+        vin_plant_d[i] = d[i] * vin_plant[i] / max_pwm_pts
+        vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
+                        + b_sensor[1]*vin_plant_d[i-1] \
+                        + b_sensor[2]*vin_plant_d[i-2] \
+                        + b_sensor[3]*vin_plant_d[i-3] \
+                        - a_sensor[1]*vout_plant[i-1] \
+                        - a_sensor[2]*vout_plant[i-2] \
+                        - a_sensor[3]*vout_plant[i-3]
+
+        vout_plant_adc[i] = Adc12Bits (vout_plant[i])
+        
 
 if PID_Multiple_Stages_Underdampling == True:
     undersampling_reload = 4
@@ -678,13 +768,13 @@ if PID_Multiple_Stages_Underdampling == True:
 
         vout_plant_adc[i] = Adc12Bits (vout_plant[i])
 
-
+delayed_d = 0
 if PID_Single_Stage == True:
 
     kp_dig = 10
-    ki_dig = 3
-    kd_dig = 0
-    max_pwm_pts = 4000
+    ki_dig = 0
+    kd_dig = 20
+    max_pwm_pts = 2000
     print('Stage 0')
     print(f'pwm points: {max_pwm_pts}')
     pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -699,11 +789,15 @@ if PID_Single_Stage == True:
         #############################
         # aplico Digital Controller #
         #############################
-        d[i] = pid_tf_int.newOutput(error[i])
+        d[i] = delayed_d
+        delayed_d = pid_tf_int.newOutput(error[i])
 
         if d[i] < 0:
             d[i] = 0
 
+        if d[i] > max_pwm_pts:
+            d[i] = max_pwm_pts
+            
         ########################################
         # aplico la transferencia de la planta #
         ########################################
@@ -769,7 +863,7 @@ if PID_Single_Stage_Udersamplig == True:
                
 if Respuesta_CloseLoop_All_Inputs_Digital == True:     
     fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.set_title(f'SP, ADC out, Error ref_mult={ref_mult} peak_220={peak_220}')
+    ax1.set_title(f'adc_ref_top={adc_ref_top} Ipk={peak_current:.2f} peak_220={peak_220}')
     ax1.grid()
     ax1.plot(t, vin_setpoint, 'r', label="sp")
     ax1.plot(t, vout_plant_adc, 'y', label="out_adc")

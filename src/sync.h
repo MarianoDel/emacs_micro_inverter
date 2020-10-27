@@ -29,8 +29,9 @@
 
 // Para ADC en 12bits
 #define VLINE_SENSE_MIN_THRESOLD    (200 * 4)
-#define VLINE_SENSE_MAX    (540 * 4)
-#define VLINE_SENSE_MIN    (420 * 4)
+// #define VLINE_SENSE_MAX    (500 * 4)
+#define VLINE_SENSE_MAX    (625 * 4)    //si genero con lampara serie
+#define VLINE_SENSE_MIN    (400 * 4)
 
 // Para ADC en 10bits
 // #define VLINE_SENSE_MIN_THRESOLD    200

@@ -17,6 +17,15 @@
 
 #include <stdio.h>
 
+// Private Types Constants and Macros ------------------------------------------
+typedef enum
+{    
+    START_BLINKING = 0,
+    WAIT_TO_OFF,
+    WAIT_TO_ON,
+    WAIT_NEW_CYCLE
+} led_state_t;
+
 
 // Externals variables ---------------------------------------------------------
 extern volatile unsigned short timer_led;
@@ -103,8 +112,13 @@ void WelcomeCodeFeatures (char * str)
 #ifdef GRID_TIED_FULL_CONECTED
     sprintf(str,"[%s] %s\n", __FILE__, str_macro(GRID_TIED_FULL_CONECTED));
     Usart1Send(str);
+    Wait_ms(30);
+#ifdef GRID_TIED_ONLY_SYNC_AND_POLARITY
+    sprintf(str,"  %s\n", str_macro(GRID_TIED_ONLY_SYNC_AND_POLARITY));
+    Usart1Send(str);
     Wait_ms(30);    
 #endif
+#endif    //GRID_TIED_FULL_CONECTED
     
     // Features mostly on hardware
 #ifdef USE_FREQ_48KHZ

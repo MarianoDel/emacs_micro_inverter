@@ -38,9 +38,9 @@
 
 
 
-#define RCC_ADC_CLK 		(RCC->APB2ENR & 0x00000200)
-#define RCC_ADC_CLK_ON 		RCC->APB2ENR |= 0x00000200
-#define RCC_ADC_CLK_OFF 	RCC->APB2ENR &= ~0x00000200
+#define RCC_ADC_CLK    (RCC->APB2ENR & 0x00000200)
+#define RCC_ADC_CLK_ON    (RCC->APB2ENR |= 0x00000200)
+#define RCC_ADC_CLK_OFF    (RCC->APB2ENR &= ~0x00000200)
 
 /* Temperature sensor calibration value address */
 #define TEMP110_CAL_ADDR ((uint16_t*) ((uint32_t) 0x1FFFF7C2))

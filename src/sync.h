@@ -28,10 +28,15 @@
 #define TT_FOR_NO_SYNC    60
 
 // Para ADC en 12bits
-#define VLINE_SENSE_MIN_THRESOLD    (200 * 4)
-// #define VLINE_SENSE_MAX    (500 * 4)
-#define VLINE_SENSE_MAX    (625 * 4)    //si genero con lampara serie
-#define VLINE_SENSE_MIN    (400 * 4)
+// #define VLINE_SENSE_MIN_THRESOLD    (200 * 4)
+// // #define VLINE_SENSE_MAX    (500 * 4)
+// #define VLINE_SENSE_MAX    (625 * 4)    //si genero con lampara serie
+// #define VLINE_SENSE_MIN    (400 * 4)
+
+// Para ADC en 12bits y FOD8801A polarizado con 470k // 470k
+#define VLINE_SENSE_MIN_THRESOLD    2000
+#define VLINE_SENSE_MAX    3000    //arranque del FOD en frio
+#define VLINE_SENSE_MIN    2200
 
 // Para ADC en 10bits
 // #define VLINE_SENSE_MIN_THRESOLD    200

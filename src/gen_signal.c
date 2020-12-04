@@ -16,8 +16,8 @@
 
 
 // Module Private Types Constants and Macros -----------------------------------
-#define INDEX_TO_MIDDLE    47
-#define INDEX_TO_FALLING    156
+#define INDEX_TO_MIDDLE    (60 - 1)
+#define INDEX_TO_FALLING   (180 - 1)
 #define INDEX_TO_REVERT    204
     
 
@@ -175,7 +175,8 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
     
     current_pid.setpoint = setpoint;
     current_pid.sample = new_sample;
-    d = PID(&current_pid);
+    // d = PID(&current_pid);
+    d = PI(&current_pid);    
                     
     if (d > 0)
     {
@@ -197,8 +198,8 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
 
 void CurrentLoop_Change_to_HighGain (void)
 {
-    current_pid.kp = 10;
-    current_pid.ki = 3;
+    current_pid.kp = 40;
+    current_pid.ki = 1;
     current_pid.kd = 0;
 }
 

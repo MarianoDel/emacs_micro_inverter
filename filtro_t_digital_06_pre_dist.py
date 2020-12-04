@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import lti, bode, lsim, dbode, zpk2tf, tf2zpk, step2, cont2discrete, dstep, freqz, freqs, dlti, TransferFunction
 from tc_udemm import sympy_to_lti, lti_to_sympy
 from pid_tf import PID_float, PID_int
+from recursive_tf import RecursiveTF
 
 """
         ESTE ARCHIVO USA UN CONTROL PID ENTRE CICLOS DE 100HZ - sin undersamplig -
@@ -25,24 +26,45 @@ from pid_tf import PID_float, PID_int
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
 Bode_Planta_Sensor_Analog = False
-Bode_Sensor_Digital = False
-Escalon_Sensor_Digital = False
-Escalon_Sensor_Digital_Recursivo = False
+Bode_Planta_Sensor_Digital = False
+Escalon_Planta_Sensor_Digital = False
+Escalon_Planta_Sensor_Digital_Recursivo = False
 Vin_Setpoint_PtP_Digital_Signals = False
 Respuesta_PreDistorted_All_Inputs_Digital = True
 
+def Adc12Bits (sample):
+    adc = np.int16(0)
+    sample = sample / 3.3
+    sample = sample * 4095
+    if sample < 0.0:
+        sample = 0
+
+    if sample > 4095:
+        sample = 4095
+
+    adc = sample
+    return adc
 
 #TF without constant
 s = Symbol('s')
 
 # desde Vinput (sin Vinput) al sensor de corriente
-Rload = 2.0
+Rload = 11.0
+# Rload = 6.0
+# Rload = 2.0
 Rsense = 0.33
 L1 = 1.8e-3
 L2 = 1.8e-3
 C = 0.44e-6
-Amp_gain = 9.2
-Vinput = 350    #promedio un input entre 350 cuando no hay contra fem y 20 con contra fem máxima
+
+# FILTRO DEL SENSOR (polo y opamp - polo y cero -)
+Rp = 1800
+Cp = 56e-9
+
+Ri = 1000
+Rf = 8200
+Cf = 22e-9
+
 
 #    ---Z1---+---Z3---+
 #            |        |
@@ -68,7 +90,34 @@ Plant_out_sim = Transf_Z4_Vinput.simplify()
 print ('Plant_out: ')
 print (Plant_out_sim)
 
-Sensor_out = Plant_out_sim * Amp_gain
+
+## Polo
+transf_polo = 1/(1 + s*Cp*Rp)
+transf_polo_sim = transf_polo.simplify()
+print ('Polo en Rsense: ')
+print (transf_polo_sim)
+
+## Opamp
+transf_opamp_gain = (Ri + Rf)/Ri
+transf_opamp_pole = 1 + s*Cf*Rf
+transf_opamp_zero = 1 + s*Cf*Rf*Ri/(Rf+Ri)
+transf_opamp = transf_opamp_gain * transf_opamp_zero / transf_opamp_pole
+transf_opamp_sim = transf_opamp.simplify()
+print ('Opamp en Rsense: ')
+print (transf_opamp_sim)
+
+## Polo + Opamp
+transf_polo_opamp = transf_polo * transf_opamp
+transf_polo_opamp_sim = transf_polo_opamp.simplify()
+print ('Polo y Opamp en Rsense: ')
+print (transf_polo_opamp_sim)
+
+
+Sensor_in = Plant_out_sim * transf_polo_opamp_sim
+Sensor_in_sim = Sensor_in.simplify()
+
+# Sensor_out = Sensor_in_sim / 3.3 * 4095    #con adc
+Sensor_out = Sensor_in_sim    #sin adc
 Sensor_out_sim = Sensor_out.simplify()
 
 print ('Sensor_out: ')
@@ -85,20 +134,22 @@ sensor_TF = sympy_to_lti(Sensor_out_sim)
 print ("sensor con sympy:")
 print (sensor_TF)
 
-wfreq = np.arange(2*np.pi, 2*np.pi*100000, 1)
-
-w, mag_p, phase_p = bode(planta_TF, wfreq)
-w, mag_s, phase_s = bode(sensor_TF, wfreq)
 
 if Bode_Planta_Sensor_Analog == True:
+    wfreq = np.arange(2*np.pi, 2*np.pi*100000, 1)
+    w, mag_p, phase_p = bode(planta_TF, wfreq)
+    w, mag_s, phase_s = bode(sensor_TF, wfreq)
+    
     fig, (ax1, ax2) = plt.subplots(2,1)
-    ax1.semilogx (w/6.28, mag_p, 'b-', linewidth="1")
-    ax1.semilogx (w/6.28, mag_s, 'g-', linewidth="1")
-    ax1.set_title('Sensor TF green - Planta Rsense blue')
+    ax1.semilogx (w/6.28, mag_p, 'g-', linewidth="1")
+    ax1.semilogx (w/6.28, mag_s, 'b-', linewidth="1")
+    ax1.set_title('Analog TF -- Planta green, Sensor blue')
+    ax1.set_ylabel('Magnitude')
 
-    ax2.semilogx (w/6.28, phase_p, 'b-', linewidth="1")
-    ax2.semilogx (w/6.28, phase_s, 'g-', linewidth="1")
-    ax2.set_title('Phase')
+    ax2.semilogx (w/6.28, phase_p, 'g-', linewidth="1")
+    ax2.semilogx (w/6.28, phase_s, 'b-', linewidth="1")
+    ax2.set_ylabel('Phase')
+    ax2.set_xlabel('Frequency [Hz]')
 
     plt.tight_layout()
     plt.show()
@@ -108,43 +159,37 @@ if Bode_Planta_Sensor_Analog == True:
 # para que no afecte polos o ceros                                                            #            
 ###############################################################################################
 Fsampling = 24000
-
-sensor_TF = sympy_to_lti(Sensor_out_sim)
-print ("sensor con sympy:")
-print (sensor_TF)
-
-Fsampling_mult = Fsampling
-Tsampling_mult = 1 / Fsampling_mult
+Tsampling = 1 / Fsampling
     
-sensor_dig_ef_n, sensor_dig_ef_d, td = cont2discrete((sensor_TF.num, sensor_TF.den), Tsampling_mult, method='euler')
-sensor_dig_zoh_n, sensor_dig_zoh_d, td = cont2discrete((sensor_TF.num, sensor_TF.den), Tsampling_mult, method='zoh')
-# sensor_dig_zoh_n, sensor_dig_zoh_d, td = cont2discrete(sensor_TF, Tsampling_mult, method='zoh')
+planta_dig_zoh_n, planta_dig_zoh_d, td = cont2discrete((planta_TF.num, planta_TF.den), Tsampling, method='zoh')
+sensor_dig_zoh_n, sensor_dig_zoh_d, td = cont2discrete((sensor_TF.num, sensor_TF.den), Tsampling, method='zoh')
 
 #normalizo con TransferFunction
-print ("Sensor Digital Euler-Forward:")
-sensor_dig_ef = TransferFunction(sensor_dig_ef_n, sensor_dig_ef_d, dt=td)
-print (sensor_dig_ef)
+print ("Planta Digital Zoh:")
+planta_dig_zoh = TransferFunction(planta_dig_zoh_n, planta_dig_zoh_d, dt=td)
+print (planta_dig_zoh)
 
 print ("Sensor Digital Zoh:")
 sensor_dig_zoh = TransferFunction(sensor_dig_zoh_n, sensor_dig_zoh_d, dt=td)
 print (sensor_dig_zoh)
 
-w, mag_ef, phase_ef = dbode(sensor_dig_ef, n = 10000)
-w, mag_zoh, phase_zoh = dbode(sensor_dig_zoh, n = 10000)
 
-if Bode_Sensor_Digital == True:
+
+if Bode_Planta_Sensor_Digital == True:
+    w, mag_p_zoh, phase_p_zoh = dbode(planta_dig_zoh, n = 10000)
+    w, mag_s_zoh, phase_s_zoh = dbode(sensor_dig_zoh, n = 10000)
+    
     fig, (ax1, ax2) = plt.subplots(2,1)
-
-    ax1.semilogx(w/(2*np.pi), mag_ef, 'g')
-    ax1.semilogx(w/(2*np.pi), mag_zoh, 'y')    
-    ax1.set_title('Digital Euler-Forward Green, ZOH Yellow')
-    ax1.set_ylabel('Amplitude P D2 [dB]', color='g')
-    ax1.set_xlabel('Frequency [Hz]')
+    ax1.semilogx(w/(2*np.pi), mag_p_zoh, 'g')
+    ax1.semilogx(w/(2*np.pi), mag_s_zoh, 'b')        
+    ax1.set_title('Digital ZOH TF -- Planta green, Sensor blue')
+    ax1.set_ylabel('Magnitude')
+    # ax1.set_xlabel('Frequency [Hz]')
     # ax1.set_ylim(ymin=-40, ymax=40)
 
-    ax2.semilogx(w/(2*np.pi), phase_ef, 'g')
-    ax2.semilogx(w/(2*np.pi), phase_zoh, 'y')    
-    ax2.set_ylabel('Phase', color='g')
+    ax2.semilogx(w/(2*np.pi), phase_p_zoh, 'g')
+    ax2.semilogx(w/(2*np.pi), phase_s_zoh, 'b')        
+    ax2.set_ylabel('Phase')
     ax2.set_xlabel('Frequency [Hz]')
 
     plt.tight_layout()
@@ -155,25 +200,25 @@ if Bode_Sensor_Digital == True:
 #############################################
 tiempo_de_simulacion = 0.01
 t = np.linspace(0, tiempo_de_simulacion, num=(tiempo_de_simulacion*Fsampling))
-tout, yout_ef = dstep([sensor_dig_ef.num, sensor_dig_ef.den, td], t=t)
-yout1 = np.transpose(yout_ef)
-yout0 = yout1[0]
-yout_ef = yout0[:tout.size]
 
-tout, yout_zoh = dstep([sensor_dig_zoh.num, sensor_dig_zoh.den, td], t=t)
-yout1 = np.transpose(yout_zoh)
-yout0 = yout1[0]
-yout_zoh = yout0[:tout.size]
-
-
-if Escalon_Sensor_Digital == True:
+if Escalon_Planta_Sensor_Digital == True:
+    tout, yout_zoh = dstep([planta_dig_zoh.num, planta_dig_zoh.den, td], t=t)
+    yout1 = np.transpose(yout_zoh)
+    yout0 = yout1[0]
+    yout_p_zoh = yout0[:tout.size]
+    
+    tout, yout_zoh = dstep([sensor_dig_zoh.num, sensor_dig_zoh.den, td], t=t)
+    yout1 = np.transpose(yout_zoh)
+    yout0 = yout1[0]
+    yout_s_zoh = yout0[:tout.size]
+    
     fig, ax = plt.subplots()
-    ax.set_title('Step Planta Digital Euler-Forward Green, ZOH Yellow')
-    ax.set_ylabel('Tension del Sensor')
+    ax.set_title('Step Digital ZOH -- Planta green, Sensor blue')
+    ax.set_ylabel('Tension')
     ax.set_xlabel('Tiempo [s]')
     ax.grid()
-    # ax.plot(tout, yout_ef, 'g')
-    ax.plot(tout, yout_zoh, 'y')
+    ax.plot(tout, yout_p_zoh, 'g')
+    ax.plot(tout, yout_s_zoh, 'b')    
     # ax.set_ylim(ymin=-20, ymax=100)
 
     plt.tight_layout()
@@ -184,47 +229,48 @@ if Escalon_Sensor_Digital == True:
 ############################################################
 # t = np.linspace(0, tiempo_de_simulacion, num=int(tiempo_de_simulacion/Fsampling))
 
-# ZOH
-b_sensor = np.transpose(sensor_dig_zoh_n)
-a_sensor = np.transpose(sensor_dig_zoh_d)
+if Escalon_Planta_Sensor_Digital_Recursivo == True:
 
-print("Recursiva:")
-print(f"b[3]: {b_sensor[0]} b[2]: {b_sensor[1]} b[1]: {b_sensor[2]} b[0]: {b_sensor[3]}")
-print(f"a[3]: {a_sensor[0]} a[2]: {a_sensor[1]} a[1]: {a_sensor[2]} a[0]: {a_sensor[3]}")
+    # ZOH Planta
+    b_planta = np.transpose(planta_dig_zoh_n)
+    a_planta = np.transpose(planta_dig_zoh_d)
+    recur_planta = RecursiveTF(b_planta, a_planta)
 
-vin_plant = np.ones(t.size)
-vin_plant[0:3] = 0
-vout_plant = np.zeros (t.size)
-for i in range(3, len(vin_plant)):
-    ########################################
-    # aplico la transferencia de la planta #
-    ########################################
-    vout_plant[i] = b_sensor[0]*vin_plant[i] \
-                    + b_sensor[1]*vin_plant[i-1] \
-                    + b_sensor[2]*vin_plant[i-2] \
-                    + b_sensor[3]*vin_plant[i-3] \
-                    - a_sensor[1]*vout_plant[i-1] \
-                    - a_sensor[2]*vout_plant[i-2] \
-                    - a_sensor[3]*vout_plant[i-3]
+    # ZOH Sensor
+    b_sensor = np.transpose(sensor_dig_zoh_n)
+    a_sensor = np.transpose(sensor_dig_zoh_d)
+    recur_sensor = RecursiveTF(b_sensor, a_sensor)    
 
-if Escalon_Sensor_Digital_Recursivo == True:
+    vin_plant = np.ones(t.size)
+    vout_plant = np.zeros(t.size)
+    for i in range(t.size):
+        vout_plant[i] = recur_planta.newOutput(vin_plant[i])
+
+    vin_sensor = np.ones(t.size)        
+    vout_sensor = np.zeros(t.size)
+    for i in range(t.size):
+        vout_sensor[i] = recur_sensor.newOutput(vin_sensor[i])
+        
     fig, ax = plt.subplots()
-    ax.set_title('Step Planta Digital Recursiva ZOH Yellow')
+    ax.set_title('Step Digital Recursiva ZOH -- Planta green Sensor blue')
     ax.set_ylabel('Tension del Sensor')
     ax.set_xlabel('Tiempo [s]')
     ax.grid()
-    ax.plot(t, vout_plant, 'y')
+    ax.plot(t, vout_plant, 'g')
+    ax.plot(t, vout_sensor, 'b')    
     plt.tight_layout()
     plt.show()
-
-####################################################
-# DESDE ACA SIGO CON ZOH QUE DA MEJORES RESULTADOS #
-####################################################
 
 ###############################
 # Entrada 1: Vinput - Voutput #
 ###############################
 fmains = 50
+# peak_220 = 300
+peak_220 = 311
+
+voltage_rectified = 350
+# voltage_rectified = 390
+
 s_sen = np.zeros(t.size)
 
 for i in range(np.size(s_sen)):
@@ -234,7 +280,7 @@ for i in range (np.size(s_sen)):
     if s_sen[i] < 0:
         s_sen[i] = -s_sen[i]
 
-vin_plant = 350 - s_sen * 311
+vin_plant = voltage_rectified - s_sen * peak_220
 # vin_plant = np.ones(t.size) * 350
 
 #######################################################
@@ -250,13 +296,17 @@ for i in range (np.size(s_sen)):
     if s_sen[i] < 0:
         s_sen[i] = -s_sen[i]
 
-Imax = 127
-# Imax = 255
-# Imax = 511
-# Imax = 1023
-vin_setpoint = s_sen * Imax
-
-print ('Cant de muestras vin_plant: ' + str(vin_plant.size) + ' vin_setpoint: ' + str(vin_setpoint.size))
+adc_ref_top = 1871
+# adc_ref_top = int(1871 * 1.1)
+# adc_ref_top = 2792
+# adc_ref_top = 3722
+## 1Apk * 0.33 * 9.2 = 3Vpk
+peak_isense = adc_ref_top / 4095 * 3.3
+peak_current = peak_isense / 3
+print (f"peak current: {peak_current:.2f}A peak voltage on Rsense: {peak_isense:.2f}V") 
+vin_setpoint = s_sen * adc_ref_top
+vin_setpoint = vin_setpoint.astype('int16')
+print (vin_setpoint)
 
 if Vin_Setpoint_PtP_Digital_Signals == True:
     fig, ax = plt.subplots()
@@ -269,21 +319,6 @@ if Vin_Setpoint_PtP_Digital_Signals == True:
     plt.show()
 
 
-#########################################
-# Realimento punto a punto con setpoint #
-# OJO ESTO ES UN SISTEMA MISO           #
-# Entrada 1: Vinput - Voutput           #
-# Entrada 2: d                          #
-#########################################
-# Respuesta escalon de la planta punto a punto
-tiempo_de_simulacion = 0.01
-print('td:')
-print (td)
-t = np.arange(0, tiempo_de_simulacion, td)
-
-# ZOH
-b_sensor = np.transpose(sensor_dig_zoh_n)
-a_sensor = np.transpose(sensor_dig_zoh_d)
 
 
 ##############################
@@ -291,70 +326,78 @@ a_sensor = np.transpose(sensor_dig_zoh_d)
 ##############################
 d = np.zeros(t.size)
 
-d = [ 5,  5,  5,  5,  5,  5,  8,  8,  7,  7,  5,  5,  6,  6,  7,  7,  5,  5,
-      6,  6,  7,  7,  7,  7,  7,  7,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10,
-      10, 10, 11, 11, 12, 12, 12, 12, 13, 13, 14, 14, 14, 14, 15, 15, 16, 16,
-      16, 16, 16, 16, 16, 16, 24, 24, 25, 25, 25, 25, 25, 26, 26, 27, 27, 27,
-      30, 30, 32, 32, 32, 32, 33, 33, 34, 34, 37, 37, 38, 38, 40, 40, 42, 42,
-      45, 45, 46, 46, 48, 48, 51, 51, 53, 53, 56, 56, 58, 58, 60, 60, 61, 61,
-      63, 63, 65, 65, 66, 66, 67, 67, 67, 67, 68, 68, 68, 68, 68, 68, 60, 60,
-      60, 60, 60, 60, 55, 55, 55, 55, 50, 50, 50, 50, 45, 45, 40, 40, 36, 36,
-      31, 31, 30, 30, 29, 29, 28, 28, 26, 26, 25, 25, 24, 24, 22, 22, 19, 19,
-      19, 19, 18, 18, 18, 18, 14, 14, 12, 12, 10, 10, 10, 10, 8, 8,  8,  8,
-      8,  8,  6,  6,  5,  5,  4,  4,  3,  3,  2,  2,  2,  2,  1,  1,  1,  1,
-      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -2, -2,
-      -2, -2, -2, -2, -2, -2, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3,
-      -3, -3, -3, -3, -4, -4,]
+d = [ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+      17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
+      24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
+      40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+      
+      60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60,
+      85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85,
+      120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120,
+      180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
+
+      230, 230, 230, 230, 230, 230, 230, 230, 230, 230, 230, 230,
+      280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280,
+      280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280,
+      220, 220, 220, 220, 220, 220, 220, 220, 220, 220, 220, 220,
+
+      155, 155, 155, 155, 155, 155, 155, 155, 155, 155, 155, 155,
+      100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+      60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60,
+      40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+
+      20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
+      10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,]
+
+
+# ZOH Planta
+b_planta = np.transpose(planta_dig_zoh_n)
+a_planta = np.transpose(planta_dig_zoh_d)
+recur_planta = RecursiveTF(b_planta, a_planta)
+
+# ZOH Sensor
+b_sensor = np.transpose(sensor_dig_zoh_n)
+a_sensor = np.transpose(sensor_dig_zoh_d)
+recur_sensor = RecursiveTF(b_sensor, a_sensor)    
 
 vin_plant_d = np.zeros(t.size)
 vout_plant = np.zeros(t.size)
-sensor_adc = np.zeros(t.size)
+vout_sensor = np.zeros(t.size)
+vout_sensor_adc = np.zeros(t.size, dtype='int16')
 
-#####################################
-# Ajusto d al valor de la corriente #
-#####################################
-d = np.array(d)
-d = d * Imax / 1023
-d = d.astype(dtype=np.int16)
-
-for i in range(3, len(vin_plant)):
+for i in range(len(vin_plant)):
     ######################################
     # aplico pre-distorted d a la planta #
     ######################################
 
     # aplico el pre-distorted d a la planta
-    vin_plant_d[i] = d[i]/1000 * vin_plant[i]
+    vin_plant_d[i] = d[i]/2000 * vin_plant[i]
+    # vin_plant_d[i] = d[i]/2000 * vin_plant[i] * 1.1    
 
-    vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
-                    + b_sensor[1]*vin_plant_d[i-1] \
-                    + b_sensor[2]*vin_plant_d[i-2] \
-                    + b_sensor[3]*vin_plant_d[i-3] \
-                    - a_sensor[1]*vout_plant[i-1] \
-                    - a_sensor[2]*vout_plant[i-2] \
-                    - a_sensor[3]*vout_plant[i-3]
-
-    # medicion del sensor adc
-    sensor_adc[i] = vout_plant[i] / 3.3 * 1023
-    sensor_adc[i] = int(sensor_adc[i])
-    if (sensor_adc[i] < 0):
-        sensor_adc[i] = 0
-
-    if (sensor_adc[i] > 1023):
-        sensor_adc[i] = 1023
-
+    vout_plant[i] = recur_planta.newOutput(vin_plant_d[i])
+    vout_sensor[i] = recur_sensor.newOutput(vin_plant_d[i])
+    vout_sensor_adc[i] = Adc12Bits (vout_sensor[i])
+    
 
 if Respuesta_PreDistorted_All_Inputs_Digital == True:     
-    fig, ax = plt.subplots()
-    ax.set_title(f'Resultados Pre Distorted')
-    ax.set_ylabel('Tension en Sensor')
-    ax.set_xlabel('Tiempo en muestras')
-    ax.grid()
-    ax.plot(t, d, 'r', label="d")
-    ax.plot(t, vin_setpoint, 'y', label="sp")
-    ax.plot(t, vout_plant, 'c', label="out")
-    ax.plot(t, vin_plant_d, 'm', label="in")
-    ax.plot(t, sensor_adc, 'g', label="sensor")
-    ax.legend(loc='upper left')
+    fig, (ax1, ax2) = plt.subplots(2,1)
+    ax1.set_title(f'adc_ref_top={adc_ref_top} Ipk={peak_current:.2f}A voltage rectified: {voltage_rectified}V peak_220={peak_220}V')
+    ax1.grid()
+    ax1.plot(t, vin_setpoint, 'r', label="sp")
+    ax1.plot(t, vout_sensor_adc, 'y', label="out_adc")
+    # ax1.plot(t, error, 'g', label="error")
+    ax1.plot(t, d, 'm', label="duty")
+    ax1.legend(loc='upper left')
+
+    # ax2.plot(t, vin_setpoint, 'y', label="sp")
+    # ax.stem(t, vout_plant)
+    ax2.plot(t, vout_plant, 'y', label="out")
+    ax2.plot(t, vin_plant_d, 'm', label="in")
+
+    # ax.set_ylim(ymin=-10, ymax=360)
+    ax2.legend(loc='upper left')
     plt.tight_layout()
     plt.show()
 

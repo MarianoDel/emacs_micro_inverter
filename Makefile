@@ -127,8 +127,8 @@ MCFLAGS = -mcpu=$(MCU)
 
 ASFLAGS = $(MCFLAGS) -g -gdwarf-2 -mthumb  -Wa,-amhls=$(<:.s=.lst) $(ADEFS)
 
-# SIN INFO DEL DEBUGGER
-#CPFLAGS = $(MCFLAGS) $(OPT) -gdwarf-2 -mthumb   -fomit-frame-pointer -Wall -Wstrict-prototypes -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DEFS)
+# SIN INFO DEL DEBUGGER + STRIP CODE
+# CPFLAGS = $(MCFLAGS) $(OPT) -gdwarf-2 -mthumb -fomit-frame-pointer -Wall -fdata-sections -ffunction-sections -fverbose-asm -Wa,-ahlms=$(<:.c=.lst)
 
 # INFO PARA DEBUGGER + STRIP CODE + DUPLICATE GLOBALS ERROR
 # CPFLAGS = $(MCFLAGS) $(OPT) -g -gdwarf-2 -fno-common -mthumb -fomit-frame-pointer -Wall -fdata-sections -ffunction-sections -fverbose-asm -Wa,-ahlms=$(<:.c=.lst) $(DDEFS)
@@ -195,15 +195,30 @@ clean:
 	rm -f $(SRC:.c=.su)
 #   rm $(ASRC:.s=.s.bak)
 	rm -f $(ASRC:.s=.lst)
+	rm -f *.o
+	rm -f *.out
 
 tests:
-	# primero objetos de los modulos a testear, solo si son tipo HAL sin dependencia del hard
+	# simple functions tests, copy functions to test into main
+	gcc src/tests.c
+	./a.out
+
+tests_signals:
+	# tests on modules with no dependencies with hardware
 	gcc -c src/dsp.c -I. $(INCDIR)
 	gcc -c src/gen_signal.c -I. $(INCDIR)
-	gcc src/tests.c dsp.o gen_signal.o -lm
+	gcc -c src/tests_vector_utils.c -I. $(INCDIR)
+	gcc src/tests_signals.c dsp.o gen_signal.o  tests_vector_utils.o -lm
 	./a.out
-	# sino copiar funcion a testear al main de tests.c
-	# gcc src/tests.c
-	# ./a.out
+
+tests_signals_simul:
+	# tests on modules with no dependencies with hardware
+	gcc -c src/dsp.c -I. $(INCDIR)
+	gcc -c src/gen_signal.c -I. $(INCDIR)
+	gcc -c src/tests_vector_utils.c -I. $(INCDIR)
+	gcc src/tests_signals_simul.c dsp.o gen_signal.o  tests_vector_utils.o -lm
+	./a.out
+	# execute by hand python3 simul_limits.py
+
 
 # *** EOF ***

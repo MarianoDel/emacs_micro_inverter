@@ -53,6 +53,7 @@ unsigned short RandomGen (unsigned int);
 
 #ifdef USE_PID_CONTROLLERS
 short PID (pid_data_obj_t *);
+short PI (pid_data_obj_t *);
 void PID_Flush_Errors (pid_data_obj_t *);
 short PID_Small_Ki (pid_data_obj_t *);
 void PID_Small_Ki_Flush_Errors (pid_data_obj_t *);

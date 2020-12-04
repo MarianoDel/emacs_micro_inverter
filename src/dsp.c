@@ -214,6 +214,42 @@ short PID (pid_data_obj_t * p)
     return d;
 }
 
+
+short PI (pid_data_obj_t * p)
+{
+    int acc = 0;
+    short error = 0;
+    short d = 0;
+
+    unsigned short k1 = 0;
+    unsigned short k2 = 0;
+    
+    short val_k1 = 0;
+    short val_k2 = 0;
+
+    k1 = p->kp + p->ki;
+    k2 = p->kp;
+    
+    error = p->setpoint - p->sample;
+
+    //K1
+    acc = k1 * error;
+    val_k1 = acc >> PID_CONSTANT_DIVIDER;
+
+    //K2
+    acc = k2 * p->error_z1;
+    val_k2 = acc >> PID_CONSTANT_DIVIDER;
+
+    d = p->last_d + val_k1 - val_k2;
+
+    //Update PID variables
+    p->error_z1 = error;
+    p->last_d = d;
+
+    return d;
+}
+
+
 void PID_Flush_Errors (pid_data_obj_t * p)
 {
     p->last_d = 0;

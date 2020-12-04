@@ -81,11 +81,11 @@ void AdcConfig (void)
 
     //set sampling time
     ADC1->SMPR |= ADC_SampleTime_71_5Cycles;
-    // ADC1->SMPR |= ADC_SampleTime_41_5Cycles;		//17.39 son SP 420    
-    // ADC1->SMPR |= ADC_SampleTime_28_5Cycles;		//17.39 son SP 420
-    //ADC1->SMPR |= ADC_SampleTime_7_5Cycles;		//17.36 de salida son SP 420 pero a veces pega
+    // ADC1->SMPR |= ADC_SampleTime_41_5Cycles;
+    // ADC1->SMPR |= ADC_SampleTime_28_5Cycles;
+    //ADC1->SMPR |= ADC_SampleTime_7_5Cycles;
     //las dos int (usar DMA?) y pierde el valor intermedio
-    //ADC1->SMPR |= ADC_SampleTime_1_5Cycles;			//20.7 de salida son SP 420 (regula mal)
+    //ADC1->SMPR |= ADC_SampleTime_1_5Cycles;
 
     //set channel selection
     ADC1->CHSELR |= ADC_All_Orer_Channels;

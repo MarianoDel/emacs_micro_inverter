@@ -15,11 +15,18 @@ from recursive_tf import RecursiveTF
         Trato de igualar lo que sucede con tests.c
         Entradas y salidas de la planta son float, duty y pid discrete
 
+        Igual a filtro_t_digital_07 pero agrego sensado a traves de un filtro
+        pasabajos (polo) y el opamp (polo y cero)
+
 """
 
 ##########################################################################
 # Cuales son los Graficos que quiero mostrar por cuestiones de velocidad #
 ##########################################################################
+Bode_Planta_Analog = False
+Bode_Polo_Opamp_Analog = False
+Bode_Sensor_Analog = False
+
 Bode_Sensor_Digital = False
 Polos_Ceros_Digital = False
 Escalon_Sensor_Digital = False
@@ -31,10 +38,10 @@ Escalon_CloseLoop_Digital = False
 Vinput_PtP_Digital = False
 Setpoint_PtP_Digital = False
 PID_Multiple_Stages = False
-PID_Multiple_Stages_3 = True
+PID_Multiple_Stages_3 = False
 PID_Multiple_Stages_5 = False
 PID_Multiple_Stages_Underdampling = False
-PID_Single_Stage = False
+PID_Single_Stage = True
 PID_Single_Stage_Udersamplig = False
 Respuesta_CloseLoop_All_Inputs_Digital = True
 
@@ -55,13 +62,24 @@ def Adc12Bits (sample):
 #TF without constant
 s = Symbol('s')
 
+# FILTRO T
 # desde Vinput (sin Vinput) al sensor de corriente
 Rload = 11.0
+# Rload = 2.0
 Rsense = 0.33
 L1 = 1.8e-3
 L2 = 1.8e-3
 C = 0.44e-6
-Amp_gain = 9.2
+
+# FILTRO DEL SENSOR (polo y opamp - polo y cero -)
+Rp = 1800
+Cp = 56e-9
+
+Ri = 1000
+Rf = 8200
+Cf = 22e-9
+
+Amp_gain = 9.2    #no se usa se saca como (Ri + Rf)/Ri
 
 
 #    ---Z1---+---Z3---+
@@ -84,11 +102,32 @@ Rth = Z1 * Z2 / (Z1 + Z2)
 
 Transf_Z4_Vinput = Z2 * Z4 /((Z1 + Z2) * (Rth + Z3 + Z4))
 Plant_out_sim = Transf_Z4_Vinput.simplify()
-
-print ('Planta sin amplificar: ')
+print ('Planta sin amplificar ni filtrar: ')
 print (Plant_out_sim)
 
-Sensor_in = Plant_out_sim * Amp_gain
+## Polo
+transf_polo = 1/(1 + s*Cp*Rp)
+transf_polo_sim = transf_polo.simplify()
+print ('Polo en Rsense: ')
+print (transf_polo_sim)
+
+## Opamp
+transf_opamp_gain = (Ri + Rf)/Ri
+transf_opamp_pole = 1 + s*Cf*Rf
+transf_opamp_zero = 1 + s*Cf*Rf*Ri/(Rf+Ri)
+transf_opamp = transf_opamp_gain * transf_opamp_zero / transf_opamp_pole
+transf_opamp_sim = transf_opamp.simplify()
+print ('Opamp en Rsense: ')
+print (transf_opamp_sim)
+
+## Polo + Opamp
+transf_polo_opamp = transf_polo * transf_opamp
+transf_polo_opamp_sim = transf_polo_opamp.simplify()
+print ('Polo y Opamp en Rsense: ')
+print (transf_polo_opamp_sim)
+
+
+Sensor_in = Plant_out_sim * transf_polo_opamp_sim
 Sensor_in_sim = Sensor_in.simplify()
 
 print ('Entrada del ADC: ')
@@ -100,6 +139,65 @@ Sensor_out_sim = Sensor_out.simplify()
 
 print ('Salida del ADC: ')
 print (Sensor_out_sim)
+
+
+################################################
+# Algunas confirmaciones de la parte Analogica #
+################################################
+planta_TF = sympy_to_lti(Plant_out_sim)
+
+if Bode_Planta_Analog == True:
+    wfreq = np.arange(2*np.pi, 2*np.pi*100000, 1)
+    w, mag_p, phase_p = bode(planta_TF, wfreq)
+
+    fig, (ax1, ax2) = plt.subplots(2,1)
+    ax1.semilogx (w/6.28, mag_p, 'b-', linewidth="1")
+    # ax1.semilogx (w/6.28, mag_s, 'g-', linewidth="1")
+    ax1.set_title('Magnitude Input to Output Plant')
+
+    ax2.semilogx (w/6.28, phase_p, 'b-', linewidth="1")
+    # ax2.semilogx (w/6.28, phase_s, 'g-', linewidth="1")
+    ax2.set_title('Phase')
+
+    plt.tight_layout()
+    plt.show()
+
+
+filters_TF = sympy_to_lti(transf_polo_opamp_sim)
+if Bode_Polo_Opamp_Analog == True:
+    wfreq = np.arange(2*np.pi, 2*np.pi*100000, 1)
+    w, mag_p, phase_p = bode(filters_TF, wfreq)
+
+    fig, (ax1, ax2) = plt.subplots(2,1)
+    ax1.semilogx (w/6.28, mag_p, 'y-', linewidth="1")
+    # ax1.semilogx (w/6.28, mag_s, 'g-', linewidth="1")
+    ax1.set_title('Magnitude Only Sensor')
+
+    ax2.semilogx (w/6.28, phase_p, 'y-', linewidth="1")
+    # ax2.semilogx (w/6.28, phase_s, 'g-', linewidth="1")
+    ax2.set_title('Phase')
+
+    plt.tight_layout()
+    plt.show()
+
+
+sensor_TF = sympy_to_lti(Sensor_in_sim)
+if Bode_Sensor_Analog == True:
+    wfreq = np.arange(2*np.pi, 2*np.pi*100000, 1)
+    w, mag_p, phase_p = bode(sensor_TF, wfreq)
+
+    fig, (ax1, ax2) = plt.subplots(2,1)
+    ax1.semilogx (w/6.28, mag_p, 'g-', linewidth="1")
+    # ax1.semilogx (w/6.28, mag_s, 'g-', linewidth="1")
+    ax1.set_title('Magnitude Input to Output Sensor')
+
+    ax2.semilogx (w/6.28, phase_p, 'g-', linewidth="1")
+    # ax2.semilogx (w/6.28, phase_s, 'g-', linewidth="1")
+    ax2.set_title('Phase')
+
+    plt.tight_layout()
+    plt.show()
+    
 
 
 ########################################################
@@ -182,66 +280,26 @@ if Escalon_Sensor_Digital == True:
     plt.show()
 
 
-#######################################################################################
-# Verifico Respuesta Escalon Planta Convertida a Recursiva, por dos metodos distintos #
-#######################################################################################
+############################################################
+# Verifico Respuesta Escalon Planta Convertida a Recursiva #
+############################################################
 if Escalon_Sensor_Digital_Recursivo == True:
     # ZOH
-    b_sensor = np.transpose(sensor_dig_zoh_n)
-    a_sensor = np.transpose(sensor_dig_zoh_d)
+    b_sensor = np.transpose(sensor_dig_zoh.num)
+    a_sensor = np.transpose(sensor_dig_zoh.den)
+
+    vin_plant = np.ones(t.size)
+    vout_plant_method2 = np.zeros (t.size)    
+    recur_sensor = RecursiveTF(b_sensor, a_sensor)
+    for i in range(t.size):
+        vout_plant_method2[i] = recur_sensor.newOutput(vin_plant[i])
     
-    print("Recursiva:")
-    print(f"b[3]: {b_sensor[0]} b[2]: {b_sensor[1]} b[1]: {b_sensor[2]} b[0]: {b_sensor[3]}")
-    print(f"a[3]: {a_sensor[0]} a[2]: {a_sensor[1]} a[1]: {a_sensor[2]} a[0]: {a_sensor[3]}")
-
-    vin_plant = np.ones(t.size)
-    vin_plant[0:3] = 0
-    vout_plant_method1 = np.zeros (t.size)
-
-    ########################################
-    # aplico la transferencia de la planta #
-    ########################################
-    for i in range(3, len(vin_plant)):
-        vout_plant_method1[i] = b_sensor[0]*vin_plant[i] \
-                                + b_sensor[1]*vin_plant[i-1] \
-                                + b_sensor[2]*vin_plant[i-2] \
-                                + b_sensor[3]*vin_plant[i-3] \
-                                - a_sensor[1]*vout_plant_method1[i-1] \
-                                - a_sensor[2]*vout_plant_method1[i-2] \
-                                - a_sensor[3]*vout_plant_method1[i-3]
-
-
-    vin_plant = np.ones(t.size)
-    vin_plant[0:3] = 0
-    vout_plant_method2 = np.zeros (t.size)
-    b_params = b_sensor
-    a_params = a_sensor
-    b_size = b_sensor.size
-    a_size = a_sensor.size
-    if b_size > a_size:
-        ba_max_size = b_size
-    else:
-        ba_max_size = a_size
-
-    print (f"b_params {b_params} a_params {a_params}")
-    print (f"b_size {b_size} a_size {a_size}")
-    print (f"ba_max_size {ba_max_size}")
-    for i in range((ba_max_size - 1), len(vin_plant)):
-        vout_plant_method2[i] = 0
-        for b_index in range(b_size):
-            vout_plant_method2[i] += b_params[b_index] * vin_plant[i - b_index]
-
-        for a_index in range(1, a_size):
-            vout_plant_method2[i] -= a_params[a_index] * vout_plant_method2[i - a_index]
-
-
 
     fig, ax = plt.subplots()
-    ax.set_title('Step Planta Digital Recursiva ZOH Green metho1 Yellow method2')
+    ax.set_title('Step Planta Digital Recursiva ZOH')
     ax.set_ylabel('Tension del Sensor')
     ax.set_xlabel('Tiempo [s]')
     ax.grid()
-    ax.plot(t, vout_plant_method1, 'g')
     ax.plot(t, vout_plant_method2, 'y')    
     plt.tight_layout()
     plt.show()
@@ -612,7 +670,7 @@ if PID_Multiple_Stages_3 == True:
             done = 1
 
         elif i >= 60 and done == 1:
-            kp_dig = 58
+            kp_dig = 50
             ki_dig = 0
             kd_dig = 0
             print('Stage 1')
@@ -621,8 +679,8 @@ if PID_Multiple_Stages_3 == True:
             done = 2
             
         elif i >= 180 and done == 2:
-            kp_dig = 30
-            ki_dig = 1
+            kp_dig = 10
+            ki_dig = 3
             kd_dig = 0
             print('Stage 2')
             pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
@@ -650,7 +708,15 @@ if PID_Multiple_Stages_3 == True:
         # aplico la transferencia de la planta #
         ########################################
         vin_plant_d[i] = d[i] * vin_plant[i] / max_pwm_pts
+
         vout_plant[i] = recur_s3.newOutput(vin_plant_d[i])
+        # vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
+        #                 + b_sensor[1]*vin_plant_d[i-1] \
+        #                 + b_sensor[2]*vin_plant_d[i-2] \
+        #                 + b_sensor[3]*vin_plant_d[i-3] \
+        #                 - a_sensor[1]*vout_plant[i-1] \
+        #                 - a_sensor[2]*vout_plant[i-2] \
+        #                 - a_sensor[3]*vout_plant[i-3]
 
         vout_plant_adc[i] = Adc12Bits (vout_plant[i])
         
@@ -739,119 +805,18 @@ if PID_Multiple_Stages_5 == True:
         vout_plant_adc[i] = Adc12Bits (vout_plant[i])
         
 
-if PID_Multiple_Stages_Underdampling == True:
-    undersampling_reload = 4
-    undersampling = 0
-    max_pwm_pts = 8000
-    done = 0
-    
-    for i in range(3, len(vin_plant)):
-        ###################################################
-        # primero calculo el error, siempre punto a punto #
-        ###################################################
-        error[i] = vin_setpoint[i] - vout_plant_adc[i-1]
 
-        #############################
-        # aplico Digital Controller #
-        #############################
-        if i >= 0 and done == 0:
-            kp_dig = 24
-            ki_dig = 5
-            kd_dig = 0
-            print('Stage 0')
-            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-            done = 1
-
-        elif i >= 48 and done == 1:
-            kp_dig = 12
-            ki_dig = 12
-            kd_dig = 0
-            print('Stage 1')
-            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-            done = 2
-            
-        elif i >= 96 and done == 2:
-            #cambio parametros pid
-            kp_dig = 128
-            ki_dig = 12
-            kd_dig = 0
-            print('Stage 2')
-            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-            done = 3
-
-        elif i >= 120 and done == 3:
-            #cambio parametros pid
-            kp_dig = 128
-            ki_dig = 24
-            kd_dig = 0
-            print('Stage 3')
-            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-            done = 4
-
-        elif i >= 144 and done == 4:
-            #cambio parametros pid
-            kp_dig = 32
-            ki_dig = 24
-            kd_dig = 0
-            print('Stage 4')
-            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-            done = 5
-        
-        elif i >= 192 and done == 5:
-            #cambio parametros pid
-            kp_dig = 16
-            ki_dig = 5
-            kd_dig = 0
-            print('Stage 5')
-            pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-            pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-            done = 6
-
-        
-        if undersampling > 0:
-            undersampling -= 1
-            d[i] = d[i - 1]
-        else:
-            undersampling = undersampling_reload - 1
-            d[i] = pid_tf_int.newOutput(error[i])
-
-
-        # si no estoy en la etapa 6 no permito descargas aceleradas
-        if done != 6:
-            if d[i] < 0:
-                d[i] = 0
-
-        ########################################
-        # aplico la transferencia de la planta #
-        ########################################
-        vin_plant_d[i] = d[i] * vin_plant[i] / max_pwm_pts
-        vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
-                        + b_sensor[1]*vin_plant_d[i-1] \
-                        + b_sensor[2]*vin_plant_d[i-2] \
-                        + b_sensor[3]*vin_plant_d[i-3] \
-                        - a_sensor[1]*vout_plant[i-1] \
-                        - a_sensor[2]*vout_plant[i-2] \
-                        - a_sensor[3]*vout_plant[i-3]
-
-        vout_plant_adc[i] = Adc12Bits (vout_plant[i])
-
-delayed_d = 0
 if PID_Single_Stage == True:
-
     kp_dig = 10
-    ki_dig = 0
-    kd_dig = 20
+    ki_dig = 3
+    kd_dig = 0
     max_pwm_pts = 2000
     print('Stage 0')
     print(f'pwm points: {max_pwm_pts}')
     pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
     pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-    
+
+    recur_s3 = RecursiveTF(b_sensor, a_sensor)
     for i in range(3, len(vin_plant)):
         ###################################################
         # primero calculo el error, siempre punto a punto #
@@ -861,11 +826,11 @@ if PID_Single_Stage == True:
         #############################
         # aplico Digital Controller #
         #############################
-        d[i] = delayed_d
-        delayed_d = pid_tf_int.newOutput(error[i])
+        d[i] = pid_tf_int.newOutput(error[i])
 
         if d[i] < 0:
             d[i] = 0
+            pid_tf_int.resetFilter()
 
         if d[i] > max_pwm_pts:
             d[i] = max_pwm_pts
@@ -874,63 +839,20 @@ if PID_Single_Stage == True:
         # aplico la transferencia de la planta #
         ########################################
         vin_plant_d[i] = d[i] * vin_plant[i] / max_pwm_pts
-        vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
-                        + b_sensor[1]*vin_plant_d[i-1] \
-                        + b_sensor[2]*vin_plant_d[i-2] \
-                        + b_sensor[3]*vin_plant_d[i-3] \
-                        - a_sensor[1]*vout_plant[i-1] \
-                        - a_sensor[2]*vout_plant[i-2] \
-                        - a_sensor[3]*vout_plant[i-3]
+        
+        vout_plant[i] = recur_s3.newOutput(vin_plant_d[i])
+        
+        # vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
+        #                 + b_sensor[1]*vin_plant_d[i-1] \
+        #                 + b_sensor[2]*vin_plant_d[i-2] \
+        #                 + b_sensor[3]*vin_plant_d[i-3] \
+        #                 - a_sensor[1]*vout_plant[i-1] \
+        #                 - a_sensor[2]*vout_plant[i-2] \
+        #                 - a_sensor[3]*vout_plant[i-3]
 
         vout_plant_adc[i] = Adc12Bits (vout_plant[i])
 
 
-if PID_Single_Stage_Udersamplig == True:
-
-    undersampling_reload = 4
-    undersampling = 0
-    max_pwm_pts = 8000
-    kp_dig = 48
-    ki_dig = 10
-    # kp_dig = 24
-    # ki_dig = 5
-    kd_dig = 0
-    print('Stage 0')
-    pid_tf_int.showParamsFromK(kp_dig, ki_dig, kd_dig, Fsampling)
-    pid_tf_int.changeParamsFromK(kp_dig, ki_dig, kd_dig)
-
-    for i in range(3, len(vin_plant)):
-        ###################################################
-        # primero calculo el error, siempre punto a punto #
-        ###################################################
-        error[i] = vin_setpoint[i] - vout_plant_adc[i-1]
-
-        #############################
-        # aplico Digital Controller #
-        #############################
-        if undersampling > 0:
-            undersampling -= 1
-            d[i] = d[i - 1]
-        else:
-            undersampling = undersampling_reload - 1
-            d[i] = pid_tf_int.newOutput(error[i])
-
-        if d[i] < 0:
-            d[i] = 0
-
-        ########################################
-        # aplico la transferencia de la planta #
-        ########################################
-        vin_plant_d[i] = d[i] * vin_plant[i] / max_pwm_pts
-        vout_plant[i] = b_sensor[0]*vin_plant_d[i] \
-                        + b_sensor[1]*vin_plant_d[i-1] \
-                        + b_sensor[2]*vin_plant_d[i-2] \
-                        + b_sensor[3]*vin_plant_d[i-3] \
-                        - a_sensor[1]*vout_plant[i-1] \
-                        - a_sensor[2]*vout_plant[i-2] \
-                        - a_sensor[3]*vout_plant[i-3]
-
-        vout_plant_adc[i] = Adc12Bits (vout_plant[i])
         
                
 if Respuesta_CloseLoop_All_Inputs_Digital == True:     

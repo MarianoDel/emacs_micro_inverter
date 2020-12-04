@@ -60,6 +60,7 @@ class PID_int:
     def newOutput(self, new_input):
         error = np.int16(new_input)
         new_output = np.int32(0)
+        
         new_output = self.b_pid[0] * error / self.div \
                      + self.b_pid[1] * self.error_z1 / self.div \
                      + self.b_pid[2] * self.error_z2 / self.div \

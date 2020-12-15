@@ -62,6 +62,34 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,
                                                  1007,955,903,851,798,746,693,640,587,534,
                                                  481,428,374,321,267,214,160,107,53,0};
 
+unsigned short duty_pre_dist [SIZEOF_SIGNAL] =
+{
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17,
+    24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
+    40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+
+    60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60,
+    85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85, 85,
+    120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120,
+    180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180, 180,
+
+    230, 230, 230, 230, 230, 230, 230, 230, 230, 230, 230, 230,
+    280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280,
+    280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280, 280,
+    220, 220, 220, 220, 220, 220, 220, 220, 220, 220, 220, 220,
+
+    155, 155, 155, 155, 155, 155, 155, 155, 155, 155, 155, 155,
+    100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+    60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60,
+    40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
+
+    20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20,
+    10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
+
 
 #else
 #error "Select SIZEOF_SIGNAL in gen_signal.h"
@@ -209,6 +237,73 @@ void CurrentLoop_Change_to_LowGain (void)
     current_pid.kp = 10;
     current_pid.ki = 3;
     current_pid.kd = 0;    
+}
+
+
+gen_signal_e GenSignalPreDistorted (unsigned short i_sample, unsigned short peak_current, short * duty)
+{
+    gen_signal_e resp = SIGNAL_RUNNING;
+    
+    //Adelanto la seniales de corriente,
+    if (p_current_ref < &duty_pre_dist[(SIZEOF_SIGNAL - 1)])
+    {
+        unsigned char signal_index = (unsigned char) (p_current_ref - duty_pre_dist);
+                    
+        //loop de corriente
+        unsigned int calc = *p_current_ref * peak_current;
+        calc = calc >> 8;
+
+        switch (gen_signal_state)
+        {
+        case SIGNAL_RISING:
+            *duty = (unsigned short) calc;
+            // *duty = duty_pre_dist[signal_index];
+
+            if (signal_index > INDEX_TO_MIDDLE)
+                gen_signal_state = SIGNAL_MIDDLE;
+
+            break;
+
+        case SIGNAL_MIDDLE:
+            // now check for max current
+            *duty = (unsigned short) calc;
+            // *duty = duty_pre_dist[signal_index];
+
+            if (signal_index > INDEX_TO_FALLING)
+                gen_signal_state = SIGNAL_FALLING;
+
+            break;
+
+        case SIGNAL_FALLING:
+            *duty = (unsigned short) calc;
+            // *duty = duty_pre_dist[signal_index];
+
+            if (signal_index > INDEX_TO_REVERT)
+            {
+                gen_signal_state = SIGNAL_REVERT;
+                *duty = 0;
+            }
+            break;
+
+        case SIGNAL_REVERT:
+
+            break;
+                        
+        }                    
+        p_current_ref++;
+    }
+    else
+        //termino de generar la senoidal, corto el mosfet
+        resp = SIGNAL_FINISH;
+
+    return resp;
+}
+
+
+void GenSignalPreDistortedReset (void)
+{
+    p_current_ref = duty_pre_dist;
+    gen_signal_state = SIGNAL_RISING;
 }
 
 //--- end of file ---//

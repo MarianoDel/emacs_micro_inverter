@@ -55,7 +55,7 @@ volatile unsigned short timer_standby;
 
 // Select Current Signal
 // #define USE_SIGNAL_CURRENT_01_A
-#define USE_SIGNAL_CURRENT_05_A
+// #define USE_SIGNAL_CURRENT_05_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
 
@@ -78,6 +78,8 @@ volatile unsigned short timer_standby;
 #define KI_SIGNAL_PEAK_MULTIPLIER    3722
 #endif
 
+//for pre distorted tests
+#define KI_SIGNAL_PEAK_MULTIPLIER    1384
 
 
 #ifdef WITH_FEW_CYCLES_OF_50HZ
@@ -290,7 +292,12 @@ int main(void)
                 }
 #endif
                 gen_signal_e resp = SIGNAL_RUNNING;
+#ifdef USE_SIGNAL_CONTROL_BY_PID
                 resp = GenSignal(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
+                resp = GenSignalPreDistorted(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
 
                 if (resp == SIGNAL_FINISH)
                 {
@@ -363,7 +370,12 @@ int main(void)
                 sequence_ready_reset;
                 if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
+#ifdef USE_SIGNAL_CONTROL_BY_PID
                     GenSignalReset();
+#endif
+#ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
+                    GenSignalPreDistortedReset();
+#endif
                     ac_sync_state = GEN_NEG;
                     
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -395,7 +407,12 @@ int main(void)
 #endif
                 
                 gen_signal_e resp = SIGNAL_RUNNING;
+#ifdef USE_SIGNAL_CONTROL_BY_PID
                 resp = GenSignal(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
+                resp = GenSignalPreDistorted(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
 
                 if (resp == SIGNAL_FINISH)
                 {
@@ -480,7 +497,12 @@ int main(void)
 #endif
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
+#ifdef USE_SIGNAL_CONTROL_BY_PID
                     GenSignalReset();
+#endif
+#ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
+                    GenSignalPreDistortedReset();
+#endif
                     ac_sync_state = GEN_POS;
                 
 #ifdef USE_LED_FOR_MAIN_POLARITY                

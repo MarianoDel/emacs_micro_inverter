@@ -39,6 +39,10 @@
 //-- Types of programs ----------
 #define GRID_TIED_FULL_CONECTED
 
+//-- Types of signal generation ----------
+#define USE_SIGNAL_CONTROL_BY_PID
+// #define USE_SIGNAL_CONTROL_PRE_DISTORTED
+
 //-- Types of led indications ----------
 // #define USE_LED_FOR_AC_PULSES
 // #define USE_LED_FOR_SYNC_PULSES

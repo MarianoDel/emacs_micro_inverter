@@ -25,6 +25,9 @@ typedef enum {
 gen_signal_e GenSignal (unsigned short, unsigned short, short *);
 void GenSignalReset (void);
 
+gen_signal_e GenSignalPreDistorted (unsigned short, unsigned short, short *);
+void GenSignalPreDistortedReset (void);
+
 
 #endif    /* _GEN_SIGNAL_H_ */
 

@@ -58,13 +58,13 @@ class PID_int:
 
 
     def newOutput(self, new_input):
-        error = np.int16(new_input)
+        error = np.int32(new_input)
         new_output = np.int32(0)
         
-        new_output = self.b_pid[0] * error / self.div \
-                     + self.b_pid[1] * self.error_z1 / self.div \
-                     + self.b_pid[2] * self.error_z2 / self.div \
-                     - self.a_pid[1] * self.new_output_z1
+        new_output = self.b_pid[0] * error / self.div
+        new_output += self.b_pid[1] * self.error_z1 / self.div
+        new_output += self.b_pid[2] * self.error_z2 / self.div
+        new_output -= self.a_pid[1] * self.new_output_z1
 
         self.new_output_z1 = np.int16(new_output)
         self.error_z2 = self.error_z1
@@ -72,6 +72,10 @@ class PID_int:
 
         return np.int16(new_output)
 
+    
+    def windowingLastOutput(self, last_output):
+        self.new_output_z1 = np.int16(last_output)
+    
     
     def showParamsFromK (self, kp, ki, kd, Fsampling):
         f0 = ki * Fsampling / (kp * 6.28)

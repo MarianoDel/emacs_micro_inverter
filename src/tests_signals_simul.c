@@ -19,8 +19,8 @@
 // Types Constants and Macros --------------------------------------------------
 // Select Current Signal
 // #define USE_SIGNAL_CURRENT_01_A
-// #define USE_SIGNAL_CURRENT_05_A
-#define USE_SIGNAL_CURRENT_075_A
+#define USE_SIGNAL_CURRENT_05_A
+// #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
 
 // Set of Peak Current in ADC points, 12bits
@@ -59,6 +59,8 @@ unsigned short last_output = 0;
 float Plant_Out (float);
 void Plant_Step_Response (void);
 void Plant_Step_Response_Duty (void);
+void TestSignalCloseLoop (void);
+void TestSignalPreDistorted (void);
 
 unsigned short Adc12BitsConvertion (float );
 void HIGH_LEFT (unsigned short duty);
@@ -76,15 +78,88 @@ void PrintERR (void);
 int main (int argc, char *argv[])
 {
     printf("Start of Analog simulations...\n");
-    //pruebo un step de la planta
     // Plant_Step_Response();
-
-    //pruebo un step de la planta pero con duty y vinput
-    //la tension de entrada es tan alta que incluso con duty_max = 10000
-    //tengo errores del 2%
     // Plant_Step_Response_Duty();
+    // TestSignalCloseLoop ();
+    TestSignalPreDistorted();
+    return 0;
+}
 
+
+void TestSignalPreDistorted (void)
+{
+    float calc = 0.0;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        calc = sin (3.1415 * i / SIZEOF_SIGNAL);
+        calc = 350 - calc * 311;
+        vinput[i] = (unsigned short) calc;
+        // vinput[i] = 350;
+    }
+
+    GenSignalPreDistortedReset();
+    gen_signal_e sig_state = SIGNAL_RUNNING;
+    unsigned short duty = 0;
+    unsigned short isense = 0;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        isense = last_output;
+        sig_state = GenSignalPreDistorted(isense, KI_SIGNAL_PEAK_MULTIPLIER, &duty);
+        if (sig_state == SIGNAL_RUNNING)
+            HIGH_LEFT(duty);
+        
+    }
+
+    unsigned short reference [SIZEOF_SIGNAL] = { 0 };
+    unsigned int ref_calc = 0;
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        ref_calc = sin_half_cycle[i] * KI_SIGNAL_PEAK_MULTIPLIER;
+        ref_calc = ref_calc >> 12;
+        reference[i] = (unsigned short) ref_calc;
+    }
+
+    ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+    // ShowVectorUShort("\nVector voltage input:\n", vinput, SIZEOF_SIGNAL);
+    ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, SIZEOF_SIGNAL);
+//     ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, SIZEOF_SIGNAL);
+
+    ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, SIZEOF_SIGNAL);
+    ShowVectorFloat("\nVector plant output:\n", voutput, SIZEOF_SIGNAL);
+
+    ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, SIZEOF_SIGNAL);
+
+    int error [SIZEOF_SIGNAL] = { 0 };
+    for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+        error[i] = reference[i] - voutput_adc[i];
+
+    ShowVectorInt("\nPlant output error:\n", error, SIZEOF_SIGNAL);
+//     ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+
+    ///////////////////////////
+    // Backup Data to a file //
+    ///////////////////////////
+    FILE * file = fopen("data.txt", "w");
+
+    if (file == NULL)
+    {
+        printf("data file not created!\n");
+        return;
+    }
+
+    Vector_UShort_To_File(file, "reference", reference, SIZEOF_SIGNAL);
+    Vector_UShort_To_File(file, "duty_high_left", duty_high_left, SIZEOF_SIGNAL);
+
+    Vector_Float_To_File(file, "vinput_applied", vinput_applied, SIZEOF_SIGNAL);
+    Vector_Float_To_File(file, "voutput", voutput, SIZEOF_SIGNAL);    
+
+    Vector_UShort_To_File(file, "voutput_adc", voutput_adc, SIZEOF_SIGNAL);
     
+}
+
+
+void TestSignalCloseLoop (void)
+{
     float calc = 0.0;
     for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
     {
@@ -141,7 +216,7 @@ int main (int argc, char *argv[])
     if (file == NULL)
     {
         printf("data file not created!\n");
-        return 0;
+        return;
     }
 
     Vector_UShort_To_File(file, "reference", reference, SIZEOF_SIGNAL);
@@ -151,8 +226,7 @@ int main (int argc, char *argv[])
     Vector_Float_To_File(file, "voutput", voutput, SIZEOF_SIGNAL);    
 
     Vector_UShort_To_File(file, "voutput_adc", voutput_adc, SIZEOF_SIGNAL);
-
-    return 0;
+    
 }
 
 
@@ -313,6 +387,9 @@ void Plant_Step_Response (void)
 }
 
 
+//pruebo un step de la planta pero con duty y vinput
+//la tension de entrada es tan alta que incluso con duty_max = 10000
+//tengo errores del 2%
 void Plant_Step_Response_Duty (void)
 {
     printf("\nPlant Step Response with duty and vinput\n");

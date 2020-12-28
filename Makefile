@@ -211,6 +211,15 @@ tests_signals:
 	gcc src/tests_signals.c dsp.o gen_signal.o  tests_vector_utils.o -lm
 	./a.out
 
+tests_simul:
+	# tests on modules with no dependencies with hardware
+	gcc -c src/dsp.c -I. $(INCDIR)
+	gcc -c src/tests_vector_utils.c -I. $(INCDIR)
+	gcc -c src/tests_recursive_utils.c -I. $(INCDIR)
+	gcc src/tests_simul.c dsp.o tests_vector_utils.o tests_recursive_utils.o -lm
+	./a.out
+	# execute by hand python3 simul_limits.py
+
 tests_signals_simul:
 	# tests on modules with no dependencies with hardware
 	gcc -c src/dsp.c -I. $(INCDIR)

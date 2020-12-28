@@ -17,6 +17,8 @@
 #include <math.h>
 
 // Types Constants and Macros --------------------------------------------------
+// Select how many cycles
+#define HOW_MANY_CYCLES    20
 // Select Current Signal
 // #define USE_SIGNAL_CURRENT_01_A
 #define USE_SIGNAL_CURRENT_05_A
@@ -47,12 +49,13 @@
 extern unsigned short sin_half_cycle [];
 
 // Globals ---------------------------------------------------------------------
-unsigned short duty_high_left [SIZEOF_SIGNAL] = { 0 };
-unsigned short duty_high_right [SIZEOF_SIGNAL] = { 0 };
-unsigned short vinput[SIZEOF_SIGNAL] = { 0 };
-float vinput_applied[SIZEOF_SIGNAL] = { 0 };
-float voutput[SIZEOF_SIGNAL] = { 0 };
-unsigned short voutput_adc[SIZEOF_SIGNAL] = { 0 };
+#define VECTOR_LENGTH    (SIZEOF_SIGNAL * HOW_MANY_CYCLES)
+unsigned short duty_high_left [VECTOR_LENGTH] = { 0 };
+unsigned short duty_high_right [VECTOR_LENGTH] = { 0 };
+unsigned short vinput[VECTOR_LENGTH] = { 0 };
+float vinput_applied[VECTOR_LENGTH] = { 0 };
+float voutput[VECTOR_LENGTH] = { 0 };
+unsigned short voutput_adc[VECTOR_LENGTH] = { 0 };
 unsigned short last_output = 0;
 
 // Module Functions to Test ----------------------------------------------------
@@ -60,6 +63,7 @@ float Plant_Out (float);
 void Plant_Step_Response (void);
 void Plant_Step_Response_Duty (void);
 void TestSignalCloseLoop (void);
+void TestSignalSinus (void);
 void TestSignalPreDistorted (void);
 
 unsigned short Adc12BitsConvertion (float );
@@ -81,8 +85,98 @@ int main (int argc, char *argv[])
     // Plant_Step_Response();
     // Plant_Step_Response_Duty();
     // TestSignalCloseLoop ();
-    TestSignalPreDistorted();
+    // TestSignalPreDistorted();
+    TestSignalSinus();
     return 0;
+}
+
+
+void TestSignalSinus (void)
+{
+    float calc = 0.0;
+
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        for (int i = 0; i < SIZEOF_SIGNAL; i++)
+        {
+            calc = sin (3.1415 * i / SIZEOF_SIGNAL);
+            calc = 350 - calc * 311;
+            vinput[i + (j * SIZEOF_SIGNAL)] = (unsigned short) calc;
+            // vinput[i] = 350;
+        }
+    }
+
+    gen_signal_e sig_state = SIGNAL_RUNNING;
+    unsigned short duty = 0;
+    unsigned short isense = 0;
+    unsigned short ki_multiplier = 180;
+    // unsigned short ki_multiplier = KI_SIGNAL_PEAK_MULTIPLIER;    
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        GenSignalSinusReset();
+        sig_state = SIGNAL_RUNNING;
+        duty = 0;
+        isense = 0;
+        
+        for (int i = 0; i < SIZEOF_SIGNAL; i++)
+        {
+            isense = last_output;
+            sig_state = GenSignalSinus(isense, ki_multiplier, &duty);
+            if (sig_state == SIGNAL_RUNNING)
+                HIGH_LEFT(duty);
+        
+        }
+    }
+
+    unsigned short reference [VECTOR_LENGTH] = { 0 };
+    unsigned int ref_calc = 0;
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        for (int i = 0; i < SIZEOF_SIGNAL; i++)
+        {
+            ref_calc = sin_half_cycle[i] * ki_multiplier;
+            ref_calc = ref_calc >> 12;
+            reference[i + (j * SIZEOF_SIGNAL)] = (unsigned short) ref_calc;
+        }
+    }
+
+    ShowVectorUShort("\nVector reference:\n", reference, VECTOR_LENGTH);
+    // ShowVectorUShort("\nVector voltage input:\n", vinput, VECTOR_LENGTH);
+    ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, VECTOR_LENGTH);
+//     ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, VECTOR_LENGTH);
+
+    ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, VECTOR_LENGTH);
+    ShowVectorFloat("\nVector plant output:\n", voutput, VECTOR_LENGTH);
+
+    ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, VECTOR_LENGTH);
+
+    int error [VECTOR_LENGTH] = { 0 };
+    for (int i = 0; i < VECTOR_LENGTH; i++)
+        error[i] = reference[i] - voutput_adc[i];
+
+    ShowVectorInt("\nPlant output error:\n", error, VECTOR_LENGTH);
+//     ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+
+    ///////////////////////////
+    // Backup Data to a file //
+    ///////////////////////////
+    FILE * file = fopen("data.txt", "w");
+
+    if (file == NULL)
+    {
+        printf("data file not created!\n");
+        return;
+    }
+
+    Vector_UShort_To_File(file, "reference", reference, VECTOR_LENGTH);
+    // Vector_UShort_To_File(file, "vinput", vinput, VECTOR_LENGTH);    
+    Vector_UShort_To_File(file, "duty_high_left", duty_high_left, VECTOR_LENGTH);
+
+    Vector_Float_To_File(file, "vinput applied", vinput_applied, VECTOR_LENGTH);
+    Vector_Float_To_File(file, "voutput getted", voutput, VECTOR_LENGTH);    
+
+    Vector_UShort_To_File(file, "voutput_adc", voutput_adc, VECTOR_LENGTH);
+    
 }
 
 
@@ -156,6 +250,8 @@ void TestSignalPreDistorted (void)
     Vector_UShort_To_File(file, "voutput_adc", voutput_adc, SIZEOF_SIGNAL);
     
 }
+
+
 
 
 void TestSignalCloseLoop (void)
@@ -232,7 +328,7 @@ void TestSignalCloseLoop (void)
 
 
 
-unsigned char cntr_high_left = 0;
+int cntr_high_left = 0;
 void HIGH_LEFT (unsigned short duty)
 {
     float out = 0.0;

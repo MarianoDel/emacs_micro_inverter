@@ -54,16 +54,33 @@ volatile unsigned short timer_standby;
 
 
 // Select Current Signal
-// #define USE_SIGNAL_CURRENT_01_A
+#ifndef USE_SIGNAL_CONTROL_PRE_DISTORTED
+// #define USE_SIGNAL_CURRENT_005_A
+#define USE_SIGNAL_CURRENT_01_A
+// #define USE_SIGNAL_CURRENT_02_A
+// #define USE_SIGNAL_CURRENT_04_A
 // #define USE_SIGNAL_CURRENT_05_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
+#endif
 
 // Set of Peak Current in ADC points, 12bits
 // Voltage in I_Sense is 3 . Ipeak
 // ADC points = 3 . Ipeak . 4095 / 3.3
+#ifdef USE_SIGNAL_CURRENT_005_A         
+#define KI_SIGNAL_PEAK_MULTIPLIER    170
+#endif
+
 #ifdef USE_SIGNAL_CURRENT_01_A         
 #define KI_SIGNAL_PEAK_MULTIPLIER    373
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_02_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    746
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_04_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    1492
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_05_A
@@ -79,7 +96,9 @@ volatile unsigned short timer_standby;
 #endif
 
 //for pre distorted tests
+#ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
 #define KI_SIGNAL_PEAK_MULTIPLIER    1384
+#endif
 
 
 #ifdef WITH_FEW_CYCLES_OF_50HZ
@@ -259,6 +278,14 @@ int main(void)
                     LOW_LEFT(DUTY_NONE);
                     LOW_RIGHT(DUTY_ALWAYS);
 #endif
+
+#if defined USE_SIGNAL_CONTROL_SINUS || defined USE_SIGNAL_CONTROL_SINUS2
+                    GenSignalSinusResetCntrs();
+#endif
+#ifdef USE_SIGNAL_CONTROL_TRIANG
+                    GenSignalTriangResetCntrs();
+#endif
+                    
                     sequence_ready_reset;
                 }
                 else if (SYNC_Last_Polarity_Check() == POLARITY_POS)
@@ -297,6 +324,15 @@ int main(void)
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                 resp = GenSignalPreDistorted(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_SINUS
+                resp = GenSignalSinus(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_SINUS2
+                resp = GenSignalSinus2(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_TRIANG
+                resp = GenSignalTriang(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
 #endif
 
                 if (resp == SIGNAL_FINISH)
@@ -376,6 +412,12 @@ int main(void)
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                     GenSignalPreDistortedReset();
 #endif
+#if defined USE_SIGNAL_CONTROL_SINUS || defined USE_SIGNAL_CONTROL_SINUS2
+                    GenSignalSinusReset();
+#endif
+#ifdef USE_SIGNAL_CONTROL_TRIANG
+                    GenSignalTriangReset();
+#endif
                     ac_sync_state = GEN_NEG;
                     
 #ifdef USE_LED_FOR_MAIN_POLARITY                
@@ -412,6 +454,15 @@ int main(void)
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                 resp = GenSignalPreDistorted(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_SINUS
+                resp = GenSignalSinus(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif                
+#ifdef USE_SIGNAL_CONTROL_SINUS2
+                resp = GenSignalSinus2(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif                
+#ifdef USE_SIGNAL_CONTROL_TRIANG
+                resp = GenSignalTriang(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
 #endif
 
                 if (resp == SIGNAL_FINISH)
@@ -502,6 +553,12 @@ int main(void)
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                     GenSignalPreDistortedReset();
+#endif
+#if defined USE_SIGNAL_CONTROL_SINUS || defined USE_SIGNAL_CONTROL_SINUS2
+                    GenSignalSinusReset();
+#endif
+#ifdef USE_SIGNAL_CONTROL_TRIANG
+                    GenSignalTriangReset();
 #endif
                     ac_sync_state = GEN_POS;
                 

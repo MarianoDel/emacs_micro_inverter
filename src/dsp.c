@@ -34,6 +34,47 @@ unsigned short RandomGen (unsigned int seed)
 
 }
 
+#ifdef USE_MA8_U16_CIRCULAR
+//set de punteros y vaciado del filtro
+//recibe:
+// puntero a estructura de datos del filtro "ma8_u16_data_obj_t *"
+void MA8_U16Circular_Reset (ma8_u16_data_obj_t * p_data)
+{
+    for (unsigned char i = 0; i < 8; i++)
+        p_data->v_ma[i] = 0;
+
+    p_data->p_ma = p_data->v_ma;
+    p_data->total_ma = 0;
+}
+
+//Filtro circular, necesito activar previamente con MA8_U16Circular_Reset()
+//recibe:
+// puntero a estructura de datos del filtro "ma8_u16_data_obj_t *"
+// nueva mustra "new_sample"
+//contesta:
+// resultado del filtro
+unsigned short MA8_U16Circular (ma8_u16_data_obj_t *p_data, unsigned short new_sample)
+{
+    p_data->total_ma -= *(p_data->p_ma);
+    p_data->total_ma += new_sample;
+    *(p_data->p_ma) = new_sample;
+
+    if (p_data->p_ma < ((p_data->v_ma) + 7))
+        p_data->p_ma += 1;
+    else
+        p_data->p_ma = p_data->v_ma;
+
+    return (unsigned short) (p_data->total_ma >> 3);    
+}
+
+unsigned short MA8_U16Circular_Only_Calc (ma8_u16_data_obj_t *p_data)
+{
+    return (unsigned short) (p_data->total_ma >> 3);
+}
+
+#endif    //USE_MA8_U16_CIRCULAR
+
+
 #ifdef USE_MA16_U16_CIRCULAR
 //set de punteros y vaciado del filtro
 //recibe:
@@ -256,6 +297,14 @@ void PID_Flush_Errors (pid_data_obj_t * p)
     p->error_z1 = 0;
     p->error_z2 = 0;
 }
+
+
+void PID_Flush_Only_Errors (pid_data_obj_t * p)
+{
+    p->error_z1 = 0;
+    p->error_z2 = 0;
+}
+
 
 short PID_Small_Ki (pid_data_obj_t * p)
 {

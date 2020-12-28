@@ -41,6 +41,9 @@
 
 //-- Types of signal generation ----------
 #define USE_SIGNAL_CONTROL_BY_PID
+// #define USE_SIGNAL_CONTROL_SINUS    //revisa con filtro solo la senial de corriente en el medio
+// #define USE_SIGNAL_CONTROL_SINUS2    //revisa con filtro el pico de corriente de toda la senial
+// #define USE_SIGNAL_CONTROL_TRIANG    //genera senial triangular solo para modo DCM
 // #define USE_SIGNAL_CONTROL_PRE_DISTORTED
 
 //-- Types of led indications ----------
@@ -81,7 +84,8 @@
 #define CYCLES_OF_50HZ    1
 #endif
 #ifdef WITH_SOFT_OVERCURRENT_SHUTDOWN
-#define SOFT_OVERCURRENT_THRESHOLD    3500
+// #define SOFT_OVERCURRENT_THRESHOLD    3500
+#define SOFT_OVERCURRENT_THRESHOLD    4000
 #endif
 
 #ifdef GRID_TIED_FULL_CONECTED

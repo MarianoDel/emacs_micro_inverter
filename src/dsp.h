@@ -12,11 +12,18 @@
 // Defines for Module Configuration --------------------------------------------
 #define USE_PID_CONTROLLERS
 // #define USE_MA32_U8_CIRCULAR
+#define USE_MA8_U16_CIRCULAR
 #define USE_MA16_U16_CIRCULAR
 #define USE_MA32_U16_CIRCULAR
 
 
 // Exported Types Constants and Macros -----------------------------------------
+typedef struct {
+    unsigned short v_ma[8];
+    unsigned short * p_ma;
+    unsigned int total_ma;
+} ma8_u16_data_obj_t;
+
 typedef struct {
     unsigned short v_ma[16];
     unsigned short * p_ma;
@@ -55,8 +62,15 @@ unsigned short RandomGen (unsigned int);
 short PID (pid_data_obj_t *);
 short PI (pid_data_obj_t *);
 void PID_Flush_Errors (pid_data_obj_t *);
+void PID_Flush_Only_Errors (pid_data_obj_t *);
 short PID_Small_Ki (pid_data_obj_t *);
 void PID_Small_Ki_Flush_Errors (pid_data_obj_t *);
+#endif
+
+#ifdef USE_MA8_U16_CIRCULAR
+void MA8_U16Circular_Reset (ma8_u16_data_obj_t *);
+unsigned short MA8_U16Circular (ma8_u16_data_obj_t *, unsigned short);
+unsigned short MA8_U16Circular_Only_Calc (ma8_u16_data_obj_t *);
 #endif
 
 #ifdef USE_MA16_U16_CIRCULAR

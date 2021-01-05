@@ -297,27 +297,48 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
 
 void CurrentLoop_Change_to_HighGain (void)
 {
-    current_pid.kp = 40;
-    current_pid.ki = 1;
+    //vsense directo de Rsense
+    // current_pid.kp = 128;
+    // current_pid.ki = 33;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    current_pid.kp = 29;
+    current_pid.ki = 7;
     current_pid.kd = 0;
+    
     PID_Flush_Only_Errors(&current_pid);    
 }
 
 
 void CurrentLoop_Change_to_LowGain (void)
 {
-    current_pid.kp = 60;
-    current_pid.ki = 4;
+    //vsense directo de Rsense    
+    // current_pid.kp = 128;
+    // current_pid.ki = 33;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    current_pid.kp = 29;
+    current_pid.ki = 7;
     current_pid.kd = 0;
+    
     PID_Flush_Only_Errors(&current_pid);    
 }
 
 
 void CurrentLoop_Change_to_RevertGain (void)
 {
-    current_pid.kp = 40;
-    current_pid.ki = 2;
+    //vsense directo de Rsense    
+    // current_pid.kp = 128;
+    // current_pid.ki = 33;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    current_pid.kp = 29;
+    current_pid.ki = 7;
     current_pid.kd = 0;
+    
     PID_Flush_Only_Errors(&current_pid);    
 }
 

@@ -40,9 +40,9 @@
 #define GRID_TIED_FULL_CONECTED
 
 //-- Types of signal generation ----------
-#define USE_SIGNAL_CONTROL_BY_PID
+// #define USE_SIGNAL_CONTROL_BY_PID
 // #define USE_SIGNAL_CONTROL_SINUS    //revisa con filtro solo la senial de corriente en el medio
-// #define USE_SIGNAL_CONTROL_SINUS2    //revisa con filtro el pico de corriente de toda la senial
+#define USE_SIGNAL_CONTROL_SINUS2    //revisa sin filtro el pico de corriente en toda la senial
 // #define USE_SIGNAL_CONTROL_TRIANG    //genera senial triangular solo para modo DCM
 // #define USE_SIGNAL_CONTROL_PRE_DISTORTED
 

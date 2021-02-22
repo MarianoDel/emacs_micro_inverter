@@ -16,13 +16,18 @@
 
 
 // Module Private Types Constants and Macros -----------------------------------
-#define INDEX_TO_MIDDLE    (60 - 1)
-#define INDEX_TO_FALLING   (180 - 1)
-#define INDEX_TO_REVERT    204
+#define INDEX_TO_MIDDLE    (90 - 1)
+#define INDEX_TO_FALLING   (150 - 1)
+#define INDEX_TO_REVERT    (240 - 10)    //230
+
+// #define INDEX_TO_MIDDLE    (60 - 1)
+// #define INDEX_TO_FALLING   (180 - 1)
+// #define INDEX_TO_REVERT    (240 - 10)    //230
 
 #define SINUS_INDEX_TO_MIDDLE    (116 - 1)
 #define SINUS_INDEX_TO_FALLING   (124 - 1)
-#define SINUS_INDEX_TO_REVERT    150    //modif 26-12-2020, hago el corte mas rapido
+// #define SINUS_INDEX_TO_REVERT    150    //modif 26-12-2020, hago el corte mas rapido
+#define SINUS_INDEX_TO_REVERT    (240 - 30)    //modif 16-02-2021
 // #define SINUS_INDEX_TO_REVERT    204
 
 #define TRIANG_INDEX_TO_CHECK_MAX_CURRENT    (204 - 1)
@@ -81,6 +86,32 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,
                                                  1517,1467,1417,1366,1316,1265,1214,1163,1111,1059,
                                                  1007,955,903,851,798,746,693,640,587,534,
                                                  481,428,374,321,267,214,160,107,53,0};
+
+
+unsigned short sin_sqrd_half_cycle [SIZEOF_SIGNAL] = {0,2,6,11,17,25,34,44,56,69,
+                                                      84,100,117,135,155,177,199,223,248,274,
+                                                      301,330,360,391,423,456,490,525,562,599,
+                                                      638,677,717,758,801,844,887,932,977,1023,
+                                                      1070,1117,1166,1214,1263,1313,1364,1414,1465,1517,
+                                                      1569,1621,1674,1727,1780,1833,1886,1940,1993,2047,
+                                                      2101,2154,2208,2261,2314,2367,2420,2473,2525,2577,
+                                                      2629,2680,2730,2781,2831,2880,2928,2977,3024,3071,
+                                                      3117,3162,3207,3250,3293,3336,3377,3417,3456,3495,
+                                                      3532,3569,3604,3638,3671,3703,3734,3764,3793,3820,
+                                                      3846,3871,3895,3917,3939,3959,3977,3994,4010,4025,
+                                                      4038,4050,4060,4069,4077,4083,4088,4092,4094,4095,
+                                                      4094,4092,4088,4083,4077,4069,4060,4050,4038,4025,
+                                                      4010,3994,3977,3959,3939,3917,3895,3871,3846,3820,
+                                                      3793,3764,3734,3703,3671,3638,3604,3569,3532,3495,
+                                                      3456,3417,3377,3336,3293,3250,3207,3162,3117,3071,
+                                                      3024,2977,2928,2880,2831,2781,2730,2680,2629,2577,
+                                                      2525,2473,2420,2367,2314,2261,2208,2154,2101,2047,
+                                                      1993,1940,1886,1833,1780,1727,1674,1621,1569,1517,
+                                                      1465,1414,1364,1313,1263,1214,1166,1117,1070,1023,
+                                                      977,932,887,844,801,758,717,677,638,599,
+                                                      562,525,490,456,423,391,360,330,301,274,
+                                                      248,223,199,177,155,135,117,100,84,69,
+                                                      56,44,34,25,17,11,6,2,0,0};
 
 // unsigned short triang_half_cycle [SIZEOF_SIGNAL] = {0,34,68,102,136,170,204,238,273,307,
 //                                                     341,375,409,443,477,511,546,580,614,648,
@@ -303,8 +334,18 @@ void CurrentLoop_Change_to_HighGain (void)
     // current_pid.kd = 0;
 
     //vsense con opamp 4.4
-    current_pid.kp = 29;
-    current_pid.ki = 7;
+    // current_pid.kp = 29;
+    // current_pid.ki = 7;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    // current_pid.kp = 1;
+    // current_pid.ki = 45;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    current_pid.kp = 1;
+    current_pid.ki = 15;
     current_pid.kd = 0;
     
     PID_Flush_Only_Errors(&current_pid);    
@@ -319,8 +360,18 @@ void CurrentLoop_Change_to_LowGain (void)
     // current_pid.kd = 0;
 
     //vsense con opamp 4.4
-    current_pid.kp = 29;
-    current_pid.ki = 7;
+    // current_pid.kp = 29;
+    // current_pid.ki = 7;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    // current_pid.kp = 1;
+    // current_pid.ki = 45;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    current_pid.kp = 1;
+    current_pid.ki = 30;
     current_pid.kd = 0;
     
     PID_Flush_Only_Errors(&current_pid);    
@@ -335,8 +386,18 @@ void CurrentLoop_Change_to_RevertGain (void)
     // current_pid.kd = 0;
 
     //vsense con opamp 4.4
-    current_pid.kp = 29;
-    current_pid.ki = 7;
+    // current_pid.kp = 29;
+    // current_pid.ki = 7;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    // current_pid.kp = 1;
+    // current_pid.ki = 45;
+    // current_pid.kd = 0;
+
+    //vsense con opamp 4.4
+    current_pid.kp = 1;
+    current_pid.ki = 30;
     current_pid.kd = 0;
     
     PID_Flush_Only_Errors(&current_pid);    
@@ -410,10 +471,10 @@ void GenSignalPreDistortedReset (void)
 }
 
 
+unsigned short current_i_peak_value = 0;
 unsigned short last_peak_current = 0;
-unsigned short last_current_filtered = 0;
-unsigned short current_filtered = 0;
-ma8_u16_data_obj_t ma8_filter;
+unsigned char current_i_peak_cntr = 0;
+unsigned char last_peak_index = 0;    //por ahora solo adelanto
 gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_current, short * duty)
 {
     gen_signal_e resp = SIGNAL_RUNNING;
@@ -427,19 +488,20 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
         //loop de corriente, es el inicial? o ya lo vengo trabanjando
         if (!last_peak_current)
         {
-            MA8_U16Circular_Reset (&ma8_filter);
-
             //loop inicial, empiezo con el 12.5% de la corriente pico seteada
             calc = peak_current;
             calc = calc >> 3;
             last_peak_current = (unsigned short) calc;
-
-            calc = *p_current_ref * last_peak_current;
+        }
+        
+        //loop de ciclos consecutivos, por ahora solo adelanto
+        if ((signal_index + last_peak_index) < (SIZEOF_SIGNAL - 1))
+        {
+            calc = *(p_current_ref + last_peak_index) * last_peak_current;
             calc = calc >> 12;
         }
         else
         {
-            //loop de ciclos consecutivos
             calc = *p_current_ref * last_peak_current;
             calc = calc >> 12;
         }
@@ -447,10 +509,12 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
         switch (gen_signal_state)
         {
         case SIGNAL_RISING:
-            // filter to check max current            
-            current_filtered = MA8_U16Circular(&ma8_filter, i_sample);
-            if (last_current_filtered < current_filtered)
-                last_current_filtered = current_filtered;
+            // check max current
+            if (current_i_peak_value < i_sample)
+            {
+                current_i_peak_value = i_sample;
+                current_i_peak_cntr = signal_index;
+            }
             
             *duty = (unsigned short) calc;
 
@@ -460,10 +524,12 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
             break;
 
         case SIGNAL_MIDDLE:
-            // filter to check max current
-            current_filtered = MA8_U16Circular(&ma8_filter, i_sample);
-            if (last_current_filtered < current_filtered)
-                last_current_filtered = current_filtered;
+            // check max current
+            if (current_i_peak_value < i_sample)
+            {
+                current_i_peak_value = i_sample;
+                current_i_peak_cntr = signal_index;
+            }
             
             *duty = (unsigned short) calc;
 
@@ -473,19 +539,34 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
             break;
 
         case SIGNAL_FALLING:
-            // filter to check max current
-            current_filtered = MA8_U16Circular(&ma8_filter, i_sample);
-            if (last_current_filtered < current_filtered)
-                last_current_filtered = current_filtered;
+            // check max current
+            if (current_i_peak_value < i_sample)
+            {
+                current_i_peak_value = i_sample;
+                current_i_peak_cntr = signal_index;
+            }
             
             *duty = (unsigned short) calc;
 
             if (signal_index > SINUS_INDEX_TO_REVERT)
             {
-                if (last_current_filtered < peak_current)
+                //ajusto proximo pico de corriente
+                if (current_i_peak_value < peak_current)
                     last_peak_current++;
-                else if (last_current_filtered > peak_current)
+                else if (current_i_peak_value > peak_current)
                     last_peak_current--;
+
+                //ajusto proximo indice del pico, por ahora solo adelanto
+                if (current_i_peak_cntr > 119)
+                {
+                    if (last_peak_index < 5)
+                        last_peak_index++;
+                }
+                else if (current_i_peak_cntr < 119)
+                {
+                    if (last_peak_index)
+                        last_peak_index--;
+                }
 
                 // printf("ref: %d filtered: %d peak: %d\n",
                 //        current_ref,
@@ -512,6 +593,12 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
 }
 
 
+// #define SINUS_NORMAL
+#define SINUS_SQUARED
+unsigned short last_current_filtered = 0;
+unsigned short current_filtered = 0;
+ma8_u16_data_obj_t ma8_filter;
+#ifdef SINUS_NORMAL
 gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_current, short * duty)
 {
     gen_signal_e resp = SIGNAL_RUNNING;
@@ -599,7 +686,6 @@ gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_curren
     return resp;
 }
 
-
 void GenSignalSinusReset (void)
 {
     last_current_filtered = 0;
@@ -607,11 +693,129 @@ void GenSignalSinusReset (void)
     gen_signal_state = SIGNAL_RISING;
 }
 
+#endif    //SINUS_NORMAL
+
+#ifdef SINUS_SQUARED
+gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_current, short * duty)
+{
+    gen_signal_e resp = SIGNAL_RUNNING;
+    unsigned int calc = 0;
+
+    //Adelanto la senial de tension-corriente
+    if (p_current_ref < &sin_sqrd_half_cycle[(SIZEOF_SIGNAL - 1)])
+    {
+        unsigned char signal_index = (unsigned char) (p_current_ref - sin_sqrd_half_cycle);
+                    
+        //loop de corriente, es el inicial? o ya lo vengo trabanjando
+        if (!last_peak_current)
+        {
+            MA8_U16Circular_Reset (&ma8_filter);
+
+            //loop inicial, empiezo con el 12.5% de la corriente pico seteada
+            calc = peak_current;
+            calc = calc >> 3;
+            last_peak_current = (unsigned short) calc;
+
+            calc = *p_current_ref * last_peak_current;
+            calc = calc >> 12;
+        }
+        else
+        {
+            //loop de ciclos consecutivos
+            calc = *p_current_ref * last_peak_current;
+            calc = calc >> 12;
+        }
+
+        switch (gen_signal_state)
+        {
+        case SIGNAL_RISING:
+            *duty = (unsigned short) calc;
+
+            if (signal_index > SINUS_INDEX_TO_MIDDLE)
+                gen_signal_state = SIGNAL_MIDDLE;
+
+            break;
+
+        case SIGNAL_MIDDLE:
+            // now check for max current
+            current_filtered = MA8_U16Circular(&ma8_filter, i_sample);
+            *duty = (unsigned short) calc;
+            // printf("i_sample: %d current filtered: %d\n", i_sample, current_filtered);
+
+            if (signal_index > SINUS_INDEX_TO_FALLING)
+            {
+                if (current_filtered < peak_current)
+                    last_peak_current++;
+                else if (current_filtered > peak_current)
+                    last_peak_current--;
+                         
+
+                // printf("ref: %d filtered: %d peak: %d\n",
+                //        current_ref,
+                //        current_filtered,
+                //        last_peak_current);
+                
+                gen_signal_state = SIGNAL_FALLING;
+            }
+            break;
+
+        case SIGNAL_FALLING:
+            *duty = (unsigned short) calc;
+
+            if (signal_index > SINUS_INDEX_TO_REVERT)
+            {
+                gen_signal_state = SIGNAL_REVERT;
+                *duty = 0;
+            }
+            break;
+
+        case SIGNAL_REVERT:
+
+            break;
+                        
+        }                    
+        p_current_ref++;
+    }
+    else
+        //termino de generar la senoidal, corto el mosfet
+        resp = SIGNAL_FINISH;
+
+    return resp;
+}
+
+void GenSignalSinusReset (void)
+{
+    last_current_filtered = 0;
+    p_current_ref = sin_sqrd_half_cycle;
+    gen_signal_state = SIGNAL_RISING;
+}
+
+#endif    //SINUS_SQUARED
+
+
+
 
 void GenSignalSinusResetCntrs (void)
 {
     last_peak_current = 0;
     GenSignalSinusReset();
+}
+
+
+void GenSignalSinus2Reset (void)
+{
+    current_i_peak_value = 0;
+    current_i_peak_cntr = 0;
+    p_current_ref = sin_half_cycle;
+    gen_signal_state = SIGNAL_RISING;
+}
+
+
+void GenSignalSinus2ResetCntrs (void)
+{
+    last_peak_current = 0;
+    last_peak_index = 0;
+    GenSignalSinus2Reset();
 }
 
 

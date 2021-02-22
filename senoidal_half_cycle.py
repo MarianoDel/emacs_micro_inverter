@@ -3,15 +3,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-muestras = 120
+muestras = 240
 Vmax = 4095
 
 s_sen = np.zeros(muestras)
+s_sen2 = np.zeros(muestras)
+
 
 for i in range(np.size(s_sen)):
     s_sen[i] = np.sin(np.pi*(i+1)/muestras) * Vmax
 
-s_sen_enteros = s_sen.astype(int)
+
+# s_sen2 = s_sen * s_sen
+# s_sen2 = s_sen2 / 4095
+s_sen2 = s_sen
+
+s_sen_enteros = s_sen2.astype(int)
 
 print (s_sen_enteros)
 

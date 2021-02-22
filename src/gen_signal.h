@@ -29,9 +29,12 @@ gen_signal_e GenSignalPreDistorted (unsigned short, unsigned short, short *);
 void GenSignalPreDistortedReset (void);
 
 gen_signal_e GenSignalSinus (unsigned short, unsigned short, short *);
-gen_signal_e GenSignalSinus2 (unsigned short, unsigned short, short *);
 void GenSignalSinusReset (void);
 void GenSignalSinusResetCntrs (void);
+
+gen_signal_e GenSignalSinus2 (unsigned short, unsigned short, short *);
+void GenSignalSinus2Reset (void);
+void GenSignalSinus2ResetCntrs (void);
 
 gen_signal_e GenSignalTriang (unsigned short, unsigned short, short *);
 void GenSignalTriangReset (void);

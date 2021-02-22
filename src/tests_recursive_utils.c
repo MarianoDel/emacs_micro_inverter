@@ -41,7 +41,10 @@ float Recursive_Filter_Float (recursive_filter_t * filter, float new_input)
 
     //forward params
     for (int i = 0; i < deep; i++)
+    {
         output += filter->b_params[i] * filter->last_inputs[i];
+        // printf("index: %d last_inputs: %f\n", i, filter->last_inputs[i]);
+    }
 
     //check the deep of calc for recursive params
     if (filter->inputs_cntr < filter->a_size)
@@ -49,24 +52,31 @@ float Recursive_Filter_Float (recursive_filter_t * filter, float new_input)
     else
         deep = filter->a_size;
 
-    printf("deep: %d counter: %d\n", deep, filter->inputs_cntr);
-
+    // printf("deep: %d counter: %d\n", deep, filter->inputs_cntr);
     
     //recursive params
     for (int i = 1; i < deep; i++)
+    {
         output -= filter->a_params[i] * filter->last_outputs[i - 1];
+        // printf("index: %d last_outputs: %f\n", i, filter->last_outputs[i - 1]);
+    }
 
     // update the counter
     filter->inputs_cntr += 1;
     
     //fix next loop vectors
-    for (int i = 0; i < (filter->b_size - 1); i++)
-        filter->last_inputs[i + 1] = filter->last_inputs[i];
+    // for (int i = 0; i < (filter->b_size - 1); i++)
+    //     filter->last_inputs[i + 1] = filter->last_inputs[i];
+
+    for (int i = (filter->b_size - 1); i > 0; i--)
+        filter->last_inputs[i] = filter->last_inputs[i - 1];
+    
+    for (int i = (filter->a_size - 1); i > 0 ; i--)
+        filter->last_outputs[i] = filter->last_outputs[i - 1];
 
     filter->last_outputs[0] = output;
-    for (int i = 0; i < (filter->a_size - 1); i++)
-        filter->last_outputs[i + 1] = filter->last_outputs[i];
-    
+
+    // printf("output: %f\n", output);
     return output;
 }
 

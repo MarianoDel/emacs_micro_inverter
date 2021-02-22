@@ -232,5 +232,6 @@ params to a_pid: [ 1 -1] dtype: int16
       #+TBLFM: @2$5=((@2$1+0.5+@2$2)*@2$3/@2$4)
 
 ** Despues veo si ademas de los 2000 hago un dither x4 (2 bits)
-
+* Simulaciones 21-02-2021
+** Paso todos los .py que ya no uso a la carpeta de proyecto
 

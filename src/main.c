@@ -56,17 +56,65 @@ volatile unsigned short timer_standby;
 // Select Current Signal
 #ifndef USE_SIGNAL_CONTROL_PRE_DISTORTED
 // #define USE_SIGNAL_CURRENT_005_A
-#define USE_SIGNAL_CURRENT_01_A
+// #define USE_SIGNAL_CURRENT_01_A
 // #define USE_SIGNAL_CURRENT_02_A
-// #define USE_SIGNAL_CURRENT_04_A
+// #define USE_SIGNAL_CURRENT_03_A
+#define USE_SIGNAL_CURRENT_04_A
 // #define USE_SIGNAL_CURRENT_05_A
+// #define USE_SIGNAL_CURRENT_06_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
 #endif
 
 // Set of Peak Current in ADC points, 12bits
+// with Aopamp = 9.2
 // Voltage in I_Sense is 3 . Ipeak
 // ADC points = 3 . Ipeak . 4095 / 3.3
+// with Aopamp = 4.4
+// Voltage in I_Sense is 1.45 . Ipeak
+// ADC points = 1.45 . Ipeak . 4095 / 3.3
+// #define AOPAMP_9_2
+#define AOPAMP_4_4
+
+#ifdef AOPAMP_4_4
+#ifdef USE_SIGNAL_CURRENT_005_A         
+#define KI_SIGNAL_PEAK_MULTIPLIER    90
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_01_A         
+#define KI_SIGNAL_PEAK_MULTIPLIER    180
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_02_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    360
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_03_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    540
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_04_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    720
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_05_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    900
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_06_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    1080
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_075_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    1350
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_1_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    1800
+#endif
+#endif    //AOPAMP_4_4
+
+#ifdef AOPAMP_9_2
 #ifdef USE_SIGNAL_CURRENT_005_A         
 #define KI_SIGNAL_PEAK_MULTIPLIER    170
 #endif
@@ -77,6 +125,10 @@ volatile unsigned short timer_standby;
 
 #ifdef USE_SIGNAL_CURRENT_02_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    746
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_03_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    1119
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_04_A
@@ -94,6 +146,7 @@ volatile unsigned short timer_standby;
 #ifdef USE_SIGNAL_CURRENT_1_A
 #define KI_SIGNAL_PEAK_MULTIPLIER    3722
 #endif
+#endif    //AOPAMP_9_2
 
 //for pre distorted tests
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
@@ -279,8 +332,11 @@ int main(void)
                     LOW_RIGHT(DUTY_ALWAYS);
 #endif
 
-#if defined USE_SIGNAL_CONTROL_SINUS || defined USE_SIGNAL_CONTROL_SINUS2
+#ifdef USE_SIGNAL_CONTROL_SINUS
                     GenSignalSinusResetCntrs();
+#endif
+#ifdef USE_SIGNAL_CONTROL_SINUS2
+                    GenSignalSinus2ResetCntrs();
 #endif
 #ifdef USE_SIGNAL_CONTROL_TRIANG
                     GenSignalTriangResetCntrs();
@@ -412,8 +468,11 @@ int main(void)
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                     GenSignalPreDistortedReset();
 #endif
-#if defined USE_SIGNAL_CONTROL_SINUS || defined USE_SIGNAL_CONTROL_SINUS2
+#ifdef USE_SIGNAL_CONTROL_SINUS
                     GenSignalSinusReset();
+#endif
+#ifdef  USE_SIGNAL_CONTROL_SINUS2
+                    GenSignalSinus2Reset();
 #endif
 #ifdef USE_SIGNAL_CONTROL_TRIANG
                     GenSignalTriangReset();
@@ -554,8 +613,11 @@ int main(void)
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                     GenSignalPreDistortedReset();
 #endif
-#if defined USE_SIGNAL_CONTROL_SINUS || defined USE_SIGNAL_CONTROL_SINUS2
+#ifdef USE_SIGNAL_CONTROL_SINUS
                     GenSignalSinusReset();
+#endif
+#ifdef  USE_SIGNAL_CONTROL_SINUS2
+                    GenSignalSinus2Reset();
 #endif
 #ifdef USE_SIGNAL_CONTROL_TRIANG
                     GenSignalTriangReset();

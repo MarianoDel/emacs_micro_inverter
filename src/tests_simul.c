@@ -18,12 +18,13 @@
 
 
 
-#define SIZEOF_SIGNAL    1000
+#define SIZEOF_SIGNAL    40
 
 // Externals -------------------------------------------------------------------
 
 
 // Globals ---------------------------------------------------------------------
+float signal_input [SIZEOF_SIGNAL] = { 0.0 };
 float signal_output [SIZEOF_SIGNAL] = { 0.0 };
 
 // Module Private Utils Functions ----------------------------------------------
@@ -33,43 +34,36 @@ float signal_output [SIZEOF_SIGNAL] = { 0.0 };
 
 
 // Module Functions ------------------------------------------------------------
+#define B_SIZE    3
+#define A_SIZE    4
+float b_vector [B_SIZE] = { 0.00296 , 0.0101, 0.00276 };
+float a_vector [A_SIZE] = { 1., -1.02798, 1.02185, -0.87036 };
+// #define B_SIZE    1
+// #define A_SIZE    3
+// float b_vector [B_SIZE] = { 1. };
+// float a_vector [A_SIZE] = { 1., -0.05, 0.05 };
+
+float ins_vector [B_SIZE] = { 0.0 };
+float outs_vector [A_SIZE] = { 0.0 };
+recursive_filter_t f1;
 int main(void)
 {
-    // float b [5] = {1.0, 1.1, 1.2, 1.3, 1.4};
-    // float a [2] = {1.0, 1.1};    
-    // float inputs [5] = { 0.0 };
-    // float outputs [2] = { 0.0 };
-    // recursive_filter_t f1;
-    
-    // f1.b_params = b;
-    // f1.a_params = a;
-    // f1.b_size = sizeof(b) / sizeof(float);
-    // f1.a_size = sizeof(a) / sizeof(float);
-    // f1.last_inputs = inputs;
-    // f1.last_outputs = outputs;
-
-    // Recursive_Filter_Float_Show_Params(&f1);
-    // Recursive_Filter_Float_Reset(&f1);
-
-    float b [1] = {0.02};
-    float a [2] = {1.0, -0.98};    
-    float inputs [1] = { 0.0 };
-    float outputs [2] = { 0.0 };
-    recursive_filter_t f1;
-    
-    f1.b_params = b;
-    f1.a_params = a;
-    f1.b_size = sizeof(b) / sizeof(float);
-    f1.a_size = sizeof(a) / sizeof(float);
-    f1.last_inputs = inputs;
-    f1.last_outputs = outputs;
+    f1.b_params = b_vector;
+    f1.a_params = a_vector;
+    f1.b_size = B_SIZE;
+    f1.a_size = A_SIZE;
+    f1.last_inputs = ins_vector;
+    f1.last_outputs = outs_vector;
 
     Recursive_Filter_Float_Show_Params(&f1);
     Recursive_Filter_Float_Reset(&f1);
     
     for (int i = 0; i < SIZEOF_SIGNAL; i++)
-        signal_output[i] = Recursive_Filter_Float(&f1, 4095.0);
+        signal_input[i] = i;
 
+    for (int i = 0; i < SIZEOF_SIGNAL; i++)
+        signal_output[i] = Recursive_Filter_Float(&f1, signal_input[i]);
+    
     ShowVectorFloat("signal_output\n", signal_output, SIZEOF_SIGNAL);
     
     return 0;

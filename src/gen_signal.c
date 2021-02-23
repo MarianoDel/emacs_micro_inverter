@@ -594,7 +594,8 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
 
 
 // #define SINUS_NORMAL
-#define SINUS_SQUARED
+// #define SINUS_SQUARED
+#define SINUS_FOLLOWS_REF
 unsigned short last_current_filtered = 0;
 unsigned short current_filtered = 0;
 ma8_u16_data_obj_t ma8_filter;
@@ -614,11 +615,17 @@ gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_curren
         {
             MA8_U16Circular_Reset (&ma8_filter);
 
-            //loop inicial, empiezo con el 12.5% de la corriente pico seteada
+            //loop inicial, empiezo con el 80% de la corriente pico seteada
             calc = peak_current;
-            calc = calc >> 3;
+            calc = calc * 95;
+            calc = calc / 100;            
             last_peak_current = (unsigned short) calc;
 
+            // //loop inicial, empiezo con el 12.5% de la corriente pico seteada
+            // calc = peak_current;
+            // calc = calc >> 3;
+            // last_peak_current = (unsigned short) calc;
+            
             calc = *p_current_ref * last_peak_current;
             calc = calc >> 12;
         }
@@ -791,6 +798,98 @@ void GenSignalSinusReset (void)
 }
 
 #endif    //SINUS_SQUARED
+
+
+#ifdef SINUS_FOLLOWS_REF
+unsigned short duty_saved [SIZEOF_SIGNAL] = { 0 };
+gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_current, short * duty)
+{
+    gen_signal_e resp = SIGNAL_RUNNING;
+    unsigned int calc = 0;
+
+    //Adelanto la senial de tension-corriente
+    if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
+    {
+        unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
+
+        // calculo la referencia de corriente para este punto
+        calc = *p_current_ref * peak_current;
+        calc = calc >> 12;
+
+        // reviso si estoy por debajo o arriba de la corriente requerida
+        if (i_sample < calc)
+        {
+            if (duty_saved[signal_index] < DUTY_100_PERCENT)
+                duty_saved[signal_index] += 1;
+            else
+                duty_saved[signal_index] = DUTY_100_PERCENT;
+        }
+        else if (i_sample > calc)
+        {
+            if (duty_saved[signal_index] > DUTY_NONE)
+                duty_saved[signal_index] -= 1;
+            else
+                duty_saved[signal_index] = DUTY_NONE;
+        }
+        else
+        {
+            // do nothing in here
+        }
+
+        if (signal_index > SINUS_INDEX_TO_REVERT)
+            duty_saved[signal_index] = 0;
+
+        *duty = duty_saved[signal_index];
+        
+        p_current_ref++;
+    }
+    else
+        //termino de generar la senoidal, corto el mosfet
+        resp = SIGNAL_FINISH;
+
+    return resp;
+}
+
+void GenSignalSinusReset (void)
+{
+    p_current_ref = sin_half_cycle;
+    gen_signal_state = SIGNAL_RISING;
+}
+
+
+void GenSignalSinusDutySet (unsigned short d)
+{
+    for (unsigned short i = 0; i < SIZEOF_SIGNAL; i++)
+        duty_saved[i] = d;
+}
+
+
+void GenSignalSinusApplyFilter (void)
+{
+    int a1 = 0;
+    int b0 = 0;    
+    
+    for (int i = 0; i < SIZEOF_SIGNAL; i++)
+    {
+        if (i)
+        {
+            //a1 = 0.98
+            a1 = duty_saved[i-1] * 3;
+            a1 = a1 / 10;
+        }
+        else
+            a1 = 0;
+        
+        //b0 = 0.02
+        b0 = duty_saved[i] * 7;
+        b0 = b0 / 10;
+
+        duty_saved[i] = a1 + b0;
+    }
+
+}
+
+#endif    //SINUS_FOLLOWS_REF
 
 
 

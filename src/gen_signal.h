@@ -30,7 +30,9 @@ void GenSignalPreDistortedReset (void);
 
 gen_signal_e GenSignalSinus (unsigned short, unsigned short, short *);
 void GenSignalSinusReset (void);
+void GenSignalSinusDutySet (unsigned short d);
 void GenSignalSinusResetCntrs (void);
+void GenSignalSinusApplyFilter (void);
 
 gen_signal_e GenSignalSinus2 (unsigned short, unsigned short, short *);
 void GenSignalSinus2Reset (void);

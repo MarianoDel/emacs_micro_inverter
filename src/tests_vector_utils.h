@@ -20,6 +20,7 @@
 void Print_Array_Uchar (unsigned char * array, int size, int length);
 void Print_Array_Ushort (unsigned short * array, int size, int length);
 
+void Vector_Short_To_File (FILE * f, char * v_name, short * v_data, int v_len);
 void Vector_UShort_To_File (FILE * f, char * v_name, unsigned short * v_data, int v_len);
 void Vector_UChar_To_File (FILE * f, char * v_name, unsigned char * v_data, int v_len);
 void Vector_Float_To_File (FILE * f, char * v_name, float * v_data, int v_len);

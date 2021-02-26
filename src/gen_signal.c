@@ -88,6 +88,57 @@ unsigned short sin_half_cycle [SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,
                                                  481,428,374,321,267,214,160,107,53,0};
 
 
+short sin_full_cycle [2*SIZEOF_SIGNAL] = {53,107,160,214,267,321,374,428,481,534,
+                                          587,640,693,746,798,851,903,955,1007,1059,
+                                          1111,1163,1214,1265,1316,1366,1417,1467,1517,1567,
+                                          1616,1665,1714,1762,1811,1859,1906,1953,2000,2047,
+                                          2093,2139,2185,2230,2275,2319,2363,2406,2450,2492,
+                                          2535,2577,2618,2659,2700,2740,2779,2818,2857,2895,
+                                          2933,2970,3007,3043,3078,3113,3148,3182,3215,3248,
+                                          3281,3312,3344,3374,3404,3434,3463,3491,3519,3546,
+                                          3572,3598,3624,3648,3672,3696,3718,3740,3762,3783,
+                                          3803,3823,3841,3860,3877,3894,3910,3926,3941,3955,
+                                          3969,3981,3994,4005,4016,4026,4035,4044,4052,4059,
+                                          4066,4072,4077,4082,4086,4089,4091,4093,4094,4095,
+                                          4094,4093,4091,4089,4086,4082,4077,4072,4066,4059,
+                                          4052,4044,4035,4026,4016,4005,3994,3981,3969,3955,
+                                          3941,3926,3910,3894,3877,3860,3841,3823,3803,3783,
+                                          3762,3740,3718,3696,3672,3648,3624,3598,3572,3546,
+                                          3519,3491,3463,3434,3404,3374,3344,3312,3281,3248,
+                                          3215,3182,3148,3113,3078,3043,3007,2970,2933,2895,
+                                          2857,2818,2779,2740,2700,2659,2618,2577,2535,2492,
+                                          2450,2406,2363,2319,2275,2230,2185,2139,2093,2047,
+                                          2000,1953,1906,1859,1811,1762,1714,1665,1616,1567,
+                                          1517,1467,1417,1366,1316,1265,1214,1163,1111,1059,
+                                          1007,955,903,851,798,746,693,640,587,534,
+                                          481,428,374,321,267,214,160,107,53,0,
+
+                                          -53,-107,-160,-214,-267,-321,-374,-428,-481,-534,
+                                          -587,-640,-693,-746,-798,-851,-903,-955,-1007,-1059,
+                                          -1111,-1163,-1214,-1265,-1316,-1366,-1417,-1467,-1517,-1567,
+                                          -1616,-1665,-1714,-1762,-1811,-1859,-1906,-1953,-2000,-2047,
+                                          -2093,-2139,-2185,-2230,-2275,-2319,-2363,-2406,-2450,-2492,
+                                          -2535,-2577,-2618,-2659,-2700,-2740,-2779,-2818,-2857,-2895,
+                                          -2933,-2970,-3007,-3043,-3078,-3113,-3148,-3182,-3215,-3248,
+                                          -3281,-3312,-3344,-3374,-3404,-3434,-3463,-3491,-3519,-3546,
+                                          -3572,-3598,-3624,-3648,-3672,-3696,-3718,-3740,-3762,-3783,
+                                          -3803,-3823,-3841,-3860,-3877,-3894,-3910,-3926,-3941,-3955,
+                                          -3969,-3981,-3994,-4005,-4016,-4026,-4035,-4044,-4052,-4059,
+                                          -4066,-4072,-4077,-4082,-4086,-4089,-4091,-4093,-4094,-4095,
+                                          -4094,-4093,-4091,-4089,-4086,-4082,-4077,-4072,-4066,-4059,
+                                          -4052,-4044,-4035,-4026,-4016,-4005,-3994,-3981,-3969,-3955,
+                                          -3941,-3926,-3910,-3894,-3877,-3860,-3841,-3823,-3803,-3783,
+                                          -3762,-3740,-3718,-3696,-3672,-3648,-3624,-3598,-3572,-3546,
+                                          -3519,-3491,-3463,-3434,-3404,-3374,-3344,-3312,-3281,-3248,
+                                          -3215,-3182,-3148,-3113,-3078,-3043,-3007,-2970,-2933,-2895,
+                                          -2857,-2818,-2779,-2740,-2700,-2659,-2618,-2577,-2535,-2492,
+                                          -2450,-2406,-2363,-2319,-2275,-2230,-2185,-2139,-2093,-2047,
+                                          -2000,-1953,-1906,-1859,-1811,-1762,-1714,-1665,-1616,-1567,
+                                          -1517,-1467,-1417,-1366,-1316,-1265,-1214,-1163,-1111,-1059,
+                                          -1007,-955,-903,-851,-798,-746,-693,-640,-587,-534,
+                                          -481,-428,-374,-321,-267,-214,-160,-107,-53,0};
+
+
 unsigned short sin_sqrd_half_cycle [SIZEOF_SIGNAL] = {0,2,6,11,17,25,34,44,56,69,
                                                       84,100,117,135,155,177,199,223,248,274,
                                                       301,330,360,391,423,456,490,525,562,599,
@@ -201,37 +252,53 @@ typedef enum {
     SIGNAL_RISING = 0,
     SIGNAL_MIDDLE,
     SIGNAL_FALLING,
-    SIGNAL_REVERT
+    SIGNAL_REVERT,
+    SIGNAL_DCM,
+    SIGNAL_CCM
         
 } signal_state_e;
 
 
 // Externals -------------------------------------------------------------------
+#define MODE_DCM    0
+#define MODE_CCM    1
 
+extern unsigned char GetCurrentMode (void);
 
 // Globals ---------------------------------------------------------------------
+// #define CURRENT_LOOP_PR_CONTROLLER
+#define CURRENT_LOOP_PI_CONTROLLER
 unsigned short * p_current_ref;
+short * p_current_ref_bipolar;
+#ifdef CURRENT_LOOP_PI_CONTROLLER
 pid_data_obj_t current_pid;
+#endif
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+pr_data_obj_t current_pr;
+#endif
 signal_state_e gen_signal_state = SIGNAL_RISING;
 
 
 // Module Private Functions ----------------------------------------------------
-unsigned short CurrentLoop (unsigned short, unsigned short);
+short CurrentLoop (short, short);
 void CurrentLoop_Change_to_LowGain (void);
 void CurrentLoop_Change_to_HighGain (void);
 void CurrentLoop_Change_to_RevertGain (void);
+unsigned short Distance (unsigned short a, unsigned short b);
 
 
 // Module Functions ------------------------------------------------------------
+// #define FUZZY_BY_SAMPLES
+#define FUZZY_BY_MODE
 gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, short * duty)
 {
     gen_signal_e resp = SIGNAL_RUNNING;
-    
+
     //Adelanto la seniales de corriente,
     if (p_current_ref < &sin_half_cycle[(SIZEOF_SIGNAL - 1)])
     {
         unsigned char signal_index = (unsigned char) (p_current_ref - sin_half_cycle);
-                    
+
         //loop de corriente
         unsigned int calc = *p_current_ref * peak_current;
         calc = calc >> 12;
@@ -239,17 +306,17 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
         switch (gen_signal_state)
         {
         case SIGNAL_RISING:
-            *duty = CurrentLoop ((unsigned short) calc, i_sample);
+            *duty = CurrentLoop ((short) calc, i_sample);
 
             if (signal_index > INDEX_TO_MIDDLE)
             {
-                CurrentLoop_Change_to_HighGain();
+                CurrentLoop_Change_to_LowGain();
                 gen_signal_state = SIGNAL_MIDDLE;
             }
             break;
 
         case SIGNAL_MIDDLE:
-            *duty = CurrentLoop ((unsigned short) calc, i_sample);
+            *duty = CurrentLoop ((short) calc, i_sample);
 
             if (signal_index > INDEX_TO_FALLING)
             {
@@ -259,11 +326,11 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
             break;
 
         case SIGNAL_FALLING:
-            *duty = CurrentLoop ((unsigned short) calc, i_sample);
+            *duty = CurrentLoop ((short) calc, i_sample);
 
             if (signal_index > INDEX_TO_REVERT)
             {
-                // CurrentLoop_Change_to_LowGain();
+                CurrentLoop_Change_to_HighGain();
                 gen_signal_state = SIGNAL_REVERT;
                 *duty = 0;
             }
@@ -278,7 +345,29 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
             //     gen_signal_state = SIGNAL_REVERT;
             // }
             break;
-                        
+
+#ifdef FUZZY_BY_MODE
+        case SIGNAL_DCM:
+            if (GetCurrentMode() != MODE_DCM)
+            {
+                gen_signal_state = SIGNAL_CCM;
+                CurrentLoop_Change_to_LowGain();
+            }
+
+            *duty = CurrentLoop ((short) calc, i_sample);
+            break;
+
+        case SIGNAL_CCM:
+            if (GetCurrentMode() != MODE_CCM)
+            {
+                gen_signal_state = SIGNAL_DCM;
+                CurrentLoop_Change_to_HighGain();
+            }
+
+            *duty = CurrentLoop ((short) calc, i_sample);
+            break;
+#endif
+            
         }                    
         p_current_ref++;
     }
@@ -290,17 +379,88 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
 }
 
 
+void GenSignalBipolar (short i_sample, short peak_current, short * duty)
+{
+    //Adelanto la seniales de corriente,
+    if (p_current_ref_bipolar < &sin_full_cycle[(2*SIZEOF_SIGNAL - 1)])
+    {
+        unsigned short signal_index = (unsigned short) (p_current_ref_bipolar - sin_full_cycle);
+
+        //loop de corriente
+        int calc = *p_current_ref_bipolar * peak_current;
+        calc = calc >> 12;
+
+        // printf("i: %d peak: %d ref: %d ", i_sample, peak_current, (short) calc);
+        
+        *duty = CurrentLoop ((short) calc, i_sample);
+
+        p_current_ref_bipolar++;
+
+        // printf("duty: %d index: %d\n", *duty, signal_index);
+    }
+    
+}
+
+
+void GenSignalResetBipolar (void)
+{
+    p_current_ref_bipolar = sin_full_cycle;
+}
+
+
 void GenSignalReset (void)
 {
     p_current_ref = sin_half_cycle;
     PID_Flush_Errors(&current_pid);
-    CurrentLoop_Change_to_LowGain();
+    CurrentLoop_Change_to_HighGain();
+    
+#ifdef FUZZY_BY_SAMPLES
     gen_signal_state = SIGNAL_RISING;
+#endif
+    
+#ifdef FUZZY_BY_MODE
+    gen_signal_state = SIGNAL_DCM;
+#endif
+
+}
+
+void GenSignalControlInit(void)
+{
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+    PR_Flush_Errors(&current_pr);
+    CurrentLoop_Change_to_LowGain();
+#endif
 }
 
 
-unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
+short CurrentLoop (short setpoint, short new_sample)
 {
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+    short d = 0;
+    
+    current_pr.setpoint = setpoint;
+    current_pr.sample = new_sample;
+    d = PR(&current_pr);
+    
+    if (d > DUTY_100_PERCENT)
+    {
+        d = DUTY_100_PERCENT;
+        current_pr.d_z1 = DUTY_100_PERCENT;
+        current_pr.d_z2 = DUTY_100_PERCENT;            
+    }
+    else if (d < -DUTY_100_PERCENT)
+    {
+        d = -DUTY_100_PERCENT;
+        current_pr.d_z1 = -DUTY_100_PERCENT;
+        current_pr.d_z2 = -DUTY_100_PERCENT;            
+    }
+    else
+    {
+        //do nothing here
+    }
+#endif
+
+#ifdef CURRENT_LOOP_PI_CONTROLLER
     short d = 0;
     
     current_pid.setpoint = setpoint;
@@ -321,13 +481,15 @@ unsigned short CurrentLoop (unsigned short setpoint, unsigned short new_sample)
         d = DUTY_NONE;
         current_pid.last_d = DUTY_NONE;
     }
-
-    return (unsigned short) d;
+#endif
+    
+    return d;
 }
 
 
 void CurrentLoop_Change_to_HighGain (void)
 {
+#ifdef CURRENT_LOOP_PI_CONTROLLER
     //vsense directo de Rsense
     // current_pid.kp = 128;
     // current_pid.ki = 33;
@@ -345,15 +507,36 @@ void CurrentLoop_Change_to_HighGain (void)
 
     //vsense con opamp 4.4
     current_pid.kp = 1;
-    current_pid.ki = 15;
+    current_pid.ki = 35;
     current_pid.kd = 0;
     
-    PID_Flush_Only_Errors(&current_pid);    
+    PID_Flush_Only_Errors(&current_pid);
+#endif
+    
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.19768152,  0.09769864]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+// )
+
+    current_pr.b0 = 13;
+    current_pr.b1 = -25;
+    current_pr.b2 = 12;
+
+    // current_pr.a0 = 128;
+    current_pr.a1 = -256;
+    current_pr.a2 = 128;
+
+    PR_Flush_Errors(&current_pr);
+#endif
 }
 
 
 void CurrentLoop_Change_to_LowGain (void)
 {
+#ifdef CURRENT_LOOP_PI_CONTROLLER
     //vsense directo de Rsense    
     // current_pid.kp = 128;
     // current_pid.ki = 33;
@@ -371,15 +554,135 @@ void CurrentLoop_Change_to_LowGain (void)
 
     //vsense con opamp 4.4
     current_pid.kp = 1;
-    current_pid.ki = 30;
+    current_pid.ki = 25;
     current_pid.kd = 0;
     
-    PID_Flush_Only_Errors(&current_pid);    
+    PID_Flush_Only_Errors(&current_pid);
+#endif
+    
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.19768152,  0.09769864]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+// )
+
+
+    // current_pr.b0 = 104;    //oscila
+    // current_pr.b1 = -200;
+    // current_pr.b2 = 96;
+
+    // current_pr.b0 = 78;
+    // current_pr.b1 = -150;
+    // current_pr.b2 = 72;
+    
+    // current_pr.b0 = 26;
+    // current_pr.b1 = -50;
+    // current_pr.b2 = 24;
+
+    // current_pr.b0 = 13;
+    // current_pr.b1 = -25;
+    // current_pr.b2 = 12;
+
+    // current_pr.b0 = 128;    //oscila
+    // current_pr.b1 = -255;
+    // current_pr.b2 = 127;
+
+    // current_pr.a0 = 128;
+    // current_pr.a1 = -256;
+    // current_pr.a2 = 128;
+
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.15793079,  0.05794791]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+    // current_pr.b0 = 0.1;
+    // current_pr.b1 = -0.15793;
+    // current_pr.b2 = 0.05794;
+
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.11608792,  0.01610503]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+    // current_pr.b0 = 0.1;
+    // current_pr.b1 = -0.11608;
+    // current_pr.b2 = 0.01610;
+
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.07424504, -0.02573784]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+    // current_pr.b0 = 0.1;    //oscila algo A = 35dB Kp = 0.1
+    // current_pr.b1 = -0.07424;
+    // current_pr.b2 = -0.02573;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.05      ,  0.02564179, -0.07563323]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+    // current_pr.b0 = 0.05;    //A = 35dB Kp = 0.05    
+    // current_pr.b1 = 0.02564; //oscila mas grande a menos freq
+    // current_pr.b2 = -0.07563;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.2       , -0.27401871,  0.07405294]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+    current_pr.b0 = 0.2;    //A = 35dB Kp = 0.2
+    current_pr.b1 = -0.27402; //oscila mas grande a menos freq
+    current_pr.b2 = 0.07405;
+    current_pr.a1 = -1.99774;
+    current_pr.a2 = 0.99791;
+    
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       ,  0.0094407 , -0.10942358]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+    // current_pr.b0 = 0.1;    //oscila mucho
+    // current_pr.b1 = 0.00944;
+    // current_pr.b2 = -0.10942;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+    // hasta aca fbw = 4Hz
+    
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.13708104,  0.03709816]),
+// array([ 1.        , -1.9987821 ,  0.99895335]),
+// dt: 4.1666666666666665e-05
+
+    // current_pr.b0 = 0.1;    //
+    // current_pr.b1 = -0.13708;
+    // current_pr.b2 = 0.03709;
+
+    // current_pr.a1 = -1.99878;
+    // current_pr.a2 = 0.99895;
+    //fbw = 2Hz
+
+
+    
+    
+
+    PR_Flush_Only_Errors(&current_pr);
+#endif
+    
 }
 
 
 void CurrentLoop_Change_to_RevertGain (void)
 {
+#ifdef CURRENT_LOOP_PI_CONTROLLER
     //vsense directo de Rsense    
     // current_pid.kp = 128;
     // current_pid.ki = 33;
@@ -397,10 +700,31 @@ void CurrentLoop_Change_to_RevertGain (void)
 
     //vsense con opamp 4.4
     current_pid.kp = 1;
-    current_pid.ki = 30;
+    current_pid.ki = 55;
     current_pid.kd = 0;
     
-    PID_Flush_Only_Errors(&current_pid);    
+    PID_Flush_Only_Errors(&current_pid);
+#endif
+
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+// Controlador PR Digital Zoh:
+// TransferFunctionDiscrete(
+// array([ 0.1       , -0.19768152,  0.09769864]),
+// array([ 1.        , -1.99773663,  0.9979078 ]),
+// dt: 4.1666666666666665e-05
+// )
+
+    current_pr.b0 = 13;
+    current_pr.b1 = -25;
+    current_pr.b2 = 12;
+
+    // current_pr.a0 = 128;
+    current_pr.a1 = -256;
+    current_pr.a2 = 128;
+
+    PR_Flush_Errors(&current_pr);
+#endif
+    
 }
 
 
@@ -596,9 +920,12 @@ gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_curre
 // #define SINUS_NORMAL
 // #define SINUS_SQUARED
 #define SINUS_FOLLOWS_REF
+#if (defined SINUS_NORMAL) || (defined SINUS_SQUARED) || (defined SINUS_FOLLOWS_REF)
 unsigned short last_current_filtered = 0;
 unsigned short current_filtered = 0;
 ma8_u16_data_obj_t ma8_filter;
+#endif
+
 #ifdef SINUS_NORMAL
 gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_current, short * duty)
 {
@@ -698,6 +1025,13 @@ void GenSignalSinusReset (void)
     last_current_filtered = 0;
     p_current_ref = sin_half_cycle;
     gen_signal_state = SIGNAL_RISING;
+}
+
+
+void GenSignalSinusResetCntrs (void)
+{
+    last_peak_current = 0;
+    GenSignalSinusReset();
 }
 
 #endif    //SINUS_NORMAL
@@ -802,6 +1136,7 @@ void GenSignalSinusReset (void)
 
 #ifdef SINUS_FOLLOWS_REF
 unsigned short duty_saved [SIZEOF_SIGNAL] = { 0 };
+short last_filter = 0;
 gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_current, short * duty)
 {
     gen_signal_e resp = SIGNAL_RUNNING;
@@ -816,30 +1151,70 @@ gen_signal_e GenSignalSinus (unsigned short i_sample, unsigned short peak_curren
         calc = *p_current_ref * peak_current;
         calc = calc >> 12;
 
+        // printf("i: %d calc: %d index: %d ", i_sample, calc, signal_index);
         // reviso si estoy por debajo o arriba de la corriente requerida
         if (i_sample < calc)
         {
-            if (duty_saved[signal_index] < DUTY_100_PERCENT)
-                duty_saved[signal_index] += 1;
-            else
-                duty_saved[signal_index] = DUTY_100_PERCENT;
+            if (signal_index)    //reviso que no sea el primer punto
+            {
+                if (duty_saved[signal_index] < DUTY_100_PERCENT)
+                {
+                    if (Distance(duty_saved[signal_index - 1], duty_saved[signal_index]) < 40)
+                        duty_saved[signal_index] += 1;
+                        
+                }
+                else
+                    duty_saved[signal_index] = DUTY_100_PERCENT;
+            }
         }
         else if (i_sample > calc)
         {
             if (duty_saved[signal_index] > DUTY_NONE)
-                duty_saved[signal_index] -= 1;
+            {
+                if (signal_index)    //reviso que no sea el primer punto
+                {
+                    if (Distance(duty_saved[signal_index - 1], duty_saved[signal_index]) < 40)
+                        duty_saved[signal_index] -= 1;
+
+                }
+                else
+                    duty_saved[signal_index] -= 1;
+            }
             else
                 duty_saved[signal_index] = DUTY_NONE;
+            
         }
         else
         {
             // do nothing in here
         }
 
+        // if (signal_index)
+        //     printf("duty: %d -> %d\n", duty_saved[signal_index - 1], duty_saved[signal_index]);
+        // else
+        //     printf("duty: %d\n", duty_saved[signal_index]);
+
         if (signal_index > SINUS_INDEX_TO_REVERT)
             duty_saved[signal_index] = 0;
 
-        *duty = duty_saved[signal_index];
+        //aplico finalmente un filtro de muestras
+        if (signal_index)
+        {
+            short b = 0;
+            short a = 0;
+            // b = 0.8
+            b = duty_saved[signal_index] * 1;
+            b = b / 10;
+            // a = 0.2
+            a = last_filter * 9;
+            a = a / 10;
+
+            *duty = b - a;
+            
+            last_filter = *duty;
+        }
+        else
+            *duty = duty_saved[signal_index];
         
         p_current_ref++;
     }
@@ -863,42 +1238,26 @@ void GenSignalSinusDutySet (unsigned short d)
         duty_saved[i] = d;
 }
 
-
-void GenSignalSinusApplyFilter (void)
-{
-    int a1 = 0;
-    int b0 = 0;    
-    
-    for (int i = 0; i < SIZEOF_SIGNAL; i++)
-    {
-        if (i)
-        {
-            //a1 = 0.98
-            a1 = duty_saved[i-1] * 3;
-            a1 = a1 / 10;
-        }
-        else
-            a1 = 0;
-        
-        //b0 = 0.02
-        b0 = duty_saved[i] * 7;
-        b0 = b0 / 10;
-
-        duty_saved[i] = a1 + b0;
-    }
-
-}
-
-#endif    //SINUS_FOLLOWS_REF
-
-
-
-
 void GenSignalSinusResetCntrs (void)
 {
     last_peak_current = 0;
     GenSignalSinusReset();
 }
+
+
+void GenSignalSinusApplyFilter (void)
+{
+    int calc = 0;
+    for (int i = 0; i < (SIZEOF_SIGNAL - 4); i++)
+    {
+        calc = duty_saved[i] + duty_saved[i+1] + duty_saved[i+2] + duty_saved[i+3];
+        calc >>= 2;
+        duty_saved[i] = (unsigned short) calc;
+    }
+}
+
+
+#endif    //SINUS_FOLLOWS_REF
 
 
 void GenSignalSinus2Reset (void)
@@ -918,90 +1277,99 @@ void GenSignalSinus2ResetCntrs (void)
 }
 
 
-gen_signal_e GenSignalTriang (unsigned short i_sample, unsigned short peak_current, short * duty)
-{
-    gen_signal_e resp = SIGNAL_RUNNING;
-    unsigned int calc = 0;
+// gen_signal_e GenSignalTriang (unsigned short i_sample, unsigned short peak_current, short * duty)
+// {
+//     gen_signal_e resp = SIGNAL_RUNNING;
+//     unsigned int calc = 0;
 
-    //Adelanto la senial de tension-corriente
-    if (p_current_ref < &triang_half_cycle[(SIZEOF_SIGNAL - 1)])
-    {
-        unsigned char signal_index = (unsigned char) (p_current_ref - triang_half_cycle);
+//     //Adelanto la senial de tension-corriente
+//     if (p_current_ref < &triang_half_cycle[(SIZEOF_SIGNAL - 1)])
+//     {
+//         unsigned char signal_index = (unsigned char) (p_current_ref - triang_half_cycle);
                     
-        //loop de corriente, es el inicial? o ya lo vengo trabanjando
-        if (!last_peak_current)
-        {
-            MA8_U16Circular_Reset (&ma8_filter);
+//         //loop de corriente, es el inicial? o ya lo vengo trabanjando
+//         if (!last_peak_current)
+//         {
+//             MA8_U16Circular_Reset (&ma8_filter);
 
-            //loop inicial, empiezo con el 12.5% de la corriente pico seteada
-            calc = peak_current;
-            calc = calc >> 3;
-            last_peak_current = (unsigned short) calc;
+//             //loop inicial, empiezo con el 12.5% de la corriente pico seteada
+//             calc = peak_current;
+//             calc = calc >> 3;
+//             last_peak_current = (unsigned short) calc;
 
-            calc = *p_current_ref * last_peak_current;
-            calc = calc >> 12;
-        }
-        else
-        {
-            //loop de ciclos consecutivos
-            calc = *p_current_ref * last_peak_current;
-            calc = calc >> 12;
-        }
+//             calc = *p_current_ref * last_peak_current;
+//             calc = calc >> 12;
+//         }
+//         else
+//         {
+//             //loop de ciclos consecutivos
+//             calc = *p_current_ref * last_peak_current;
+//             calc = calc >> 12;
+//         }
 
-        switch (gen_signal_state)
-        {
-        case SIGNAL_RISING:
-            // filter to check max current            
-            current_filtered = MA8_U16Circular(&ma8_filter, i_sample);
-            if (last_current_filtered < current_filtered)
-                last_current_filtered = current_filtered;
+//         switch (gen_signal_state)
+//         {
+//         case SIGNAL_RISING:
+//             // filter to check max current            
+//             current_filtered = MA8_U16Circular(&ma8_filter, i_sample);
+//             if (last_current_filtered < current_filtered)
+//                 last_current_filtered = current_filtered;
             
-            *duty = (unsigned short) calc;
+//             *duty = (unsigned short) calc;
 
-            if (signal_index > TRIANG_INDEX_TO_CHECK_MAX_CURRENT)
-            {
-                if (last_current_filtered < peak_current)
-                    last_peak_current++;
-                else if (last_current_filtered > peak_current)
-                    last_peak_current--;
+//             if (signal_index > TRIANG_INDEX_TO_CHECK_MAX_CURRENT)
+//             {
+//                 if (last_current_filtered < peak_current)
+//                     last_peak_current++;
+//                 else if (last_current_filtered > peak_current)
+//                     last_peak_current--;
 
-                // printf("ref: %d filtered: %d peak: %d\n",
-                //        current_ref,
-                //        current_filtered,
-                //        last_peak_current);
+//                 // printf("ref: %d filtered: %d peak: %d\n",
+//                 //        current_ref,
+//                 //        current_filtered,
+//                 //        last_peak_current);
                 
-                gen_signal_state = SIGNAL_REVERT;
-                *duty = 0;
-            }
-            break;
+//                 gen_signal_state = SIGNAL_REVERT;
+//                 *duty = 0;
+//             }
+//             break;
 
-        case SIGNAL_REVERT:
+//         case SIGNAL_REVERT:
 
-            break;
+//             break;
                         
-        }                    
-        p_current_ref++;
-    }
+//         }                    
+//         p_current_ref++;
+//     }
+//     else
+//         //termino de generar la senoidal, corto el mosfet
+//         resp = SIGNAL_FINISH;
+
+//     return resp;
+// }
+
+
+// void GenSignalTriangReset (void)
+// {
+//     last_current_filtered = 0;
+//     p_current_ref = triang_half_cycle;
+//     gen_signal_state = SIGNAL_RISING;
+// }
+
+
+// void GenSignalTriangResetCntrs (void)
+// {
+//     last_peak_current = 0;
+//     GenSignalTriangReset();
+// }
+
+
+unsigned short Distance (unsigned short a, unsigned short b)
+{
+    if (a > b)
+        return a - b;
     else
-        //termino de generar la senoidal, corto el mosfet
-        resp = SIGNAL_FINISH;
-
-    return resp;
+        return b - a;
+    
 }
-
-
-void GenSignalTriangReset (void)
-{
-    last_current_filtered = 0;
-    p_current_ref = triang_half_cycle;
-    gen_signal_state = SIGNAL_RISING;
-}
-
-
-void GenSignalTriangResetCntrs (void)
-{
-    last_peak_current = 0;
-    GenSignalTriangReset();
-}
-
 //--- end of file ---//

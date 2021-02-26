@@ -235,3 +235,4 @@ params to a_pid: [ 1 -1] dtype: int16
 * Simulaciones 21-02-2021
 ** Paso todos los .py que ya no uso a la carpeta de proyecto
 
+

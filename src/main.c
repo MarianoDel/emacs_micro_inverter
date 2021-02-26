@@ -59,8 +59,8 @@ volatile unsigned short timer_standby;
 // #define USE_SIGNAL_CURRENT_01_A
 // #define USE_SIGNAL_CURRENT_02_A
 // #define USE_SIGNAL_CURRENT_03_A
-#define USE_SIGNAL_CURRENT_04_A
-// #define USE_SIGNAL_CURRENT_05_A
+// #define USE_SIGNAL_CURRENT_04_A
+#define USE_SIGNAL_CURRENT_05_A
 // #define USE_SIGNAL_CURRENT_06_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
@@ -164,7 +164,8 @@ void SoftOverCurrentShutdown (unsigned char, unsigned short);
 void PWM_Off (void);
 void TimingDelay_Decrement (void);
 void EXTI4_15_IRQHandler(void);
-
+void CalcCurrentMode (unsigned short duty);
+unsigned char GetCurrentMode (void);
 
 
 //-------------------------------------------//
@@ -377,6 +378,7 @@ int main(void)
                 gen_signal_e resp = SIGNAL_RUNNING;
 #ifdef USE_SIGNAL_CONTROL_BY_PID
                 resp = GenSignal(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+                CalcCurrentMode(d);
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                 resp = GenSignalPreDistorted(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
@@ -771,6 +773,26 @@ int main(void)
 }
 
 //--- End of Main ---//
+
+unsigned char current_mode = 0;
+void CalcCurrentMode (unsigned short duty)
+{
+    //2650 puntos son 300V
+    //3091 serian 350V
+    int calc = 0;
+    calc = 3091 * duty;
+    calc = calc / 2000;
+    if (calc > 2650)
+        current_mode = 1;
+    else
+        current_mode = 0;
+}
+
+
+unsigned char GetCurrentMode(void)
+{
+    return current_mode;
+}
 
 
 void SoftOverCurrentShutdown (unsigned char side, unsigned short current)

@@ -146,6 +146,25 @@ void Vector_UShort_To_File (FILE * f, char * v_name, unsigned short * v_data, in
 }
 
 
+void Vector_Short_To_File (FILE * f, char * v_name, short * v_data, int v_len)
+{
+    int len = 0;
+    char str [100] = { 0 };
+    
+    len = strlen(v_name);    
+    fwrite(v_name, 1, len, f);
+    fwrite("\n", 1, sizeof("\n") - 1, f);
+    
+    for (int i = 0; i < v_len; i++)
+    {
+        len = sprintf(str, "%d ", v_data[i]);
+        fwrite(str, 1, len, f);
+    }
+    fwrite("\n", 1, sizeof("\n") - 1, f);
+    
+}
+
+
 void Vector_Float_To_File (FILE * f, char * v_name, float * v_data, int v_len)
 {
     int len = 0;

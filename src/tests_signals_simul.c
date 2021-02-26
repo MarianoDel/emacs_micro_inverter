@@ -25,52 +25,74 @@
 #define RSENSE    0.33
 
 // Select how many cycles
-#define HOW_MANY_CYCLES    2000
+#define HOW_MANY_CYCLES    2
 // Select Current Signal
-// #define USE_SIGNAL_CURRENT_01_A
-#define USE_SIGNAL_CURRENT_05_A
+#define USE_SIGNAL_CURRENT_01_A
+// #define USE_SIGNAL_CURRENT_05_A
 // #define USE_SIGNAL_CURRENT_075_A
 // #define USE_SIGNAL_CURRENT_1_A
 
-// Set of Peak Current in ADC points, 12bits
-// Voltage in I_Sense is 3 . Ipeak
-// ADC points = 3 . Ipeak . 4095 / 3.3
+#ifdef USE_SIGNAL_CURRENT_005_A         
+#define KI_SIGNAL_PEAK_MULTIPLIER    90
+#endif
+
 #ifdef USE_SIGNAL_CURRENT_01_A         
-#define KI_SIGNAL_PEAK_MULTIPLIER    373
+#define KI_SIGNAL_PEAK_MULTIPLIER    180
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_02_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    360
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_03_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    540
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_04_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    720
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_05_A
-#define KI_SIGNAL_PEAK_MULTIPLIER    1861
+#define KI_SIGNAL_PEAK_MULTIPLIER    900
+#endif
+
+#ifdef USE_SIGNAL_CURRENT_06_A
+#define KI_SIGNAL_PEAK_MULTIPLIER    1080
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_075_A
-#define KI_SIGNAL_PEAK_MULTIPLIER    2792
+#define KI_SIGNAL_PEAK_MULTIPLIER    1350
 #endif
 
 #ifdef USE_SIGNAL_CURRENT_1_A
-#define KI_SIGNAL_PEAK_MULTIPLIER    3722
+#define KI_SIGNAL_PEAK_MULTIPLIER    1800
 #endif
 
 
 // Externals -------------------------------------------------------------------
 extern unsigned short sin_half_cycle [];
+extern short sin_full_cycle [];
 
 // Globals ---------------------------------------------------------------------
-#define VECTOR_LENGTH    (SIZEOF_SIGNAL * HOW_MANY_CYCLES)
+#define VECTOR_LENGTH    (2*SIZEOF_SIGNAL * HOW_MANY_CYCLES)
 unsigned short duty_high_left [VECTOR_LENGTH] = { 0 };
 unsigned short duty_high_right [VECTOR_LENGTH] = { 0 };
+short duty_bipolar [VECTOR_LENGTH] = { 0 };
 float vinput[VECTOR_LENGTH] = { 0 };
 float vline[VECTOR_LENGTH] = { 0 };
 float vinput_applied[VECTOR_LENGTH] = { 0 };
 float voutput[VECTOR_LENGTH] = { 0 };
 unsigned short voutput_adc[VECTOR_LENGTH] = { 0 };
+unsigned short current_mode[VECTOR_LENGTH] = { 0 };
 unsigned short last_output = 0;
+short last_output_bipolar = 0;
 
 // Module Functions to Test ----------------------------------------------------
 void Plant_Step_Response (void);
 void Plant_Step_Response_Duty (void);
 
 void TestGenSignal (void);
+void TestGenSignalBipolar (void);
 void TestSignalCloseLoop (void);
 void TestSignalSinus (void);
 void TestSignalPreDistorted (void);
@@ -89,6 +111,8 @@ void LOW_RIGHT (unsigned short duty);
 void HIGH_RIGHT (unsigned short duty);
 void LOW_LEFT (unsigned short duty);
 
+int GetPwmCounter (void);
+void HIGH_BIPOLAR (short duty);
 
 void PrintOK (void);
 void PrintERR (void);
@@ -103,8 +127,9 @@ int main (int argc, char *argv[])
     // Plant_Step_Response_Duty();
     // TestSignalCloseLoop ();
     // TestSignalPreDistorted();
-    // TestGenSignal();
-    TestSignalSinus();    
+    TestGenSignal();
+    // TestGenSignalBipolar();    
+    // TestSignalSinus();    
     // TestStepDCM();
     // TestStepCCM();    
     return 0;
@@ -114,7 +139,7 @@ int main (int argc, char *argv[])
 void TestSignalSinus (void)
 {
     float calc = 0.0;
-    int filter_cntr = 0;
+    // int filter_cntr = 0;
 
     Plant_Out_Recursive_Reset();
     
@@ -152,14 +177,13 @@ void TestSignalSinus (void)
                 HIGH_LEFT(0);
         }
 
-        // GenSignalSinusApplyFilter();
-        if (filter_cntr > 20)
-        {
-            GenSignalSinusApplyFilter();
-            filter_cntr = 0;
-        }
-        else
-            filter_cntr++;
+        // if (filter_cntr > 50)
+        // {
+        //     filter_cntr = 0;
+        //     GenSignalSinusApplyFilter ();
+        // }
+        // else
+        //     filter_cntr++;
     }
 
     unsigned short reference [VECTOR_LENGTH] = { 0 };
@@ -189,7 +213,7 @@ void TestSignalSinus (void)
         error[i] = reference[i] - voutput_adc[i];
 
     // ShowVectorInt("\nPlant output error:\n", error, VECTOR_LENGTH);
-//     ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
+    // ShowVectorUShort("\nVector reference:\n", reference, SIZEOF_SIGNAL);
 
     ///////////////////////////
     // Backup Data to a file //
@@ -224,39 +248,92 @@ void TestGenSignal (void)
     
     for (int j = 0; j < HOW_MANY_CYCLES; j++)
     {
-        for (int i = 0; i < SIZEOF_SIGNAL; i++)
+        for (int i = 0; i < (2*SIZEOF_SIGNAL); i++)
         {
             calc = sin (3.1415 * i / SIZEOF_SIGNAL);
             calc = calc * 311;
-            vline[i + (j * SIZEOF_SIGNAL)] = calc;
-            vinput[i + (j * SIZEOF_SIGNAL)] = 350;
+            vline[i + (j * (2*SIZEOF_SIGNAL))] = calc;
+            vinput[i + (j * (2*SIZEOF_SIGNAL))] = 350;
         }
     }
 
-    gen_signal_e sig_state = SIGNAL_RUNNING;
-    unsigned short duty = 0;
-    unsigned short isense = 0;
-    unsigned short ki_multiplier = KI_SIGNAL_PEAK_MULTIPLIER;    
+    //distorsiono entrada
     for (int j = 0; j < HOW_MANY_CYCLES; j++)
     {
-        GenSignalReset();        
+        for (int i = 95; i < 145; i++)
+        {
+            vline[i + (j * 2*SIZEOF_SIGNAL)] = 295;
+            vline[i + SIZEOF_SIGNAL + (j * 2*SIZEOF_SIGNAL)] = -295;
+        }
+    }
+
+    // ShowVectorFloat("\nVector line:\n", vline, VECTOR_LENGTH);
+    // ShowVectorFloat("\nVector input:\n", vinput, VECTOR_LENGTH);    
+
+    gen_signal_e sig_state = SIGNAL_RUNNING;
+    short duty = 0;
+    short ki_multiplier = KI_SIGNAL_PEAK_MULTIPLIER;
+
+    GenSignalControlInit();
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        //primera parte de la senial
+        GenSignalReset();
         sig_state = SIGNAL_RUNNING;
         duty = 0;
-        isense = 0;
         
         for (int i = 0; i < SIZEOF_SIGNAL; i++)
         {
-            isense = last_output;
-            sig_state = GenSignal(isense, ki_multiplier, &duty);
+            sig_state = GenSignal(last_output_bipolar, ki_multiplier, &duty);
+            // sig_state = GenSignal(last_output, ki_multiplier, &duty);            
             if (sig_state == SIGNAL_RUNNING)
-                HIGH_LEFT(duty);
+            {
+                //reviso que duty sea siempre positivo en esta parte
+                if (duty < 0)
+                    duty = 0;
+
+                // HIGH_LEFT(duty);
+                HIGH_BIPOLAR(duty);
+            }
             else
-                HIGH_LEFT(0);
+            {
+                // HIGH_LEFT(0);
+                HIGH_BIPOLAR(0);
+            }
         
         }
+
+        // segunda parte de la senial
+        GenSignalReset();
+        sig_state = SIGNAL_RUNNING;
+        duty = 0;
+        
+        for (int i = SIZEOF_SIGNAL; i < 2*SIZEOF_SIGNAL; i++)
+        {
+            // sig_state = GenSignal(last_output, ki_multiplier, &duty);
+            printf("index: %d i: %d ",GetPwmCounter(), last_output_bipolar);
+            sig_state = GenSignal(last_output_bipolar, ki_multiplier, &duty);
+            printf("duty: %d\n",duty);
+            if (sig_state == SIGNAL_RUNNING)
+            {
+                //reviso que duty sea siempre positivo
+                if (duty < 0)
+                    duty = 0;
+                
+                // HIGH_RIGHT(duty);
+                HIGH_BIPOLAR(-duty);                
+            }
+            else
+            {
+                // HIGH_RIGHT(0);
+                HIGH_BIPOLAR(0);
+            }
+        
+        }
+        
     }
 
-    unsigned short reference [VECTOR_LENGTH] = { 0 };
+    short reference [VECTOR_LENGTH] = { 0 };
     unsigned int ref_calc = 0;
     for (int j = 0; j < HOW_MANY_CYCLES; j++)
     {
@@ -264,7 +341,14 @@ void TestGenSignal (void)
         {
             ref_calc = sin_half_cycle[i] * ki_multiplier;
             ref_calc = ref_calc >> 12;
-            reference[i + (j * SIZEOF_SIGNAL)] = (unsigned short) ref_calc;
+            reference[i + (j * 2*SIZEOF_SIGNAL)] = (unsigned short) ref_calc;
+        }
+
+        for (int i = SIZEOF_SIGNAL; i < 2*SIZEOF_SIGNAL; i++)
+        {
+            ref_calc = sin_half_cycle[i - SIZEOF_SIGNAL] * ki_multiplier;
+            ref_calc = ref_calc >> 12;
+            reference[i + (j * 2*SIZEOF_SIGNAL)] = -(short) ref_calc;
         }
     }
 
@@ -282,7 +366,7 @@ void TestGenSignal (void)
     for (int i = 0; i < VECTOR_LENGTH; i++)
         error[i] = reference[i] - voutput_adc[i];
 
-    ShowVectorInt("\nPlant output error:\n", error, VECTOR_LENGTH);
+    // ShowVectorInt("\nPlant output error:\n", error, VECTOR_LENGTH);
 
 
     ///////////////////////////
@@ -296,16 +380,117 @@ void TestGenSignal (void)
         return;
     }
 
-    Vector_UShort_To_File(file, "reference", reference, VECTOR_LENGTH);
+    
+    Vector_Float_To_File(file, "vline", vline, VECTOR_LENGTH);
+    Vector_Float_To_File(file, "vinput", vinput, VECTOR_LENGTH);
+
+    Vector_Short_To_File(file, "reference", reference, VECTOR_LENGTH);
+    Vector_Short_To_File(file, "duty_bipolar", duty_bipolar, VECTOR_LENGTH);
+    // Vector_UShort_To_File(file, "reference", reference, VECTOR_LENGTH);    
     // Vector_UShort_To_File(file, "vinput", vinput, VECTOR_LENGTH);    
-    Vector_UShort_To_File(file, "duty_high_left", duty_high_left, VECTOR_LENGTH);
+    // Vector_UShort_To_File(file, "duty_high_left", duty_high_left, VECTOR_LENGTH);
+    // Vector_UShort_To_File(file, "duty_high_right", duty_high_right, VECTOR_LENGTH);    
+
+    Vector_Float_To_File(file, "vinput applied", vinput_applied, VECTOR_LENGTH);
+    Vector_Float_To_File(file, "voutput getted", voutput, VECTOR_LENGTH);    
+
+    Vector_UShort_To_File(file, "voutput_adc", voutput_adc, VECTOR_LENGTH);
+    Vector_UShort_To_File(file, "current_mode", current_mode, VECTOR_LENGTH);    
+
+    printf("\nRun by hand python3 simul_sinus_filter.py\n");    
+    
+}
+
+
+void TestGenSignalBipolar (void)
+{
+    float calc = 0.0;
+
+    Plant_Out_Recursive_Reset();
+    
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        for (int i = 0; i < (2*SIZEOF_SIGNAL); i++)
+        {
+            calc = sin (3.1415 * i / SIZEOF_SIGNAL);
+            calc = calc * 311;
+            vline[i + (j * (2*SIZEOF_SIGNAL))] = calc;
+            vinput[i + (j * (2*SIZEOF_SIGNAL))] = 350;
+        }
+    }
+
+    // ShowVectorFloat("\nVector line:\n", vline, VECTOR_LENGTH);
+    // ShowVectorFloat("\nVector input:\n", vinput, VECTOR_LENGTH);    
+
+    gen_signal_e sig_state = SIGNAL_RUNNING;
+    short duty = 0;
+    short ki_multiplier = KI_SIGNAL_PEAK_MULTIPLIER;
+
+    GenSignalControlInit();
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        GenSignalResetBipolar();
+        duty = 0;
+        
+        for (int i = 0; i < 2*SIZEOF_SIGNAL; i++)
+        {
+            GenSignalBipolar(last_output_bipolar, ki_multiplier, &duty);
+            HIGH_BIPOLAR(duty);
+        }
+    }
+
+    short reference [VECTOR_LENGTH] = { 0 };
+    unsigned int ref_calc = 0;
+    for (int j = 0; j < HOW_MANY_CYCLES; j++)
+    {
+        for (int i = 0; i < 2*SIZEOF_SIGNAL; i++)
+        {
+            ref_calc = sin_full_cycle[i] * ki_multiplier;
+            ref_calc = ref_calc >> 12;
+            reference[i + (j * 2*SIZEOF_SIGNAL)] = (short) ref_calc;
+        }
+    }
+
+    // ShowVectorUShort("\nVector reference:\n", reference, VECTOR_LENGTH);
+    // ShowVectorUShort("\nVector voltage input:\n", vinput, VECTOR_LENGTH);
+    // ShowVectorUShort("\nVector duty_high_left:\n", duty_high_left, VECTOR_LENGTH);
+    // ShowVectorUShort("\nVector duty_high_right:\n", duty_high_right, VECTOR_LENGTH);
+
+    // ShowVectorFloat("\nVector vinput_applied:\n", vinput_applied, VECTOR_LENGTH);
+    // ShowVectorFloat("\nVector plant output:\n", voutput, VECTOR_LENGTH);
+
+    // ShowVectorUShort("\nVector plant output ADC:\n", voutput_adc, VECTOR_LENGTH);
+
+    int error [VECTOR_LENGTH] = { 0 };
+    for (int i = 0; i < VECTOR_LENGTH; i++)
+        error[i] = reference[i] - voutput_adc[i];
+
+    // ShowVectorInt("\nPlant output error:\n", error, VECTOR_LENGTH);
+
+
+    ///////////////////////////
+    // Backup Data to a file //
+    ///////////////////////////
+    FILE * file = fopen("data.txt", "w");
+
+    if (file == NULL)
+    {
+        printf("data file not created!\n");
+        return;
+    }
+
+    Vector_Float_To_File(file, "vline", vline, VECTOR_LENGTH);
+    Vector_Float_To_File(file, "vinput", vinput, VECTOR_LENGTH);
+
+    Vector_Short_To_File(file, "reference", reference, VECTOR_LENGTH);
+    Vector_Short_To_File(file, "duty_bipolar", duty_bipolar, VECTOR_LENGTH);
 
     Vector_Float_To_File(file, "vinput applied", vinput_applied, VECTOR_LENGTH);
     Vector_Float_To_File(file, "voutput getted", voutput, VECTOR_LENGTH);    
 
     Vector_UShort_To_File(file, "voutput_adc", voutput_adc, VECTOR_LENGTH);
 
-    printf("\nRun by hand python3 simul_sinus_filter.py\n");    
+    printf("\nRun by hand python3 simul_bipolar_filter.py\n");    
     
 }
 
@@ -559,28 +744,28 @@ void TestStepCCM (void)
 
 
 
-int cntr_high_left = 0;
+int pwm_cntr = 0;
 void HIGH_LEFT (unsigned short duty)
 {
     float out = 0.0;
     float input = 0.0;
     
-    duty_high_left[cntr_high_left] = duty;
+    duty_high_left[pwm_cntr] = duty;
 
     //aplico el nuevo duty a la planta
-    input = vinput[cntr_high_left] * duty;
+    input = vinput[pwm_cntr] * duty;
     input = input / DUTY_100_PERCENT;
 
     //reviso si con el nuevo duty estoy en DCM o CCM
-    if (input > vline[cntr_high_left])
+    if (input > vline[pwm_cntr])
     {
         //CCM
-        vinput_applied[cntr_high_left] = input - vline[cntr_high_left];
+        vinput_applied[pwm_cntr] = input - vline[pwm_cntr];
     }
     else
     {
         //DCM
-        if (duty)
+        if (duty > 0)
         {
             float duty_sqr = duty;
             duty_sqr = duty_sqr / DUTY_100_PERCENT;
@@ -589,39 +774,195 @@ void HIGH_LEFT (unsigned short duty)
             float rth = (RLINE + RSENSE) / (RLINE + RSENSE + re);
 
             // printf("re: %f rth: %f duty2: %f\n", re, rth, duty_sqr);
-            vinput_applied[cntr_high_left] = (vinput[cntr_high_left] - vline[cntr_high_left]) * rth;
+            vinput_applied[pwm_cntr] = (vinput[pwm_cntr] - vline[pwm_cntr]) * rth;
         }
         else
-            vinput_applied[cntr_high_left] = 0.0;
+            vinput_applied[pwm_cntr] = 0.0;
     }
 
-    voutput[cntr_high_left] = Plant_Out_Recursive(vinput_applied[cntr_high_left]);
-    voutput_adc[cntr_high_left] = Adc12BitsConvertion(voutput[cntr_high_left]);
-    last_output = voutput_adc[cntr_high_left];
+    voutput[pwm_cntr] = Plant_Out_Recursive(vinput_applied[pwm_cntr]);
+
+    voutput_adc[pwm_cntr] = Adc12BitsConvertion(voutput[pwm_cntr]);
+    last_output = voutput_adc[pwm_cntr];
     
-    cntr_high_left++;
+    pwm_cntr++;
 }
 
-unsigned char cntr_high_right = 0;
-// void HIGH_RIGHT (unsigned short duty)
-// {
-//     float out = 0.0;
-//     float input = 0.0;
+
+int GetPwmCounter (void)
+{
+    return pwm_cntr;
+}
+
+
+void HIGH_RIGHT (unsigned short duty)
+{
+    float out = 0.0;
+    float input = 0.0;
     
-//     duty_high_right[cntr_high_right] = duty;
+    duty_high_right[pwm_cntr] = duty;
 
-//     //aplico el nuevo duty a la planta
-//     input = vinput[cntr_high_right] * duty;
-//     input = input / DUTY_100_PERCENT;
-//     vinput_applied[cntr_high_right] = input;
+    //aplico el nuevo duty a la planta
+    input = vinput[pwm_cntr] * duty;
+    input = input / DUTY_100_PERCENT;
+    input = -input;
 
-//     voutput[cntr_high_right] = Plant_Out(input);
-//     voutput_adc[cntr_high_right] = Adc12BitsConvertion(voutput[cntr_high_right]);
-//     last_output = voutput_adc[cntr_high_right];
+    // printf("hl duty: %d, index: %d\n", duty, pwm_cntr);
+    //reviso si con el nuevo duty estoy en DCM o CCM
+    if (input < vline[pwm_cntr])
+    {
+        //CCM
+        vinput_applied[pwm_cntr] = input - vline[pwm_cntr];
+    }
+    else
+    {
+        //DCM
+        if (duty > 0)
+        {
+            float duty_sqr = duty;
+            duty_sqr = duty_sqr / DUTY_100_PERCENT;
+            duty_sqr = duty_sqr * duty_sqr;
+            float re = 2 * LF * FPWM / duty_sqr;
+            float rth = (RLINE + RSENSE) / (RLINE + RSENSE + re);
+
+            // printf("re: %f rth: %f duty2: %f\n", re, rth, duty_sqr);
+            vinput_applied[pwm_cntr] = (-vinput[pwm_cntr] - vline[pwm_cntr]) * rth;
+        }
+        else
+            vinput_applied[pwm_cntr] = 0.0;
+    }
     
-//     cntr_high_right++;
-// }
+    voutput[pwm_cntr] = Plant_Out_Recursive(vinput_applied[pwm_cntr]);
 
+    //lo que sale de la planta se invierte antes del ADC
+    float current_sample = 0.0;
+    if (voutput[pwm_cntr] < 0.00001)
+        current_sample = -voutput[pwm_cntr];
+
+    voutput_adc[pwm_cntr] = Adc12BitsConvertion(current_sample);
+    last_output = voutput_adc[pwm_cntr];
+    
+    pwm_cntr++;
+}
+
+
+unsigned char last_mode = 0;
+void HIGH_BIPOLAR (short duty)
+{
+    float out = 0.0;
+    float input = 0.0;
+    
+    duty_bipolar[pwm_cntr] = duty;
+
+    //aplico el nuevo duty a la planta
+    input = vinput[pwm_cntr] * duty;
+    input = input / DUTY_100_PERCENT;
+
+    //reviso cuadrantes
+    if ((input > 0) && (vline[pwm_cntr] > 0))    //primer cuadrante
+    {
+        printf("cuadrante 1 ");
+        if (input > vline[pwm_cntr])    //CCM
+        {
+            vinput_applied[pwm_cntr] = input - vline[pwm_cntr];
+            printf("ccm ");
+            last_mode = 1;
+            current_mode[pwm_cntr] = 1000;
+        }
+        else    //DCM
+        {
+            float duty_sqr = duty;
+            duty_sqr = duty_sqr / DUTY_100_PERCENT;
+            duty_sqr = duty_sqr * duty_sqr;
+            float re = 2 * LF * FPWM / duty_sqr;
+            float rth = (RLINE + RSENSE) / (RLINE + RSENSE + re);
+
+            // printf("re: %f rth: %f duty2: %f\n", re, rth, duty_sqr);
+            vinput_applied[pwm_cntr] = (vinput[pwm_cntr] - vline[pwm_cntr]) * rth;
+            printf("dcm ");
+            last_mode = 0;
+            current_mode[pwm_cntr] = 0;
+        }
+        
+        printf("applied: %f cntr: %d\n", vinput_applied[pwm_cntr], pwm_cntr);
+    }
+    else if ((input < 0) && (vline[pwm_cntr] < 0))    //tercer cuadrante
+    {
+        printf("cuadrante 3 ");
+        if (input < vline[pwm_cntr])    //CCM
+        {
+            vinput_applied[pwm_cntr] = input - vline[pwm_cntr];
+            printf("ccm ");
+            last_mode = 1;
+            current_mode[pwm_cntr] = 1000;
+        }
+        else    //DCM
+        {
+            float duty_sqr = duty;
+            duty_sqr = duty_sqr / DUTY_100_PERCENT;
+            duty_sqr = duty_sqr * duty_sqr;
+            float re = 2 * LF * FPWM / duty_sqr;
+            float rth = (RLINE + RSENSE) / (RLINE + RSENSE + re);
+
+            // printf("re: %f rth: %f duty2: %f\n", re, rth, duty_sqr);
+            vinput_applied[pwm_cntr] = (-vinput[pwm_cntr] - vline[pwm_cntr]) * rth;
+            printf("dcm ");
+            last_mode = 0;
+            current_mode[pwm_cntr] = 0;
+        }
+        
+        printf("applied: %f cntr: %d\n", vinput_applied[pwm_cntr], pwm_cntr);
+    }
+    else if ((input < 0) && (vline[pwm_cntr] > 0))    //cuadrante 2
+    {
+        printf("cuadrante 2 ");
+        vinput_applied[pwm_cntr] = input - vline[pwm_cntr];
+        printf("ccm ");
+        printf("applied: %f cntr: %d\n", vinput_applied[pwm_cntr], pwm_cntr);
+        last_mode = 1;
+        current_mode[pwm_cntr] = 1000;
+    }
+    else if ((input < 0) && (vline[pwm_cntr] < 0))    //cuadrante 4
+    {
+        printf("cuadrante 4 ");
+        vinput_applied[pwm_cntr] = input - vline[pwm_cntr];
+        printf("ccm ");
+        printf("applied: %f cntr: %d\n", vinput_applied[pwm_cntr], pwm_cntr);
+        last_mode = 1;
+        current_mode[pwm_cntr] = 1000;
+    }
+    else    //input == 0
+    {
+        printf("no input ");
+        vinput_applied[pwm_cntr] = 0.0;
+        printf("applied: %f cntr: %d\n", vinput_applied[pwm_cntr], pwm_cntr);
+        last_mode = 0;
+        current_mode[pwm_cntr] = 0;
+    }
+
+    voutput[pwm_cntr] = Plant_Out_Recursive(vinput_applied[pwm_cntr]);
+
+    if (voutput[pwm_cntr] < 0)
+    {
+        voutput_adc[pwm_cntr] = Adc12BitsConvertion(-voutput[pwm_cntr]);
+        // last_output_bipolar = -voutput_adc[pwm_cntr];    //cuando uso bipolar con gen signal bipolar
+        last_output_bipolar = voutput_adc[pwm_cntr];    //cuando uso bipolar con gen signal
+    }
+    else
+    {
+        voutput_adc[pwm_cntr] = Adc12BitsConvertion(voutput[pwm_cntr]);
+        last_output_bipolar = voutput_adc[pwm_cntr];
+    }
+        
+    
+    pwm_cntr++;
+}
+
+
+unsigned char GetCurrentMode (void)
+{
+    return last_mode;
+}
 
 unsigned short duty_low_right [SIZEOF_SIGNAL] = { 0 };
 unsigned char cntr_low_right = 0;

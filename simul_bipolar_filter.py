@@ -51,8 +51,8 @@ reference = get_vector_lines_short (fl, 4)
 duty_bipolar = get_vector_lines_short (fl, 6)
 vapplied = get_vector_lines_float (fl, 8)
 voutput = get_vector_lines_float (fl, 10)
+
 adc_data = get_vector_lines_ushort(fl, 12)
-current_mode = get_vector_lines_ushort(fl, 14)
 
 file.close()
 ###########################
@@ -63,6 +63,7 @@ t = np.linspace(0, reference.size, num=reference.size)
 
 fig, ax = plt.subplots()
 ax.set_title('Supply and Line')
+# ax.set_ylabel('PWM')
 ax.set_xlabel('Tiempo en muestras')
 ax.grid()
 ax.plot(t, vline, 'y', label='vline')
@@ -70,6 +71,7 @@ ax.plot(t, vinput, 'b', label='vinput')
 ax.legend(loc='upper left')
 plt.tight_layout()
 plt.show()
+
 
 fig, ax = plt.subplots()
 ax.set_title('Output')
@@ -79,7 +81,6 @@ ax.grid()
 ax.plot(t, reference, 'y', label='reference')
 ax.plot(t, duty_bipolar, 'b', label='duty_bipolar')
 ax.plot(t, adc_data, 'g', label='adc_data')
-ax.plot(t, current_mode, 'r', label='current_mode')
 ax.legend(loc='upper left')
 plt.tight_layout()
 plt.show()

@@ -55,6 +55,31 @@ typedef struct {
 } pid_data_obj_t;
 
 
+typedef struct {
+    short setpoint;
+    short sample;
+    short d_z1;
+    short d_z2;    
+    short error_z1;
+    short error_z2;
+
+    // short b0;
+    // short b1;
+    // short b2;
+
+    // short a1;
+    // short a2;
+
+    float b0;
+    float b1;
+    float b2;
+
+    float a1;
+    float a2;
+    
+} pr_data_obj_t;
+
+
 // Module Exported Functions ---------------------------------------------------
 unsigned short RandomGen (unsigned int);
 
@@ -65,6 +90,9 @@ void PID_Flush_Errors (pid_data_obj_t *);
 void PID_Flush_Only_Errors (pid_data_obj_t *);
 short PID_Small_Ki (pid_data_obj_t *);
 void PID_Small_Ki_Flush_Errors (pid_data_obj_t *);
+short PR (pr_data_obj_t *);
+void PR_Flush_Errors (pr_data_obj_t *);
+void PR_Flush_Only_Errors (pr_data_obj_t *);
 #endif
 
 #ifdef USE_MA8_U16_CIRCULAR

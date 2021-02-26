@@ -364,6 +364,65 @@ void PID_Small_Ki_Flush_Errors (pid_data_obj_t * p)
 }
 
 
+short PR (pr_data_obj_t * p)
+{
+    // int acc = 0;
+    float acc = 0.0;
+    short error = 0;
+    short d = 0;
+
+    short forward_val = 0;
+    short backward_val = 0;
+
+    error = p->setpoint - p->sample;
+
+    // //Forward Params
+    // acc = p->b0 * error + p->b1 * p->error_z1 + p->b2 * p->error_z2;    
+    // forward_val = acc >> PID_CONSTANT_DIVIDER;
+
+    // //Backwards Params
+    // acc = p->a1 * p->d_z1 + p->a2 * p->d_z2;
+    // backward_val = acc >> PID_CONSTANT_DIVIDER;
+
+    // d = forward_val - backward_val;
+
+    //Forward Params & Backwards float
+    acc = p->b0 * error +
+        p->b1 * p->error_z1 +
+        p->b2 * p->error_z2 -
+        p->a1 * p->d_z1 -
+        p->a2 * p->d_z2;
+    
+    d = (short) acc;
+    
+    
+    //Update PR variables
+    p->error_z2 = p->error_z1;
+    p->error_z1 = error;
+    p->d_z2 = p->d_z1;
+    p->d_z1 = d;    
+
+    return d;
+}
+
+
+void PR_Flush_Errors (pr_data_obj_t * p)
+{
+    p->d_z1 = 0.0;
+    p->d_z2 = 0.0;    
+    p->error_z1 = 0.0;
+    p->error_z2 = 0.0;
+}
+
+
+void PR_Flush_Only_Errors (pr_data_obj_t * p)
+{
+    p->error_z1 = 0.0;
+    p->error_z2 = 0.0;
+}
+
 #endif    //USE_PID_CONTROLLERS
+
+
 
 //--- end of file ---//

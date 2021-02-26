@@ -24,6 +24,9 @@ typedef enum {
 // Exported Module Functions ---------------------------------------------------
 gen_signal_e GenSignal (unsigned short, unsigned short, short *);
 void GenSignalReset (void);
+void GenSignalControlInit(void);
+void GenSignalBipolar (short i_sample, short peak_current, short * duty);
+void GenSignalResetBipolar (void);
 
 gen_signal_e GenSignalPreDistorted (unsigned short, unsigned short, short *);
 void GenSignalPreDistortedReset (void);

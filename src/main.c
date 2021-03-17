@@ -156,6 +156,8 @@ volatile unsigned short timer_standby;
 
 #ifdef WITH_FEW_CYCLES_OF_50HZ
 unsigned short d_dump [SIZEOF_SIGNAL] = { 0 };
+unsigned short i_dump [SIZEOF_SIGNAL] = { 0 };
+unsigned short r_dump [SIZEOF_SIGNAL] = { 0 };
 #endif
 
 // Module Private Functions ----------------------------------------------------
@@ -265,7 +267,11 @@ int main(void)
 #ifdef WITH_FEW_CYCLES_OF_50HZ
             cycles_50hz = CYCLES_OF_50HZ;
             for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
+            {
                 d_dump[i] = 0;
+                i_dump[i] = 0;
+                r_dump[i] = 0;
+            }
 #endif            
             break;
 
@@ -378,7 +384,6 @@ int main(void)
                 gen_signal_e resp = SIGNAL_RUNNING;
 #ifdef USE_SIGNAL_CONTROL_BY_PID
                 resp = GenSignal(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
-                CalcCurrentMode(d);
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
                 resp = GenSignalPreDistorted(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
@@ -462,6 +467,17 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
+
+#if (defined WITH_FEW_CYCLES_OF_50HZ) && (defined WITH_FEW_CYCLES_OF_50HZ_POS)
+                if (cycles_50hz)
+                    cycles_50hz--;
+                else
+                {
+                    ac_sync_state = FEW_CYCLES_DUMP_DATA;
+                    break;
+                }
+#endif
+                
                 if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
 #ifdef USE_SIGNAL_CONTROL_BY_PID
@@ -595,14 +611,11 @@ int main(void)
             if (sequence_ready)
             {
                 sequence_ready_reset;
-#ifdef WITH_FEW_CYCLES_OF_50HZ
+#if (defined WITH_FEW_CYCLES_OF_50HZ) && (defined WITH_FEW_CYCLES_OF_50HZ_NEG)
                 if (cycles_50hz)
                     cycles_50hz--;
                 else
                 {
-#ifndef GRID_TIED_ONLY_SYNC_AND_POLARITY
-                    LOW_RIGHT(DUTY_NONE);
-#endif
                     ac_sync_state = FEW_CYCLES_DUMP_DATA;
                     break;
                 }
@@ -634,7 +647,7 @@ int main(void)
                     ac_sync_state = START_SYNCING;
             }
             break;
-            
+
         case JUMPER_PROTECTED:
             if (!timer_standby)
             {
@@ -674,23 +687,19 @@ int main(void)
         case FEW_CYCLES_DUMP_DATA_1:
 #ifdef WITH_FEW_CYCLES_OF_50HZ
 #ifdef WITH_FEW_CYCLES_OF_50HZ_POS
-            Usart1Send("d_dump data positive:\n");
+            Usart1Send("d_dump data positive:\n");            
 #endif
 #ifdef WITH_FEW_CYCLES_OF_50HZ_NEG
             Usart1Send("d_dump data negative:\n");
 #endif
-            for (unsigned char i = 0; i < SIZEOF_SIGNAL; i+=8)
+            Wait_ms(20);
+            for (unsigned char i = 0; i < SIZEOF_SIGNAL; i++)
             {
-                sprintf(s_lcd, "%d -> %d %d %d %d %d %d %d %d\n",
+                sprintf(s_lcd, "%03d -> r: %d i: %d d: %d\n",
                         i,
-                        *(d_dump + i + 0),
-                        *(d_dump + i + 1),
-                        *(d_dump + i + 2),
-                        *(d_dump + i + 3),
-                        *(d_dump + i + 4),
-                        *(d_dump + i + 5),
-                        *(d_dump + i + 6),
-                        *(d_dump + i + 7));
+                        *(r_dump + i),
+                        *(i_dump + i),                        
+                        *(d_dump + i));
 
                 Usart1Send(s_lcd);
                 Wait_ms(40);
@@ -773,26 +782,6 @@ int main(void)
 }
 
 //--- End of Main ---//
-
-unsigned char current_mode = 0;
-void CalcCurrentMode (unsigned short duty)
-{
-    //2650 puntos son 300V
-    //3091 serian 350V
-    int calc = 0;
-    calc = 3091 * duty;
-    calc = calc / 2000;
-    if (calc > 2650)
-        current_mode = 1;
-    else
-        current_mode = 0;
-}
-
-
-unsigned char GetCurrentMode(void)
-{
-    return current_mode;
-}
 
 
 void SoftOverCurrentShutdown (unsigned char side, unsigned short current)

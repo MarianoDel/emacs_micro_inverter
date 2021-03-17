@@ -30,6 +30,8 @@ MCU  = cortex-m0
 # DDEFS = -DSTM32F051
 #para el micro STM32F030K6T6
 DDEFS = -DSTM32F030
+#para el micro STM32G030J6M6
+# DDEFS = -DSTM32G030xx
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =
@@ -190,7 +192,6 @@ clean:
 	rm -f $(FULL_PRJ).map
 	rm -f $(FULL_PRJ).hex
 	rm -f $(FULL_PRJ).bin
-#	rm $(SRC:.c=.c.bak)
 	rm -f $(SRC:.c=.lst)
 	rm -f $(SRC:.c=.su)
 #   rm $(ASRC:.s=.s.bak)

@@ -235,4 +235,13 @@ params to a_pid: [ 1 -1] dtype: int16
 * Simulaciones 21-02-2021
 ** Paso todos los .py que ya no uso a la carpeta de proyecto
 
+* Ultimos cambios en opamp
+** R28 y R29
+   - 6k8 // 6k8
+
+** C23 y C24
+   - 220p
+
+** C21 y C22
+   - quitar
 

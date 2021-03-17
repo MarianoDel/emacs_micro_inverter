@@ -34,15 +34,16 @@ s = Symbol('s')
 # w0 = frecuencia del resonador
 
 # desde Vinput (sin Vinput) al sensor de corriente
-Kp = 0.2
-Ki = 30.0
-fbw = 5
-f0 = 25
+gain = 0.3
+fzero = 5
+fpole = 50
 
-wbw = 2 * np.pi * fbw
-w0 = 2 * np.pi * f0
+wzero = 2 * np.pi * fzero
+wpole = 2 * np.pi * fpole
 
-Gs = Kp + (2 * Ki * wbw * s)/(s**2 + 2 * wbw * s + w0**2)
+eff_gain = gain * wpole / wzero
+
+Gs = eff_gain * (s + wzero) / (s + wpole)
 
 # PR Controller
 print ("Controlador PR:")
@@ -63,7 +64,7 @@ if Bode_Controlador_Analog == True:
     fig, (ax1, ax2) = plt.subplots(2,1)
     ax1.semilogx (w/6.28, mag_p, 'b-', linewidth="1")
     # ax1.semilogx (w/6.28, mag_s, 'g-', linewidth="1")
-    ax1.set_title(f'Magnitude PR controller Kp: {Kp} Ki: {Ki}')
+    ax1.set_title(f'Magnitude zero pole controller fz: {fzero} fp: {fpole}')
 
     ax2.semilogx (w/6.28, phase_p, 'b-', linewidth="1")
     # ax2.semilogx (w/6.28, phase_s, 'g-', linewidth="1")

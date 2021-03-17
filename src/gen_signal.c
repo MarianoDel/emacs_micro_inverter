@@ -16,8 +16,8 @@
 
 
 // Module Private Types Constants and Macros -----------------------------------
-#define INDEX_TO_MIDDLE    (90 - 1)
-#define INDEX_TO_FALLING   (150 - 1)
+#define INDEX_TO_MIDDLE    (60 - 1)
+#define INDEX_TO_FALLING   (180 - 1)
 #define INDEX_TO_REVERT    (240 - 10)    //230
 
 // #define INDEX_TO_MIDDLE    (60 - 1)
@@ -254,20 +254,24 @@ typedef enum {
     SIGNAL_FALLING,
     SIGNAL_REVERT,
     SIGNAL_DCM,
-    SIGNAL_CCM
+    SIGNAL_CCM,
+    SIGNAL_CCM_REVERT
         
 } signal_state_e;
 
 
 // Externals -------------------------------------------------------------------
-#define MODE_DCM    0
-#define MODE_CCM    1
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+extern unsigned short d_dump [];
+extern unsigned short i_dump [];
+extern unsigned short r_dump [];
+#endif
 
-extern unsigned char GetCurrentMode (void);
 
 // Globals ---------------------------------------------------------------------
 // #define CURRENT_LOOP_PR_CONTROLLER
 #define CURRENT_LOOP_PI_CONTROLLER
+// #define CURRENT_LOOP_ZP_CONTROLLER
 unsigned short * p_current_ref;
 short * p_current_ref_bipolar;
 #ifdef CURRENT_LOOP_PI_CONTROLLER
@@ -276,11 +280,16 @@ pid_data_obj_t current_pid;
 #ifdef CURRENT_LOOP_PR_CONTROLLER
 pr_data_obj_t current_pr;
 #endif
+#ifdef CURRENT_LOOP_ZP_CONTROLLER
+short last_e = 0;
+short last_d = 0;
+#endif
 signal_state_e gen_signal_state = SIGNAL_RISING;
 
 
 // Module Private Functions ----------------------------------------------------
 short CurrentLoop (short, short);
+// void CurrentLoop_SetLastD (unsigned short d);
 void CurrentLoop_Change_to_LowGain (void);
 void CurrentLoop_Change_to_HighGain (void);
 void CurrentLoop_Change_to_RevertGain (void);
@@ -290,6 +299,16 @@ unsigned short Distance (unsigned short a, unsigned short b);
 // Module Functions ------------------------------------------------------------
 // #define FUZZY_BY_SAMPLES
 #define FUZZY_BY_MODE
+
+#ifdef FUZZY_BY_SAMPLES
+#define SAMPLE_BY_SAMPLE
+// #define UNDERSAMPLING
+#endif
+
+#ifdef UNDERSAMPLING
+unsigned char undersampling = 0;
+short last_duty = 0;
+#endif
 gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, short * duty)
 {
     gen_signal_e resp = SIGNAL_RUNNING;
@@ -306,13 +325,36 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
         switch (gen_signal_state)
         {
         case SIGNAL_RISING:
+#ifdef UNDERSAMPLING
+            if (!undersampling)
+            {
+                *duty = CurrentLoop ((short) calc, i_sample);
+                last_duty = *duty;
+                undersampling = 9;
+            }
+            else
+            {
+                undersampling--;
+                *duty = last_duty;
+            }
+
+            if (signal_index > INDEX_TO_FALLING)
+            {
+                gen_signal_state = SIGNAL_REVERT;
+                *duty = 0;
+                last_duty = 0;
+            }
+            
+#endif
+#ifdef SAMPLE_BY_SAMPLE
             *duty = CurrentLoop ((short) calc, i_sample);
 
             if (signal_index > INDEX_TO_MIDDLE)
             {
-                CurrentLoop_Change_to_LowGain();
-                gen_signal_state = SIGNAL_MIDDLE;
+                CurrentLoop_Change_to_RevertGain();
+                gen_signal_state = SIGNAL_FALLING;
             }
+#endif
             break;
 
         case SIGNAL_MIDDLE:
@@ -320,7 +362,7 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
 
             if (signal_index > INDEX_TO_FALLING)
             {
-                CurrentLoop_Change_to_RevertGain();
+                CurrentLoop_Change_to_LowGain();
                 gen_signal_state = SIGNAL_FALLING;
             }
             break;
@@ -330,7 +372,6 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
 
             if (signal_index > INDEX_TO_REVERT)
             {
-                CurrentLoop_Change_to_HighGain();
                 gen_signal_state = SIGNAL_REVERT;
                 *duty = 0;
             }
@@ -348,34 +389,148 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
 
 #ifdef FUZZY_BY_MODE
         case SIGNAL_DCM:
-            if (GetCurrentMode() != MODE_DCM)
+            //cuando la corriente supera la seteada supongo CCM despues de algunas muestras
+            // y ademas no vuelvo
+            // if ((signal_index > 20) && (i_sample > calc))
+            // {
+            //     //supongo CCM
+            //     gen_signal_state = SIGNAL_CCM;
+            //     CurrentLoop_Change_to_LowGain();
+            // }
+
+            //en la ultima parte de la senial aumento la ganancia independiente de donde este
+            // if (signal_index > 210)
+            // {
+            //     gen_signal_state = SIGNAL_CCM;
+            //     CurrentLoop_Change_to_LowGain();
+            // }
+
+            *duty = CurrentLoop ((short) calc, i_sample);
+            if ((signal_index > 20) &&
+                (i_sample > 600))
             {
                 gen_signal_state = SIGNAL_CCM;
                 CurrentLoop_Change_to_LowGain();
             }
-
-            *duty = CurrentLoop ((short) calc, i_sample);
             break;
 
         case SIGNAL_CCM:
-            if (GetCurrentMode() != MODE_CCM)
-            {
-                gen_signal_state = SIGNAL_DCM;
-                CurrentLoop_Change_to_HighGain();
-            }
-
             *duty = CurrentLoop ((short) calc, i_sample);
+
+            if (signal_index > 200)
+            {
+                gen_signal_state = SIGNAL_CCM_REVERT;
+                CurrentLoop_Change_to_HighGain();
+                *duty = 0;
+            }
+            break;
+
+        case SIGNAL_CCM_REVERT:
+            *duty = CurrentLoop ((short) calc, i_sample);
+            
+            if (signal_index > 234)
+            {
+                *duty = 0;
+            }
             break;
 #endif
             
         }                    
         p_current_ref++;
+
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+        i_dump[signal_index] = i_sample;
+        d_dump[signal_index] = *duty;
+        r_dump[signal_index] = (unsigned short) calc;
+#endif
+
     }
     else
         //termino de generar la senoidal, corto el mosfet
         resp = SIGNAL_FINISH;
 
     return resp;
+}
+
+
+unsigned char volt_index = 0;
+unsigned short last_peak_current = 0;
+unsigned short last_peak_multiplier = 0;
+gen_signal_e GenSignalVoltage (unsigned short v_sample, unsigned short i_sample, short * duty)
+{
+    gen_signal_e resp = SIGNAL_RUNNING;
+
+    if (volt_index < 240)
+    {
+        //calculo la referencia de tension que quiero
+        unsigned int calc = v_sample * last_peak_multiplier;
+        calc = calc >> 12;
+
+        if (calc > 2000)
+            calc = 2000;
+        
+        *duty = (short) calc;
+
+#ifdef WITH_FEW_CYCLES_OF_50HZ
+        i_dump[volt_index] = i_sample;
+        d_dump[volt_index] = *duty;
+        r_dump[volt_index] = v_sample;
+#endif
+
+        //si en algun momento del ciclo me paso de la corriente maxima trato de bajar
+        // if (i_sample > 1200)
+        // {
+        //     if (last_peak_multiplier > 10)
+        //         last_peak_multiplier -= 10;
+        //     else
+        //         last_peak_multiplier--;
+        // }
+
+        if (i_sample > last_peak_current)
+            last_peak_current = i_sample;
+
+        volt_index++;
+    }
+    else
+    {
+        *duty = 0;
+        resp = SIGNAL_FINISH;
+    }
+
+    return resp;
+}
+
+
+pid_data_obj_t voltage_pid;
+void GenSignalVoltageReset (void)
+{
+    short new_d = 0;
+    //hago un update del multiplier en funcion de la corriente pico
+    voltage_pid.setpoint = 900;
+    voltage_pid.sample = last_peak_current;
+    new_d = PI(&voltage_pid);
+
+    if (new_d < 0)
+        new_d = 0;
+
+    if (new_d > 4095)
+        new_d = 4095;
+
+    last_peak_multiplier = new_d;
+    last_peak_current = 0;
+    volt_index = 0;
+}
+
+
+void GenSignalVoltageInit (void)
+{
+    //armo un pid para controlar la corriente pico a traves del multiplicador
+    voltage_pid.kp = 0;
+    voltage_pid.ki = 11;    //
+    voltage_pid.kd = 0;
+    PID_Flush_Only_Errors(&voltage_pid);
+    
+    GenSignalVoltageReset();
 }
 
 
@@ -411,18 +566,34 @@ void GenSignalResetBipolar (void)
 void GenSignalReset (void)
 {
     p_current_ref = sin_half_cycle;
+#ifdef CURRENT_LOOP_PI_CONTROLLER
     PID_Flush_Errors(&current_pid);
     CurrentLoop_Change_to_HighGain();
-    
+#endif
+
+#ifdef CURRENT_LOOP_PR_CONTROLLER
+    PR_Flush_Errors(&current_pr);
+    CurrentLoop_Change_to_HighGain();
+#endif
+
+#ifdef CURRENT_LOOP_ZP_CONTROLLER
+    last_d = 0;
+    last_e = 0;
+#endif
+
 #ifdef FUZZY_BY_SAMPLES
     gen_signal_state = SIGNAL_RISING;
+#ifdef UNDERSAMPLING
+    undersampling = 0;    
+#endif
 #endif
     
 #ifdef FUZZY_BY_MODE
     gen_signal_state = SIGNAL_DCM;
 #endif
-
+    
 }
+
 
 void GenSignalControlInit(void)
 {
@@ -458,6 +629,7 @@ short CurrentLoop (short setpoint, short new_sample)
     {
         //do nothing here
     }
+    printf("set: %d i: %d d: %d\n", setpoint, new_sample, d);
 #endif
 
 #ifdef CURRENT_LOOP_PI_CONTROLLER
@@ -482,9 +654,51 @@ short CurrentLoop (short setpoint, short new_sample)
         current_pid.last_d = DUTY_NONE;
     }
 #endif
+
+#ifdef CURRENT_LOOP_ZP_CONTROLLER
+    short d = 0;
+    short e = setpoint - new_sample;
+    int e_z1 = last_e * 383;
+    e_z1 >>= 7;
+
+    int d_z1 = last_d * 126;
+    d_z1 >>= 7;
+    
+    d = e * 3 - e_z1 + d_z1;
+    
+    if (d > 0)
+    {
+        if (d > DUTY_100_PERCENT)
+            d = DUTY_100_PERCENT;
+    }
+    else
+    {
+        d = DUTY_NONE;
+    }
+    
+    printf("set: %d i: %d l_d: %d l_e: %d e_z1: %d d_z1: %d d: %d\n",
+           setpoint,
+           new_sample,
+           last_d,
+           last_e,
+           e_z1,
+           d_z1,
+           d);    
+
+    last_e = e;
+    last_d = d;
+
+
+#endif
     
     return d;
 }
+
+
+// void CurrentLoop_SetLastD (unsigned short d)
+// {
+//     current_pid.last_d = d;
+// }
 
 
 void CurrentLoop_Change_to_HighGain (void)
@@ -507,8 +721,10 @@ void CurrentLoop_Change_to_HighGain (void)
 
     //vsense con opamp 4.4
     current_pid.kp = 1;
-    current_pid.ki = 35;
+    current_pid.ki = 55;    //para undersampling 4
+    // current_pid.ki = 11;    //para sample_by_sample
     current_pid.kd = 0;
+
     
     PID_Flush_Only_Errors(&current_pid);
 #endif
@@ -521,13 +737,31 @@ void CurrentLoop_Change_to_HighGain (void)
 // dt: 4.1666666666666665e-05
 // )
 
-    current_pr.b0 = 13;
-    current_pr.b1 = -25;
-    current_pr.b2 = 12;
+    // current_pr.b0 = 13;
+    // current_pr.b1 = -25;
+    // current_pr.b2 = 12;
 
-    // current_pr.a0 = 128;
-    current_pr.a1 = -256;
-    current_pr.a2 = 128;
+    // // current_pr.a0 = 128;
+    // current_pr.a1 = -256;
+    // current_pr.a2 = 128;
+
+    // current_pr.b0 = 0.2;    //A = 35dB Kp = 0.2
+    // current_pr.b1 = -0.27402; //oscila mas grande a menos freq
+    // current_pr.b2 = 0.07405;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+
+    // current_pr.b0 = 0.2;    //A = 30dB Kp = 0.2
+    // current_pr.b1 = -0.3367; //oscila mas grande a menos freq
+    // current_pr.b2 = 0.1368;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+
+    current_pr.b0 = 0.2;    //A = 30dB Kp = 0.2
+    current_pr.b1 = -0.32103; //oscila mas grande a menos freq
+    current_pr.b2 = 0.12104;
+    current_pr.a1 = -1.99734;
+    current_pr.a2 = 0.99738;
 
     PR_Flush_Errors(&current_pr);
 #endif
@@ -553,8 +787,8 @@ void CurrentLoop_Change_to_LowGain (void)
     // current_pid.kd = 0;
 
     //vsense con opamp 4.4
-    current_pid.kp = 1;
-    current_pid.ki = 25;
+    current_pid.kp = 0;
+    current_pid.ki = 5;
     current_pid.kd = 0;
     
     PID_Flush_Only_Errors(&current_pid);
@@ -638,12 +872,30 @@ void CurrentLoop_Change_to_LowGain (void)
 // array([ 0.2       , -0.27401871,  0.07405294]),
 // array([ 1.        , -1.99773663,  0.9979078 ]),
 // dt: 4.1666666666666665e-05
-    current_pr.b0 = 0.2;    //A = 35dB Kp = 0.2
-    current_pr.b1 = -0.27402; //oscila mas grande a menos freq
-    current_pr.b2 = 0.07405;
-    current_pr.a1 = -1.99774;
-    current_pr.a2 = 0.99791;
-    
+    // current_pr.b0 = 0.2;    //A = 35dB Kp = 0.2
+    // current_pr.b1 = -0.27402; //oscila mas grande a menos freq
+    // current_pr.b2 = 0.07405;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+
+    // current_pr.b0 = 0.2;    //A = 30dB Kp = 0.2
+    // current_pr.b1 = -0.3367; //oscila mas grande a menos freq
+    // current_pr.b2 = 0.1368;
+    // current_pr.a1 = -1.99774;
+    // current_pr.a2 = 0.99791;
+
+    // current_pr.b0 = 0.2;    //A = 30dB Kp = 0.2
+    // current_pr.b1 = -0.321; //oscila mas grande a menos freq
+    // current_pr.b2 = 0.121;
+    // current_pr.a1 = -1.99721;
+    // current_pr.a2 = 0.99738;
+
+    current_pr.b0 = 0.2;    //A = 30dB Kp = 0.2
+    current_pr.b1 = -0.32103; //oscila mas grande a menos freq
+    current_pr.b2 = 0.12104;
+    current_pr.a1 = -1.99734;
+    current_pr.a2 = 0.99738;
+
 // Controlador PR Digital Zoh:
 // TransferFunctionDiscrete(
 // array([ 0.1       ,  0.0094407 , -0.10942358]),
@@ -699,8 +951,8 @@ void CurrentLoop_Change_to_RevertGain (void)
     // current_pid.kd = 0;
 
     //vsense con opamp 4.4
-    current_pid.kp = 1;
-    current_pid.ki = 55;
+    current_pid.kp = 0;
+    current_pid.ki = 2;
     current_pid.kd = 0;
     
     PID_Flush_Only_Errors(&current_pid);
@@ -796,7 +1048,7 @@ void GenSignalPreDistortedReset (void)
 
 
 unsigned short current_i_peak_value = 0;
-unsigned short last_peak_current = 0;
+// unsigned short last_peak_current = 0;
 unsigned char current_i_peak_cntr = 0;
 unsigned char last_peak_index = 0;    //por ahora solo adelanto
 gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_current, short * duty)

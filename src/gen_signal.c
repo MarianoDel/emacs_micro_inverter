@@ -265,6 +265,8 @@ typedef enum {
 extern unsigned short d_dump [];
 extern unsigned short i_dump [];
 extern unsigned short r_dump [];
+#else
+extern unsigned short d_dump [];
 #endif
 
 
@@ -454,8 +456,8 @@ gen_signal_e GenSignal (unsigned short i_sample, unsigned short peak_current, sh
 
 
 unsigned char volt_index = 0;
-unsigned short last_peak_current = 0;
 unsigned short last_peak_multiplier = 0;
+unsigned int current_sum = 0;
 gen_signal_e GenSignalVoltage (unsigned short v_sample, unsigned short i_sample, short * duty)
 {
     gen_signal_e resp = SIGNAL_RUNNING;
@@ -475,20 +477,31 @@ gen_signal_e GenSignalVoltage (unsigned short v_sample, unsigned short i_sample,
         i_dump[volt_index] = i_sample;
         d_dump[volt_index] = *duty;
         r_dump[volt_index] = v_sample;
+#else
+        d_dump[volt_index] = *duty;    //same duty on negative cycle
 #endif
 
-        //si en algun momento del ciclo me paso de la corriente maxima trato de bajar
-        // if (i_sample > 1200)
-        // {
-        //     if (last_peak_multiplier > 10)
-        //         last_peak_multiplier -= 10;
-        //     else
-        //         last_peak_multiplier--;
-        // }
+        current_sum += i_sample;
+        volt_index++;
+    }
+    else
+    {
+        *duty = 0;
+        resp = SIGNAL_FINISH;
+    }
 
-        if (i_sample > last_peak_current)
-            last_peak_current = i_sample;
+    return resp;
+}
 
+
+gen_signal_e GenSignalVoltageN (unsigned short v_sample, unsigned short i_sample, short * duty)
+{
+    gen_signal_e resp = SIGNAL_RUNNING;
+
+    if (volt_index < 240)
+    {
+        //aplico mismo duty de ciclo positivo
+        *duty = d_dump[volt_index];
         volt_index++;
     }
     else
@@ -502,13 +515,17 @@ gen_signal_e GenSignalVoltage (unsigned short v_sample, unsigned short i_sample,
 
 
 pid_data_obj_t voltage_pid;
-void GenSignalVoltageReset (void)
+void GenSignalVoltageReset (unsigned short peak_setpoint)
 {
     short new_d = 0;
     //hago un update del multiplier en funcion de la corriente pico
-    voltage_pid.setpoint = 900;
-    voltage_pid.sample = last_peak_current;
+    // printf("set: %d sum: %d", peak_setpoint, current_sum);
+    voltage_pid.setpoint = peak_setpoint;
+    current_sum >>= 8;
+    voltage_pid.sample = (unsigned short) current_sum;
     new_d = PI(&voltage_pid);
+    // printf(" i: %d d: %d\n", voltage_pid.sample, new_d);
+    
 
     if (new_d < 0)
         new_d = 0;
@@ -517,7 +534,14 @@ void GenSignalVoltageReset (void)
         new_d = 4095;
 
     last_peak_multiplier = new_d;
-    last_peak_current = 0;
+    current_sum = 0;
+    volt_index = 0;
+}
+
+
+void GenSignalVoltageNReset (unsigned short peak_setpoint)
+{
+    // not much to be done here!
     volt_index = 0;
 }
 
@@ -526,11 +550,11 @@ void GenSignalVoltageInit (void)
 {
     //armo un pid para controlar la corriente pico a traves del multiplicador
     voltage_pid.kp = 0;
-    voltage_pid.ki = 11;    //
+    voltage_pid.ki = 5;    //
     voltage_pid.kd = 0;
-    PID_Flush_Only_Errors(&voltage_pid);
-    
-    GenSignalVoltageReset();
+    PID_Flush_Errors(&voltage_pid);
+    last_peak_multiplier = 0;
+    current_sum = 0;
 }
 
 
@@ -1048,7 +1072,7 @@ void GenSignalPreDistortedReset (void)
 
 
 unsigned short current_i_peak_value = 0;
-// unsigned short last_peak_current = 0;
+unsigned short last_peak_current = 0;
 unsigned char current_i_peak_cntr = 0;
 unsigned char last_peak_index = 0;    //por ahora solo adelanto
 gen_signal_e GenSignalSinus2 (unsigned short i_sample, unsigned short peak_current, short * duty)

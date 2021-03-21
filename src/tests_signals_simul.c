@@ -25,7 +25,7 @@
 #define RSENSE    0.33
 
 // Select how many cycles
-#define HOW_MANY_CYCLES    100
+#define HOW_MANY_CYCLES    400
 // Select Current Signal
 // #define USE_SIGNAL_CURRENT_01_A
 // #define USE_SIGNAL_CURRENT_02_A
@@ -457,7 +457,7 @@ void TestGenSignalVoltage (void)
     for (int j = 0; j < HOW_MANY_CYCLES; j++)
     {
         //primera parte de la senial
-        GenSignalVoltageReset();
+        GenSignalVoltageReset(KI_SIGNAL_PEAK_MULTIPLIER);
         sig_state = SIGNAL_RUNNING;
         duty = 0;
         
@@ -485,16 +485,15 @@ void TestGenSignalVoltage (void)
         }
 
         // segunda parte de la senial
-        GenSignalReset();
+        GenSignalVoltageNReset(KI_SIGNAL_PEAK_MULTIPLIER);
         sig_state = SIGNAL_RUNNING;
         duty = 0;
         
         for (int i = SIZEOF_SIGNAL; i < 2*SIZEOF_SIGNAL; i++)
         {
-            // sig_state = GenSignal(last_output, ki_multiplier, &duty);
-            // printf("index: %d i: %d ",GetPwmCounter(), last_output_bipolar);
-            sig_state = GenSignal(last_output_bipolar, ki_multiplier, &duty);
-            // printf("duty: %d\n",duty);
+            unsigned short vline_adc = vline[i] * -10;
+            sig_state = GenSignalVoltageN(vline_adc, last_output_bipolar, &duty);
+
             if (sig_state == SIGNAL_RUNNING)
             {
                 //reviso que duty sea siempre positivo

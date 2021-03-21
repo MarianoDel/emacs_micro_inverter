@@ -68,7 +68,7 @@
 #define WITH_AC_SYNC_INT
 #define WITH_OVERCURRENT_SHUTDOWN
 #define WITH_SOFT_OVERCURRENT_SHUTDOWN
-#define WITH_FEW_CYCLES_OF_50HZ
+// #define WITH_FEW_CYCLES_OF_50HZ
 
 //-- Some timeouts ----------
 #define TT_FOR_CURRENT_ERROR    10000

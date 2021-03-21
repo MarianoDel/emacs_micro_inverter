@@ -26,7 +26,9 @@ gen_signal_e GenSignal (unsigned short, unsigned short, short *);
 void GenSignalReset (void);
 
 gen_signal_e GenSignalVoltage (unsigned short, unsigned short, short *);
-void GenSignalVoltageReset (void);
+gen_signal_e GenSignalVoltageN (unsigned short, unsigned short, short *);
+void GenSignalVoltageReset (unsigned short);
+void GenSignalVoltageNReset (unsigned short);
 void GenSignalVoltageInit (void);
 
 void GenSignalControlInit(void);

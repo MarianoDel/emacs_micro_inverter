@@ -131,7 +131,8 @@ void Vector_UShort_To_File (FILE * f, char * v_name, unsigned short * v_data, in
 {
     int len = 0;
     char str [100] = { 0 };
-    
+
+    fwrite("ushort ", 1, sizeof("ushort ") - 1, f);    
     len = strlen(v_name);    
     fwrite(v_name, 1, len, f);
     fwrite("\n", 1, sizeof("\n") - 1, f);

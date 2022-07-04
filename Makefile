@@ -229,6 +229,20 @@ tests_signals_simul:
 	gcc src/tests_signals_simul.c dsp.o gen_signal.o tests_vector_utils.o tests_recursive_utils.o -lm
 	./a.out
 
+tests_simul_dq:
+	# first module objects to test
+	# gcc -g -c src/funcs_gsm.c -I $(INCDIR) $(DDEFS)
+	# gcc -g -c src/sim900_800.c -I $(INCDIR) $(DDEFS)
+	# gcc -g -c src/comm.c -I $(INCDIR) $(DDEFS)
+	# second auxiliary helper modules
+	gcc -g -c src/tests_ok.c -I $(INCDIR)
+	gcc -g -c src/tests_vector_utils.c -I. $(INCDIR)
+	gcc -g -c src/tests_recursive_utils.c -I. $(INCDIR)
+	# linking
+	gcc -g src/tests_simul_dq.c tests_ok.o tests_vector_utils.o tests_recursive_utils.o -lm
+	# test execution
+	./a.out
+
 
 
 # *** EOF ***

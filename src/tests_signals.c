@@ -30,6 +30,7 @@ float vinput_applied[SIZEOF_SIGNAL] = { 0 };
 float voutput[SIZEOF_SIGNAL] = { 0 };
 unsigned short voutput_adc[SIZEOF_SIGNAL] = { 0 };
 unsigned short last_output = 0;
+unsigned short d_dump [SIZEOF_SIGNAL] = { 0 };
 
 // Module Functions to Test ----------------------------------------------------
 void TEST_Dsp_Module (void);

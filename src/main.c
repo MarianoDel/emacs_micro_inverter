@@ -341,7 +341,7 @@ int main(void)
                     LOW_RIGHT(DUTY_ALWAYS);
 #endif
 
-#ifdef USE_SIGNAL_CONTROL_BY_PID
+#ifdef USE_SIGNAL_CONTROL_BY_VOLTAGE_INPUT
                     GenSignalVoltageInit();
 #endif
 #ifdef USE_SIGNAL_CONTROL_SINUS
@@ -388,7 +388,9 @@ int main(void)
 #endif
                 gen_signal_e resp = SIGNAL_RUNNING;
 #ifdef USE_SIGNAL_CONTROL_BY_PID
-                // resp = GenSignal(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+                resp = GenSignal(I_Sense_Pos, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_BY_VOLTAGE_INPUT
                 resp = GenSignalVoltage(Vline_Sense, I_Sense_Pos, &d);
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
@@ -487,7 +489,9 @@ int main(void)
                 if (SYNC_Last_Polarity_Check() == POLARITY_POS)
                 {
 #ifdef USE_SIGNAL_CONTROL_BY_PID
-                    // GenSignalReset();
+                    GenSignalReset();
+#endif
+#ifdef USE_SIGNAL_CONTROL_BY_VOLTAGE_INPUT
                     GenSignalVoltageNReset(KI_SIGNAL_PEAK_MULTIPLIER);
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
@@ -534,7 +538,9 @@ int main(void)
                 
                 gen_signal_e resp = SIGNAL_RUNNING;
 #ifdef USE_SIGNAL_CONTROL_BY_PID
-                // resp = GenSignal(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+                resp = GenSignal(I_Sense_Neg, KI_SIGNAL_PEAK_MULTIPLIER, &d);
+#endif
+#ifdef USE_SIGNAL_CONTROL_BY_VOLTAGE_INPUT
                 resp = GenSignalVoltageN(Vline_Sense, I_Sense_Neg, &d);                
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED
@@ -631,7 +637,9 @@ int main(void)
                 if (SYNC_Last_Polarity_Check() == POLARITY_NEG)
                 {
 #ifdef USE_SIGNAL_CONTROL_BY_PID
-                    // GenSignalReset();
+                    GenSignalReset();
+#endif
+#ifdef USE_SIGNAL_CONTROL_BY_VOLTAGE_INPUT
                     GenSignalVoltageReset(KI_SIGNAL_PEAK_MULTIPLIER);
 #endif
 #ifdef USE_SIGNAL_CONTROL_PRE_DISTORTED

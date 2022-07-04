@@ -40,7 +40,8 @@
 #define GRID_TIED_FULL_CONECTED
 
 //-- Types of signal generation ----------
-#define USE_SIGNAL_CONTROL_BY_PID
+#define USE_SIGNAL_CONTROL_BY_PID    //genera la senial pwm con PID siguiendo la tabla de corriente
+// #define USE_SIGNAL_CONTROL_BY_VOLTAGE_INPUT    //genera pwm siguiendo tension medida en la linea
 // #define USE_SIGNAL_CONTROL_SINUS    //revisa con filtro solo la senial de corriente en el medio
 // #define USE_SIGNAL_CONTROL_SINUS2    //revisa sin filtro el pico de corriente en toda la senial
 // #define USE_SIGNAL_CONTROL_TRIANG    //genera senial triangular solo para modo DCM

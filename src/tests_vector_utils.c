@@ -152,6 +152,7 @@ void Vector_Short_To_File (FILE * f, char * v_name, short * v_data, int v_len)
     int len = 0;
     char str [100] = { 0 };
     
+    fwrite("short ", 1, sizeof("short ") - 1, f);
     len = strlen(v_name);    
     fwrite(v_name, 1, len, f);
     fwrite("\n", 1, sizeof("\n") - 1, f);
@@ -171,6 +172,7 @@ void Vector_Float_To_File (FILE * f, char * v_name, float * v_data, int v_len)
     int len = 0;
     char str [100] = { 0 };
     
+    fwrite("float ", 1, sizeof("float ") - 1, f);
     len = strlen(v_name);    
     fwrite(v_name, 1, len, f);
     fwrite("\n", 1, sizeof("\n") - 1, f);
@@ -253,6 +255,24 @@ void ShowVectorFloat (char * s_comment, float * f_vect, int size)
 
 
 void ShowVectorUShort (char * s_comment, unsigned short * int_vect, int size)
+{
+    printf(s_comment);
+    for (int i = 0; i < size; i+=8)
+        printf("index: %03d - %d %d %d %d %d %d %d %d\n",
+               i,
+               *(int_vect+i+0),
+               *(int_vect+i+1),
+               *(int_vect+i+2),
+               *(int_vect+i+3),
+               *(int_vect+i+4),
+               *(int_vect+i+5),
+               *(int_vect+i+6),
+               *(int_vect+i+7));
+    
+}
+
+
+void ShowVectorShort (char * s_comment, short * int_vect, int size)
 {
     printf(s_comment);
     for (int i = 0; i < size; i+=8)

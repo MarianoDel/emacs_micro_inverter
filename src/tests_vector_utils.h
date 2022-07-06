@@ -30,6 +30,7 @@ void Variable_UChar_To_File (FILE * f, char * v_name, unsigned char data);
 
 void ShowVectorFloat (char * s_comment, float * f_vect, int size);
 void ShowVectorUShort (char * s_comment, unsigned short * int_vect, int size);
+void ShowVectorShort (char * s_comment, short * int_vect, int size);
 void ShowVectorInt (char * s_comment, int * int_vect, int size);
 
 #endif    /* __TESTS_VECTOR_UTILS_H_ */

@@ -39,7 +39,7 @@ def get_vector_data (myfile, line):
     return (v_data_type, v_name)
 
 last_color = 0
-colors_list = ['b', 'y', 'g', 'o', 'r', 'c']
+colors_list = ['o', 'y', 'g', 'c', 'r', 'b']
 def get_new_color_vector ():
     global last_color
     
@@ -70,17 +70,17 @@ vectors_type = []
 vectors_name = []
 vectors_data = []
 
-for x in range(0, vectors_len, 2):
-    (new_type, new_name) = get_vector_data(fl, x)
+for x in range(vectors_len):
+    (new_type, new_name) = get_vector_data(fl, x * 2)
     vectors_type.append(new_type)
     vectors_name.append(new_name)
 
     if new_type == 'ushort':
-        new_data = get_vector_lines_ushort(fl, x)
+        new_data = get_vector_lines_ushort(fl, x * 2)
     elif new_type == 'short':
-        new_data = get_vector_lines_short(fl, x)
+        new_data = get_vector_lines_short(fl, x * 2)
     elif new_type == 'float':
-        new_data = get_vector_lines_float(fl, x)
+        new_data = get_vector_lines_float(fl, x * 2)
         
     vectors_data.append(new_data)
     
